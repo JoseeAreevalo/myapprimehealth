@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  font-family: 'Manrope', sans-serif;
+  background: oklch(0.12 0.015 285);
+  color: oklch(0.96 0.01 285);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    linear-gradient(oklch(1 0 0 / 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(1 0 0 / 0.018) 1px, transparent 1px),
+    oklch(0.12 0.015 285);
+  background-size: 48px 48px;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.font-display {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.bg-ink {
+  background-color: oklch(0.12 0.015 285);
+}
+
+.bg-panel {
+  background-color: oklch(0.16 0.018 285);
+}
+
+.eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: oklch(0.61 0.03 285);
+}
+
+.metric-card {
+  border: 1px solid oklch(1 0 0 / 0.08);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(145deg, oklch(0.19 0.025 285 / 0.82), oklch(0.15 0.018 285 / 0.72));
+  box-shadow: 0 18px 50px oklch(0.04 0.01 285 / 0.28);
+}
+
+.shadow-panel {
+  box-shadow: 0 18px 50px oklch(0.04 0.01 285 / 0.28);
+}
+
+.ambient-orb {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  width: 34rem;
+  height: 34rem;
+  border-radius: 999px;
+  filter: blur(100px);
+  opacity: 0.12;
+}
+
+.ambient-orb-top {
+  top: -17rem;
+  right: -8rem;
+  background: oklch(0.62 0.26 295);
+}
+
+.ambient-orb-bottom {
+  bottom: -22rem;
+  left: 10rem;
+  background: oklch(0.58 0.18 235);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
