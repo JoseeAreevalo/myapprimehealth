@@ -5,6 +5,17 @@ import { useAuth } from '../context/AuthContext';
 
 export type MealStatus = 'completed' | 'next' | 'planned';
 
+export interface NutritionMealItem {
+    id: number;
+    foodId: number | null;
+    foodName: string;
+    grams: number;
+    calories: number;
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
+}
+
 export interface NutritionMeal {
     id: number;
     name: string;
@@ -12,6 +23,9 @@ export interface NutritionMeal {
     mealTime: string | null;
     calories: number;
     status: MealStatus;
+    items: NutritionMealItem[];
+    alternativeGroup: string | null;
+    alternativeLabel: string | null;
 }
 
 export interface NutritionPlan {

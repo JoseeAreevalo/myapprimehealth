@@ -3,19 +3,25 @@ import { useState } from 'react';
 import { ChefHat, Plus, Trash2 } from 'lucide-react';
 import { api } from '../api/config';
 import { useAuth } from '../context/AuthContext';
+import MealItemsEditor, { MealItemDraft, mealItemsTotals } from './MealItemsEditor';
 import NutritionLiveTotals from './NutritionLiveTotals';
-import { macroCalories, sumMealCalories } from '../utils/nutritionMath';
+import { macroCalories } from '../utils/nutritionMath';
 
 interface MealDraft {
     name: string;
     mealTime: string;
     calories: string;
+    items: MealItemDraft[];
+}
+
+function effectiveCalories(meal: MealDraft): number {
+    return meal.items.length > 0 ? mealItemsTotals(meal.items).calories : Number(meal.calories) || 0;
 }
 
 const defaultMeals: MealDraft[] = [
-    { name: 'Desayuno', mealTime: '08:00', calories: '450' },
-    { name: 'Almuerzo', mealTime: '13:00', calories: '600' },
-    { name: 'Cena', mealTime: '19:00', calories: '550' },
+    { name: 'Desayuno', mealTime: '08:00', calories: '450', items: [] },
+    { name: 'Almuerzo', mealTime: '13:00', calories: '600', items: [] },
+    { name: 'Cena', mealTime: '19:00', calories: '550', items: [] },
 ];
 
 // Lets any user without an existing plan (e.g. no coach yet) set up their own nutrition plan.
@@ -34,16 +40,20 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
 
     if (!user || hasPlan) return null;
 
-    const updateMeal = (index: number, field: keyof MealDraft, value: string) => {
+    const updateMeal = (index: number, field: 'name' | 'mealTime' | 'calories', value: string) => {
         setMeals((current) => current.map((meal, i) => (i === index ? { ...meal, [field]: value } : meal)));
     };
 
     const addMealRow = () => {
-        setMeals((current) => [...current, { name: `Comida ${current.length + 1}`, mealTime: '', calories: '200' }]);
+        setMeals((current) => [...current, { name: `Comida ${current.length + 1}`, mealTime: '', calories: '200', items: [] }]);
     };
 
     const removeMealRow = (index: number) => {
         setMeals((current) => current.filter((_, i) => i !== index));
+    };
+
+    const updateMealItems = (index: number, items: MealItemDraft[]) => {
+        setMeals((current) => current.map((meal, i) => (i === index ? { ...meal, items } : meal)));
     };
 
     const handleSubmit = async (event: React.FormEvent) => {
@@ -62,7 +72,12 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
                     carbsGTarget: carbsG ? Number(carbsG) : undefined,
                     fatGTarget: fatG ? Number(fatG) : undefined,
                     waterGoalMl: waterGoalMl ? Number(waterGoalMl) : undefined,
-                    meals: meals.map((meal) => ({ name: meal.name, mealTime: meal.mealTime, calories: Number(meal.calories) })),
+                    meals: meals.map((meal) => ({
+                        name: meal.name,
+                        mealTime: meal.mealTime,
+                        calories: effectiveCalories(meal),
+                        items: meal.items.map((item) => ({ foodId: item.foodId, foodName: item.foodName, grams: Number(item.grams) })),
+                    })),
                 },
                 { headers: { Authorization: `Bearer ${token}` } },
             );
@@ -157,42 +172,51 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
                     <NutritionLiveTotals
                         goalCalories={Number(goalCalories) || 0}
                         macroTotalCalories={macroCalories(proteinG, carbsG, fatG)}
-                        mealsTotalCalories={sumMealCalories(meals)}
+                        mealsTotalCalories={meals.reduce((sum, meal) => sum + effectiveCalories(meal), 0)}
                     />
                     <div className="space-y-2">
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Comidas del plan</p>
                         <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 px-0.5 text-[10px] text-slate-500">
                             <span>Nombre de la comida</span>
                             <span>Hora (HH:MM)</span>
-                            <span>Calorías</span>
+                            <span>Calorías (o agrega alimentos abajo)</span>
                             <span />
                         </div>
                         {meals.map((meal, index) => (
-                            <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2" key={index}>
-                                <input
-                                    className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
-                                    onChange={(event) => updateMeal(index, 'name', event.target.value)}
-                                    value={meal.name}
-                                />
-                                <input
-                                    className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
-                                    onChange={(event) => updateMeal(index, 'mealTime', event.target.value)}
-                                    value={meal.mealTime}
-                                />
-                                <input
-                                    className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
-                                    onChange={(event) => updateMeal(index, 'calories', event.target.value)}
-                                    type="number"
-                                    value={meal.calories}
-                                />
-                                <button
-                                    className="rounded-lg bg-rose-500/15 px-2 text-xs text-rose-300 hover:bg-rose-500/25 disabled:opacity-30"
-                                    disabled={meals.length <= 1}
-                                    onClick={() => removeMealRow(index)}
-                                    type="button"
-                                >
-                                    <Trash2 size={13} />
-                                </button>
+                            <div className="space-y-1.5 rounded-xl border border-white/7 p-2" key={index}>
+                                <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+                                    <input
+                                        className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                                        onChange={(event) => updateMeal(index, 'name', event.target.value)}
+                                        value={meal.name}
+                                    />
+                                    <input
+                                        className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                                        onChange={(event) => updateMeal(index, 'mealTime', event.target.value)}
+                                        value={meal.mealTime}
+                                    />
+                                    {meal.items.length === 0 ? (
+                                        <input
+                                            className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                                            onChange={(event) => updateMeal(index, 'calories', event.target.value)}
+                                            type="number"
+                                            value={meal.calories}
+                                        />
+                                    ) : (
+                                        <div className="flex items-center rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-400">
+                                            {Math.round(effectiveCalories(meal))} kcal (de alimentos)
+                                        </div>
+                                    )}
+                                    <button
+                                        className="rounded-lg bg-rose-500/15 px-2 text-xs text-rose-300 hover:bg-rose-500/25 disabled:opacity-30"
+                                        disabled={meals.length <= 1}
+                                        onClick={() => removeMealRow(index)}
+                                        type="button"
+                                    >
+                                        <Trash2 size={13} />
+                                    </button>
+                                </div>
+                                <MealItemsEditor items={meal.items} onChange={(items) => updateMealItems(index, items)} />
                             </div>
                         ))}
                         <button

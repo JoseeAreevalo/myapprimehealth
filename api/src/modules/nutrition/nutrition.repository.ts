@@ -1,5 +1,5 @@
 import { pool } from '../../db/pool';
-import { MealStatus, NutritionMeal, NutritionMealInput, NutritionPlan } from './nutrition.types';
+import { MealStatus, NutritionMeal, NutritionMealInput, NutritionMealItem, NutritionPlan } from './nutrition.types';
 
 interface PlanRow {
     id: number;
@@ -24,6 +24,21 @@ interface MealRow {
     detail: string | null;
     meal_time: string | null;
     calories: number;
+    sort_order: number;
+    alternative_group: string | null;
+    alternative_label: string | null;
+}
+
+interface MealItemRow {
+    id: number;
+    meal_id: number;
+    food_id: number | null;
+    food_name: string;
+    grams: string;
+    calories: string;
+    protein_g: string;
+    carbs_g: string;
+    fat_g: string;
     sort_order: number;
 }
 
@@ -50,7 +65,7 @@ function toPlan(row: PlanRow): NutritionPlan {
     };
 }
 
-function toMeal(row: MealRow): NutritionMeal {
+function toMeal(row: MealRow): Omit<NutritionMeal, 'items'> {
     return {
         id: row.id,
         planId: row.plan_id,
@@ -58,6 +73,23 @@ function toMeal(row: MealRow): NutritionMeal {
         detail: row.detail,
         mealTime: row.meal_time,
         calories: row.calories,
+        sortOrder: row.sort_order,
+        alternativeGroup: row.alternative_group,
+        alternativeLabel: row.alternative_label,
+    };
+}
+
+function toMealItem(row: MealItemRow): NutritionMealItem {
+    return {
+        id: row.id,
+        mealId: row.meal_id,
+        foodId: row.food_id,
+        foodName: row.food_name,
+        grams: Number(row.grams),
+        calories: Number(row.calories),
+        proteinG: Number(row.protein_g),
+        carbsG: Number(row.carbs_g),
+        fatG: Number(row.fat_g),
         sortOrder: row.sort_order,
     };
 }
@@ -159,7 +191,7 @@ export const nutritionPlansRepository = {
 };
 
 export const nutritionMealsRepository = {
-    async listByPlanId(planId: number): Promise<NutritionMeal[]> {
+    async listByPlanId(planId: number): Promise<Omit<NutritionMeal, 'items'>[]> {
         const { rows } = await pool.query<MealRow>(
             'SELECT * FROM nutrition_meals WHERE plan_id = $1 ORDER BY sort_order ASC, id ASC',
             [planId],
@@ -167,36 +199,54 @@ export const nutritionMealsRepository = {
         return rows.map(toMeal);
     },
 
-    async findById(id: number): Promise<NutritionMeal | undefined> {
+    async findById(id: number): Promise<Omit<NutritionMeal, 'items'> | undefined> {
         const { rows } = await pool.query<MealRow>('SELECT * FROM nutrition_meals WHERE id = $1', [id]);
         return rows[0] ? toMeal(rows[0]) : undefined;
     },
 
-    async createMany(planId: number, meals: NutritionMealInput[]): Promise<NutritionMeal[]> {
-        const created: NutritionMeal[] = [];
+    async createMany(planId: number, meals: NutritionMealInput[]): Promise<Omit<NutritionMeal, 'items'>[]> {
+        const created: Omit<NutritionMeal, 'items'>[] = [];
         for (const [index, meal] of meals.entries()) {
             const { rows } = await pool.query<MealRow>(
-                `INSERT INTO nutrition_meals (plan_id, name, detail, meal_time, calories, sort_order)
-         VALUES ($1, $2, $3, $4, $5, $6)
+                `INSERT INTO nutrition_meals (plan_id, name, detail, meal_time, calories, sort_order, alternative_group, alternative_label)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
-                [planId, meal.name, meal.detail ?? null, meal.mealTime ?? null, meal.calories, meal.sortOrder ?? index],
+                [
+                    planId,
+                    meal.name,
+                    meal.detail ?? null,
+                    meal.mealTime ?? null,
+                    meal.calories,
+                    meal.sortOrder ?? index,
+                    meal.alternativeGroup ?? null,
+                    meal.alternativeLabel ?? null,
+                ],
             );
             created.push(toMeal(rows[0]));
         }
         return created;
     },
 
-    async create(planId: number, meal: NutritionMealInput, sortOrder: number): Promise<NutritionMeal> {
+    async create(planId: number, meal: NutritionMealInput, sortOrder: number): Promise<Omit<NutritionMeal, 'items'>> {
         const { rows } = await pool.query<MealRow>(
-            `INSERT INTO nutrition_meals (plan_id, name, detail, meal_time, calories, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6)
+            `INSERT INTO nutrition_meals (plan_id, name, detail, meal_time, calories, sort_order, alternative_group, alternative_label)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-            [planId, meal.name, meal.detail ?? null, meal.mealTime ?? null, meal.calories, sortOrder],
+            [
+                planId,
+                meal.name,
+                meal.detail ?? null,
+                meal.mealTime ?? null,
+                meal.calories,
+                sortOrder,
+                meal.alternativeGroup ?? null,
+                meal.alternativeLabel ?? null,
+            ],
         );
         return toMeal(rows[0]);
     },
 
-    async update(id: number, updates: { name?: string; mealTime?: string | null; calories?: number }): Promise<NutritionMeal> {
+    async update(id: number, updates: { name?: string; mealTime?: string | null; calories?: number }): Promise<Omit<NutritionMeal, 'items'>> {
         const { rows } = await pool.query<MealRow>(
             `UPDATE nutrition_meals
        SET name = COALESCE($2, name), meal_time = COALESCE($3, meal_time), calories = COALESCE($4, calories)
@@ -214,6 +264,66 @@ export const nutritionMealsRepository = {
     async countByPlanId(planId: number): Promise<number> {
         const { rows } = await pool.query<{ count: string }>('SELECT COUNT(*) AS count FROM nutrition_meals WHERE plan_id = $1', [planId]);
         return Number(rows[0]?.count ?? 0);
+    },
+};
+
+export const nutritionMealItemsRepository = {
+    async listByMealId(mealId: number): Promise<NutritionMealItem[]> {
+        const { rows } = await pool.query<MealItemRow>(
+            'SELECT * FROM nutrition_meal_items WHERE meal_id = $1 ORDER BY sort_order ASC, id ASC',
+            [mealId],
+        );
+        return rows.map(toMealItem);
+    },
+
+    async listByMealIds(mealIds: number[]): Promise<NutritionMealItem[]> {
+        if (mealIds.length === 0) return [];
+        const { rows } = await pool.query<MealItemRow>(
+            'SELECT * FROM nutrition_meal_items WHERE meal_id = ANY($1) ORDER BY sort_order ASC, id ASC',
+            [mealIds],
+        );
+        return rows.map(toMealItem);
+    },
+
+    async findById(id: number): Promise<NutritionMealItem | undefined> {
+        const { rows } = await pool.query<MealItemRow>('SELECT * FROM nutrition_meal_items WHERE id = $1', [id]);
+        return rows[0] ? toMealItem(rows[0]) : undefined;
+    },
+
+    async countByMealId(mealId: number): Promise<number> {
+        const { rows } = await pool.query<{ count: string }>('SELECT COUNT(*) AS count FROM nutrition_meal_items WHERE meal_id = $1', [mealId]);
+        return Number(rows[0]?.count ?? 0);
+    },
+
+    async create(
+        mealId: number,
+        item: { foodId?: number | null; foodName: string; grams: number; calories: number; proteinG: number; carbsG: number; fatG: number; sortOrder?: number },
+    ): Promise<NutritionMealItem> {
+        const { rows } = await pool.query<MealItemRow>(
+            `INSERT INTO nutrition_meal_items (meal_id, food_id, food_name, grams, calories, protein_g, carbs_g, fat_g, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 0))
+       RETURNING *`,
+            [mealId, item.foodId ?? null, item.foodName, item.grams, item.calories, item.proteinG, item.carbsG, item.fatG, item.sortOrder ?? null],
+        );
+        return toMealItem(rows[0]);
+    },
+
+    async delete(id: number): Promise<void> {
+        await pool.query('DELETE FROM nutrition_meal_items WHERE id = $1', [id]);
+    },
+
+    async updateValues(
+        id: number,
+        updates: { grams: number; calories: number; proteinG: number; carbsG: number; fatG: number },
+    ): Promise<NutritionMealItem> {
+        const { rows } = await pool.query<MealItemRow>(
+            `UPDATE nutrition_meal_items
+       SET grams = $2, calories = $3, protein_g = $4, carbs_g = $5, fat_g = $6
+       WHERE id = $1
+       RETURNING *`,
+            [id, updates.grams, updates.calories, updates.proteinG, updates.carbsG, updates.fatG],
+        );
+        return toMealItem(rows[0]);
     },
 };
 

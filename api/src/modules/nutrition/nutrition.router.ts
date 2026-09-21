@@ -97,10 +97,48 @@ nutritionRouter.post('/plans/:planId/meals', authenticate, async (req: Request, 
             name: req.body.name,
             mealTime: req.body.mealTime,
             calories: Number(req.body.calories),
+            alternativeGroup: req.body.alternativeGroup,
+            alternativeLabel: req.body.alternativeLabel,
+            items: Array.isArray(req.body.items) ? req.body.items : undefined,
         });
         res.status(201).json({ meal });
     } catch (error) {
         handleError(res, error, 'No se pudo agregar la comida.');
+    }
+});
+
+nutritionRouter.post('/meals/:mealId/items', authenticate, async (req: Request, res: Response): Promise<void> => {
+    try {
+        const meal = await nutritionService.addMealItem(req.authenticatedUser!, Number(req.params.mealId), {
+            foodId: req.body.foodId != null ? Number(req.body.foodId) : undefined,
+            foodName: req.body.foodName,
+            grams: Number(req.body.grams),
+            caloriesPer100g: req.body.caloriesPer100g != null ? Number(req.body.caloriesPer100g) : undefined,
+            proteinGPer100g: req.body.proteinGPer100g != null ? Number(req.body.proteinGPer100g) : undefined,
+            carbsGPer100g: req.body.carbsGPer100g != null ? Number(req.body.carbsGPer100g) : undefined,
+            fatGPer100g: req.body.fatGPer100g != null ? Number(req.body.fatGPer100g) : undefined,
+        });
+        res.status(201).json({ meal });
+    } catch (error) {
+        handleError(res, error, 'No se pudo agregar el alimento a la comida.');
+    }
+});
+
+nutritionRouter.delete('/meal-items/:itemId', authenticate, async (req: Request, res: Response): Promise<void> => {
+    try {
+        const meal = await nutritionService.deleteMealItem(req.authenticatedUser!, Number(req.params.itemId));
+        res.status(200).json({ meal });
+    } catch (error) {
+        handleError(res, error, 'No se pudo quitar el alimento de la comida.');
+    }
+});
+
+nutritionRouter.patch('/meal-items/:itemId', authenticate, async (req: Request, res: Response): Promise<void> => {
+    try {
+        const meal = await nutritionService.updateMealItemGrams(req.authenticatedUser!, Number(req.params.itemId), Number(req.body.grams));
+        res.status(200).json({ meal });
+    } catch (error) {
+        handleError(res, error, 'No se pudo actualizar la cantidad del alimento.');
     }
 });
 

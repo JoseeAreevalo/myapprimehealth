@@ -39,6 +39,11 @@ export const foodsRepository = {
         return rows[0] ? toFood(rows[0]) : undefined;
     },
 
+    async findById(id: number): Promise<Food | undefined> {
+        const { rows } = await pool.query<FoodRow>('SELECT * FROM foods WHERE id = $1', [id]);
+        return rows[0] ? toFood(rows[0]) : undefined;
+    },
+
     async create(input: {
         name: string;
         caloriesPer100g: number;

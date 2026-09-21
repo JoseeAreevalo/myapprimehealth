@@ -1,8 +1,9 @@
 import { coachClientsRepository } from '../people/people.repository';
 import { AuthenticatedUser } from '../identity/identity.types';
+import { foodsRepository } from '../foods/foods.repository';
 import { notificationsRepository } from '../notifications/notifications.repository';
-import { nutritionMealLogsRepository, nutritionMealsRepository, nutritionPlansRepository } from './nutrition.repository';
-import { MealStatus, NutritionMeal, NutritionMealInput, NutritionPlan, NutritionPlanWithMeals } from './nutrition.types';
+import { nutritionMealItemsRepository, nutritionMealLogsRepository, nutritionMealsRepository, nutritionPlansRepository } from './nutrition.repository';
+import { MealStatus, NutritionMeal, NutritionMealInput, NutritionMealItem, NutritionMealItemDraft, NutritionPlan, NutritionPlanWithMeals } from './nutrition.types';
 
 class ForbiddenError extends Error { }
 class NotFoundError extends Error { }
@@ -37,6 +38,65 @@ async function assertCanManagePlan(requester: AuthenticatedUser, clientId: numbe
     throw new ForbiddenError('No tienes permiso para modificar este plan.');
 }
 
+// Scales a catalog food's (assumed cooked/prepared) per-100g macros by the item's gram amount, or
+// falls back to caller-supplied per-100g values for a freeform item not yet in the catalog.
+async function resolveMealItem(draft: NutritionMealItemDraft): Promise<{
+    foodId: number | null;
+    foodName: string;
+    grams: number;
+    calories: number;
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
+}> {
+    if (!draft.foodName || !Number.isFinite(draft.grams) || draft.grams <= 0) {
+        throw new ValidationError('Cada alimento requiere un nombre y una cantidad en gramos mayor a 0.');
+    }
+
+    let per100g = {
+        calories: draft.caloriesPer100g,
+        protein: draft.proteinGPer100g,
+        carbs: draft.carbsGPer100g,
+        fat: draft.fatGPer100g,
+    };
+
+    if (draft.foodId != null) {
+        const food = await foodsRepository.findById(draft.foodId);
+        if (!food) {
+            throw new ValidationError(`El alimento "${draft.foodName}" ya no existe en el catálogo.`);
+        }
+        per100g = { calories: food.caloriesPer100g, protein: food.proteinG, carbs: food.carbsG, fat: food.fatG };
+    }
+
+    if (per100g.calories == null) {
+        throw new ValidationError(`Faltan datos nutricionales para "${draft.foodName}".`);
+    }
+
+    const scale = draft.grams / 100;
+    return {
+        foodId: draft.foodId ?? null,
+        foodName: draft.foodName,
+        grams: draft.grams,
+        calories: Math.round(per100g.calories * scale * 10) / 10,
+        proteinG: Math.round((per100g.protein ?? 0) * scale * 10) / 10,
+        carbsG: Math.round((per100g.carbs ?? 0) * scale * 10) / 10,
+        fatG: Math.round((per100g.fat ?? 0) * scale * 10) / 10,
+    };
+}
+
+async function createMealItems(mealId: number, drafts: NutritionMealItemDraft[]): Promise<NutritionMealItem[]> {
+    const created: NutritionMealItem[] = [];
+    for (const [index, draft] of drafts.entries()) {
+        const resolved = await resolveMealItem(draft);
+        created.push(await nutritionMealItemsRepository.create(mealId, { ...resolved, sortOrder: index }));
+    }
+    return created;
+}
+
+function sumItemCalories(items: NutritionMealItem[]): number {
+    return Math.round(items.reduce((sum, item) => sum + item.calories, 0) * 10) / 10;
+}
+
 export function createNutritionService() {
     return {
         async listPlans(requester: AuthenticatedUser, clientId: number): Promise<NutritionPlan[]> {
@@ -59,11 +119,16 @@ export function createNutritionService() {
             if (!plan) return null;
 
             const meals = await nutritionMealsRepository.listByPlanId(plan.id);
+            const items = await nutritionMealItemsRepository.listByMealIds(meals.map((meal) => meal.id));
             const logs = await nutritionMealLogsRepository.listForDate(clientId, todayIsoDate());
 
             return {
                 ...plan,
-                meals: meals.map((meal) => ({ ...meal, status: logs.get(meal.id) ?? 'planned' })),
+                meals: meals.map((meal) => ({
+                    ...meal,
+                    items: items.filter((item) => item.mealId === meal.id),
+                    status: logs.get(meal.id) ?? 'planned',
+                })),
             };
         },
 
@@ -110,6 +175,13 @@ export function createNutritionService() {
                 waterGoalMl: input.waterGoalMl,
             });
             const meals = await nutritionMealsRepository.createMany(plan.id, input.meals);
+            const mealsWithItems: NutritionMeal[] = [];
+            for (const [index, meal] of meals.entries()) {
+                const drafts = input.meals[index]?.items ?? [];
+                const items = drafts.length > 0 ? await createMealItems(meal.id, drafts) : [];
+                const calories = items.length > 0 ? sumItemCalories(items) : meal.calories;
+                mealsWithItems.push({ ...meal, calories, items });
+            }
 
             if (requester.id !== input.clientId) {
                 await notificationsRepository.create(
@@ -120,7 +192,7 @@ export function createNutritionService() {
                 );
             }
 
-            return { ...plan, meals: meals.map((meal) => ({ ...meal, status: 'planned' as MealStatus })) };
+            return { ...plan, meals: mealsWithItems.map((meal) => ({ ...meal, status: 'planned' as MealStatus })) };
         },
 
         async updatePlan(
@@ -160,7 +232,83 @@ export function createNutritionService() {
             }
 
             const sortOrder = await nutritionMealsRepository.countByPlanId(planId);
-            return nutritionMealsRepository.create(planId, meal, sortOrder);
+            const created = await nutritionMealsRepository.create(planId, meal, sortOrder);
+            const items = meal.items && meal.items.length > 0 ? await createMealItems(created.id, meal.items) : [];
+            const calories = items.length > 0 ? sumItemCalories(items) : created.calories;
+            return { ...created, calories, items };
+        },
+
+        async addMealItem(requester: AuthenticatedUser, mealId: number, draft: NutritionMealItemDraft): Promise<NutritionMeal> {
+            const meal = await nutritionMealsRepository.findById(mealId);
+            if (!meal) {
+                throw new NotFoundError('Comida no encontrada.');
+            }
+            const plan = await nutritionPlansRepository.findById(meal.planId);
+            if (!plan) {
+                throw new NotFoundError('Comida no encontrada.');
+            }
+            await assertCanManagePlan(requester, plan.clientId);
+
+            await createMealItems(mealId, [draft]);
+            const items = await nutritionMealItemsRepository.listByMealId(mealId);
+            const calories = sumItemCalories(items);
+            const updated = await nutritionMealsRepository.update(mealId, { calories });
+            return { ...updated, items };
+        },
+
+        async deleteMealItem(requester: AuthenticatedUser, itemId: number): Promise<NutritionMeal> {
+            const item = await nutritionMealItemsRepository.findById(itemId);
+            if (!item) {
+                throw new NotFoundError('Alimento no encontrado.');
+            }
+            const meal = await nutritionMealsRepository.findById(item.mealId);
+            if (!meal) {
+                throw new NotFoundError('Comida no encontrada.');
+            }
+            const plan = await nutritionPlansRepository.findById(meal.planId);
+            if (!plan) {
+                throw new NotFoundError('Comida no encontrada.');
+            }
+            await assertCanManagePlan(requester, plan.clientId);
+
+            await nutritionMealItemsRepository.delete(itemId);
+            const items = await nutritionMealItemsRepository.listByMealId(meal.id);
+            const calories = items.length > 0 ? sumItemCalories(items) : meal.calories;
+            const updated = await nutritionMealsRepository.update(meal.id, { calories });
+            return { ...updated, items };
+        },
+
+        async updateMealItemGrams(requester: AuthenticatedUser, itemId: number, grams: number): Promise<NutritionMeal> {
+            const item = await nutritionMealItemsRepository.findById(itemId);
+            if (!item) {
+                throw new NotFoundError('Alimento no encontrado.');
+            }
+            const meal = await nutritionMealsRepository.findById(item.mealId);
+            if (!meal) {
+                throw new NotFoundError('Comida no encontrada.');
+            }
+            const plan = await nutritionPlansRepository.findById(meal.planId);
+            if (!plan) {
+                throw new NotFoundError('Comida no encontrada.');
+            }
+            await assertCanManagePlan(requester, plan.clientId);
+
+            if (!Number.isFinite(grams) || grams <= 0) {
+                throw new ValidationError('Los gramos deben ser un número mayor a 0.');
+            }
+
+            const ratio = grams / item.grams;
+            await nutritionMealItemsRepository.updateValues(itemId, {
+                grams,
+                calories: Math.round(item.calories * ratio * 10) / 10,
+                proteinG: Math.round(item.proteinG * ratio * 10) / 10,
+                carbsG: Math.round(item.carbsG * ratio * 10) / 10,
+                fatG: Math.round(item.fatG * ratio * 10) / 10,
+            });
+            const items = await nutritionMealItemsRepository.listByMealId(meal.id);
+            const calories = sumItemCalories(items);
+            const updated = await nutritionMealsRepository.update(meal.id, { calories });
+            return { ...updated, items };
         },
 
         async updateMeal(
@@ -182,7 +330,9 @@ export function createNutritionService() {
                 throw new ValidationError('Las calorías deben ser un número no negativo.');
             }
 
-            return nutritionMealsRepository.update(mealId, updates);
+            const updated = await nutritionMealsRepository.update(mealId, updates);
+            const items = await nutritionMealItemsRepository.listByMealId(mealId);
+            return { ...updated, items };
         },
 
         async deleteMeal(requester: AuthenticatedUser, mealId: number): Promise<void> {
