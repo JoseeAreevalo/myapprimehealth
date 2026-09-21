@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Moon } from 'lucide-react';
 import { useCheckIns } from '../hooks/useCheckIns';
+import CheckInPhotos from './CheckInPhotos';
 
 export default function WeeklyCheckInCard() {
   const { latest, loading, error, submit, isClient } = useCheckIns();
@@ -52,6 +53,7 @@ export default function WeeklyCheckInCard() {
                 Week of <span className="font-medium text-slate-100">{latest.weekStartDate}</span> · {latest.status === 'reviewed' ? 'Reviewed by your coach' : 'Awaiting review'}
               </p>
               {latest.coachFeedback && <p className="mt-2 text-sm text-violet-200">"{latest.coachFeedback}"</p>}
+              <CheckInPhotos canUpload checkInId={latest.id} />
             </div>
           ) : (
             <p className="mt-6 text-sm text-slate-400">No check-in submitted yet this week.</p>

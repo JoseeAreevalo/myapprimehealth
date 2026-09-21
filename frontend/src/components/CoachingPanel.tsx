@@ -4,6 +4,7 @@ import { ClipboardCheck, HeartHandshake, TrendingUp, Users } from 'lucide-react'
 import { api } from '../api/config';
 import { useAuth } from '../context/AuthContext';
 import { useClientProgress } from '../hooks/useClientProgress';
+import CheckInPhotos from './CheckInPhotos';
 
 interface PersonSummary {
   id: number;
@@ -92,6 +93,7 @@ function PendingCheckIns({ clients }: { clients: PersonSummary[] }) {
                 {checkIn.weightKg != null ? `${checkIn.weightKg} kg` : 'No weight logged'} · {checkIn.adherencePercent != null ? `${checkIn.adherencePercent}% adherence` : 'No adherence logged'}
               </p>
               {checkIn.notes && <p className="mt-2 text-sm text-slate-300">"{checkIn.notes}"</p>}
+              <CheckInPhotos canUpload={false} checkInId={checkIn.id} />
               <textarea
                 className="mt-3 w-full rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-xs text-slate-100"
                 onChange={(event) => setDrafts((current) => ({ ...current, [checkIn.id]: event.target.value }))}

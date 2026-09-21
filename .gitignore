@@ -30,6 +30,9 @@ jspm_packages/
 # dotenv environment variables file
 .env
 
+# Local file uploads (not committed; use object storage in production)
+api/uploads/
+
 # IDE specific files
 .idea/
 *.suo

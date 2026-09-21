@@ -11,6 +11,7 @@ import checkInsRouter from './modules/checkIns/checkIns.router';
 import progressRouter from './modules/progress/progress.router';
 import administrationRouter from './modules/administration/administration.router';
 import notificationsRouter from './modules/notifications/notifications.router';
+import filesRouter from './modules/files/files.router';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -73,6 +74,7 @@ app.use('/api/v1/check-ins', checkInsRouter);
 app.use('/api/v1/progress', progressRouter);
 app.use('/api/v1/administration', administrationRouter);
 app.use('/api/v1/notifications', notificationsRouter);
+app.use('/api/v1/files', filesRouter);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApi));
 app.get('/api-docs.json', (_req, res): void => {
   res.json(openApi);
