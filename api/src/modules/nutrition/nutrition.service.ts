@@ -1,5 +1,6 @@
 import { coachClientsRepository } from '../people/people.repository';
 import { AuthenticatedUser } from '../identity/identity.types';
+import { notificationsRepository } from '../notifications/notifications.repository';
 import { nutritionMealLogsRepository, nutritionMealsRepository, nutritionPlansRepository } from './nutrition.repository';
 import { MealStatus, NutritionMealInput, NutritionPlan, NutritionPlanWithMeals } from './nutrition.types';
 
@@ -90,6 +91,13 @@ export function createNutritionService() {
         goalCalories: input.goalCalories,
       });
       const meals = await nutritionMealsRepository.createMany(plan.id, input.meals);
+
+      await notificationsRepository.create(
+        input.clientId,
+        'plan_assigned',
+        'New nutrition plan',
+        `Your coach assigned you the "${input.label}" plan.`,
+      );
 
       return { ...plan, meals: meals.map((meal) => ({ ...meal, status: 'planned' as MealStatus })) };
     },

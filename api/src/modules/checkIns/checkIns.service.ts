@@ -1,5 +1,6 @@
 import { coachClientsRepository } from '../people/people.repository';
 import { AuthenticatedUser } from '../identity/identity.types';
+import { notificationsRepository } from '../notifications/notifications.repository';
 import { checkInsRepository } from './checkIns.repository';
 import { CheckIn, CheckInInput } from './checkIns.types';
 
@@ -78,7 +79,14 @@ export function createCheckInsService() {
         throw new ValidationError('Feedback is required to review a check-in.');
       }
 
-      return checkInsRepository.review(checkInId, feedback.trim());
+      const reviewed = await checkInsRepository.review(checkInId, feedback.trim());
+      await notificationsRepository.create(
+        checkIn.clientId,
+        'checkin_reviewed',
+        'Your coach reviewed your check-in',
+        feedback.trim(),
+      );
+      return reviewed;
     },
   };
 }

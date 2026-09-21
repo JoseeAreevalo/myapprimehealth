@@ -1,10 +1,11 @@
-import { Activity, Bell, ChevronDown, Droplets, Dumbbell, HeartPulse, Home, LogOut, Menu, Settings, Sparkles, Utensils, X } from 'lucide-react';
+import { Activity, ChevronDown, Droplets, Dumbbell, HeartPulse, Home, LogOut, Menu, Settings, Sparkles, Utensils, X } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import CoachingPanel from './components/CoachingPanel';
 import WeeklyCheckInCard from './components/WeeklyCheckInCard';
 import ProgressPanel from './components/ProgressPanel';
 import AdministrationPanel from './components/AdministrationPanel';
+import NotificationsBell from './components/NotificationsBell';
 import { useNutritionToday } from './hooks/useNutritionToday';
 
 const navigation = [
@@ -98,10 +99,7 @@ function App() {
             <p className="mt-0.5 text-sm font-medium text-slate-300">Make today intentional.</p>
           </div>
           <div className="flex items-center gap-3">
-            <button aria-label="Notifications" className="relative grid size-11 place-items-center rounded-xl border border-white/8 bg-white/[0.035] text-slate-300 transition hover:bg-white/8">
-              <Bell size={19} />
-              <span className="absolute right-2.5 top-2.5 size-1.5 rounded-full bg-violet-400" />
-            </button>
+            <NotificationsBell />
             <div className="hidden items-center gap-3 sm:flex">
               <button className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.035] py-1.5 pl-1.5 pr-3 text-sm">
                 <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-violet-400 to-fuchsia-600 text-xs font-bold text-white">

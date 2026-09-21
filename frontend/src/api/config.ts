@@ -57,5 +57,9 @@ export const api = {
         progress: (clientId: number) => `/api/v1/progress/clients/${clientId}`,
         adminUsers: '/api/v1/administration/users',
         adminUserUpdate: (id: number) => `/api/v1/administration/users/${id}`,
+        notifications: '/api/v1/notifications',
+        notificationRead: (id: number) => `/api/v1/notifications/${id}/read`,
+        notificationReadAll: '/api/v1/notifications/read-all',
+        notificationPreferences: '/api/v1/notifications/preferences',
     }
 };

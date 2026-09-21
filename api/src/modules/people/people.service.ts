@@ -1,4 +1,5 @@
 import { AuthenticatedUser } from '../identity/identity.types';
+import { notificationsRepository } from '../notifications/notifications.repository';
 import { coachClientsRepository, peopleRepository, profilesRepository } from './people.repository';
 import { CoachClientLink, PersonSummary, Profile } from './people.types';
 
@@ -73,7 +74,9 @@ export function createPeopleService() {
         throw new ValidationError('This client already has an active coach assignment.');
       }
 
-      return coachClientsRepository.assign(coachId, clientId);
+      const link = await coachClientsRepository.assign(coachId, clientId);
+      await notificationsRepository.create(clientId, 'coach_assigned', 'You have a new coach', 'You have been paired with a new coach.');
+      return link;
     },
 
     async endAssignment(requester: AuthenticatedUser, linkId: number): Promise<void> {
