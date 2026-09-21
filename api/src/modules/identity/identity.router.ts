@@ -5,7 +5,10 @@ import { authenticate, authorizeRoles } from './token.service';
 export const identityRouter = Router();
 const identityService = createIdentityService();
 
-void identityService.bootstrapSuperAdmin();
+// Called by index.ts after migrations run - must not execute at import time (users table may not exist yet).
+export function bootstrapSuperAdmin(): Promise<void> {
+  return identityService.bootstrapSuperAdmin();
+}
 
 /**
  * @swagger

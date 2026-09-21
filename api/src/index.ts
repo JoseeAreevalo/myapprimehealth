@@ -4,7 +4,7 @@ import express, { NextFunction, Request, Response } from 'express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { runMigrations } from './db/migrate';
-import identityRouter from './modules/identity/identity.router';
+import identityRouter, { bootstrapSuperAdmin } from './modules/identity/identity.router';
 import peopleRouter from './modules/people/people.router';
 import nutritionRouter from './modules/nutrition/nutrition.router';
 import checkInsRouter from './modules/checkIns/checkIns.router';
@@ -90,6 +90,7 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
 
 async function start(): Promise<void> {
   await runMigrations();
+  await bootstrapSuperAdmin();
   app.listen(port, () => console.log(`Prime Health API listening on port ${port}.`));
 }
 
