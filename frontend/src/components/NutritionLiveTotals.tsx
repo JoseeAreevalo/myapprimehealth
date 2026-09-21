@@ -9,6 +9,8 @@ function DiffTag({ diff }: { diff: number }) {
 }
 
 // Recomputes on every render from controlled-input state, so totals update live as the user types.
+// Macros (g) are the primary input; kcal is always the derived/final metric, per Atwater general
+// factors: protein 4 kcal/g, carbohydrate 4 kcal/g, fat 9 kcal/g (USDA/FAO standard).
 export default function NutritionLiveTotals({
   goalCalories,
   mealsTotalCalories,
@@ -22,14 +24,16 @@ export default function NutritionLiveTotals({
   const macroDiff = macroTotalCalories - goalCalories;
 
   return (
-    <div className="grid grid-cols-2 gap-2 rounded-lg border border-white/8 bg-white/[0.02] p-2.5 text-[11px] text-slate-400">
-      <p>
+    <div className="rounded-lg border border-white/8 bg-white/[0.02] p-2.5">
+      <p className="text-[11px] text-slate-400">
+        Calorías resultantes de los macros:{' '}
+        <span className={`text-sm font-semibold ${diffColor(macroDiff)}`}>{Math.round(macroTotalCalories)} kcal</span>
+        <DiffTag diff={macroDiff} />
+      </p>
+      <p className="mt-1 text-[10px] text-slate-500">4 kcal/g proteína · 4 kcal/g carbohidratos · 9 kcal/g grasa (factores de Atwater)</p>
+      <p className="mt-2 text-[11px] text-slate-400">
         Suma de comidas: <span className={`font-semibold ${diffColor(mealsDiff)}`}>{Math.round(mealsTotalCalories)} kcal</span>
         <DiffTag diff={mealsDiff} />
-      </p>
-      <p>
-        Según macros: <span className={`font-semibold ${diffColor(macroDiff)}`}>{Math.round(macroTotalCalories)} kcal</span>
-        <DiffTag diff={macroDiff} />
       </p>
     </div>
   );

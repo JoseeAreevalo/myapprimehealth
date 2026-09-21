@@ -139,6 +139,12 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
                 </div>
             </div>
             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Macros y agua meta (por día)</p>
+            <div className="grid grid-cols-4 gap-2 px-0.5 text-[10px] text-slate-500">
+                <span>Proteína (g)</span>
+                <span>Carbohidratos (g)</span>
+                <span>Grasa (g)</span>
+                <span>Agua (ml)</span>
+            </div>
             <div className="grid grid-cols-4 gap-2">
                 <input
                     className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
