@@ -50,5 +50,9 @@ export const api = {
         nutritionActivatePlan: (clientId: number, planId: number) => `/api/v1/nutrition/clients/${clientId}/plans/${planId}/activate`,
         nutritionPlanCreate: '/api/v1/nutrition/plans',
         nutritionMealLog: (mealId: number) => `/api/v1/nutrition/meals/${mealId}/log`,
+        checkInSubmit: '/api/v1/check-ins',
+        checkInHistory: (clientId: number) => `/api/v1/check-ins/clients/${clientId}`,
+        checkInPending: (coachId: number) => `/api/v1/check-ins/coaches/${coachId}/pending`,
+        checkInReview: (id: number) => `/api/v1/check-ins/${id}/review`,
     }
 };

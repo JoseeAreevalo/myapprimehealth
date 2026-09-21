@@ -1,7 +1,8 @@
-import { Activity, Bell, ChevronDown, Droplets, Dumbbell, HeartPulse, Home, LogOut, Menu, Moon, Settings, Sparkles, Utensils, X } from 'lucide-react';
+import { Activity, Bell, ChevronDown, Droplets, Dumbbell, HeartPulse, Home, LogOut, Menu, Settings, Sparkles, Utensils, X } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import CoachingPanel from './components/CoachingPanel';
+import WeeklyCheckInCard from './components/WeeklyCheckInCard';
 import { useNutritionToday } from './hooks/useNutritionToday';
 
 const navigation = [
@@ -267,25 +268,7 @@ function App() {
               <button className="mt-7 w-full rounded-xl bg-violet-400 py-3 text-sm font-semibold text-violet-950 transition hover:bg-violet-300">Start workout</button>
             </section>
 
-            <section className="rounded-3xl border border-white/8 bg-panel/70 p-6 shadow-panel">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="eyebrow">Weekly check-in</p>
-                  <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Your progress story</h2>
-                </div>
-                <Moon className="text-violet-300" size={20} />
-              </div>
-              <div className="mt-6 grid grid-cols-7 gap-1.5">
-                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
-                  <div className="text-center" key={`${day}-${index}`}>
-                    <span className="text-[10px] font-medium text-slate-600">{day}</span>
-                    <span className={`mt-2 block aspect-square rounded-lg ${index < 4 ? 'bg-violet-400 shadow-[0_0_14px_oklch(0.7_0.2_295_/_0.25)]' : index === 4 ? 'border border-violet-300/60 bg-violet-400/15' : 'bg-white/6'}`} />
-                  </div>
-                ))}
-              </div>
-              <p className="mt-5 text-sm leading-6 text-slate-300"><span className="font-semibold text-violet-300">4 days consistent.</span> Your weekly check-in unlocks tomorrow.</p>
-              <button className="mt-5 text-sm font-semibold text-slate-50 hover:text-violet-200">Open check-in →</button>
-            </section>
+            <WeeklyCheckInCard />
           </aside>
         </section>
       </main>
