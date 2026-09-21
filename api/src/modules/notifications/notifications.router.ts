@@ -22,7 +22,7 @@ notificationsRouter.get('/', authenticate, async (req: Request, res: Response): 
     const { notifications, unreadCount } = await notificationsService.list(req.authenticatedUser!);
     res.status(200).json({ data: notifications, meta: { total: notifications.length, unreadCount } });
   } catch (error) {
-    handleError(res, error, 'Unable to load notifications.');
+    handleError(res, error, 'No se pudieron cargar las notificaciones.');
   }
 });
 
@@ -31,7 +31,7 @@ notificationsRouter.patch('/:id/read', authenticate, async (req: Request, res: R
     await notificationsService.markRead(req.authenticatedUser!, Number(req.params.id));
     res.status(204).send();
   } catch (error) {
-    handleError(res, error, 'Unable to update the notification.');
+    handleError(res, error, 'No se pudo actualizar la notificación.');
   }
 });
 
@@ -40,7 +40,7 @@ notificationsRouter.patch('/read-all', authenticate, async (req: Request, res: R
     await notificationsService.markAllRead(req.authenticatedUser!);
     res.status(204).send();
   } catch (error) {
-    handleError(res, error, 'Unable to update notifications.');
+    handleError(res, error, 'No se pudieron actualizar las notificaciones.');
   }
 });
 
@@ -49,7 +49,7 @@ notificationsRouter.get('/preferences', authenticate, async (req: Request, res: 
     const preferences = await notificationsService.getPreferences(req.authenticatedUser!);
     res.status(200).json({ preferences });
   } catch (error) {
-    handleError(res, error, 'Unable to load preferences.');
+    handleError(res, error, 'No se pudieron cargar las preferencias.');
   }
 });
 
@@ -62,7 +62,7 @@ notificationsRouter.put('/preferences', authenticate, async (req: Request, res: 
     });
     res.status(200).json({ preferences });
   } catch (error) {
-    handleError(res, error, 'Unable to update preferences.');
+    handleError(res, error, 'No se pudieron actualizar las preferencias.');
   }
 });
 

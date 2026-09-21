@@ -18,7 +18,7 @@
   --app-input-bg: oklch(0.18 0.02 285 / 0.96);
   --app-input-text: oklch(0.99 0.005 285);
   --app-placeholder: oklch(0.71 0.03 285);
-  --app-accent: oklch(0.7 0.22 295);
+  --app-accent: oklch(0.78 0.16 85);
 }
 
 * {
@@ -48,7 +48,7 @@ select {
 }
 
 ::selection {
-  background: oklch(0.62 0.22 295 / 0.35);
+  background: oklch(0.75 0.18 85 / 0.35);
   color: oklch(0.99 0.01 285);
 }
 
@@ -94,14 +94,6 @@ a {
 
 .font-display {
   font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-.bg-ink {
-  background-color: var(--app-bg);
-}
-
-.bg-panel {
-  background-color: var(--app-panel);
 }
 
 .eyebrow {

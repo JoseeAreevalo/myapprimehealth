@@ -1,25 +1,29 @@
-import { Activity, ChevronDown, Droplets, Dumbbell, HeartPulse, Home, LogOut, Menu, Settings, Sparkles, Utensils, X } from 'lucide-react';
-import { useState } from 'react';
+import { Activity, ChevronDown, Droplets, HeartPulse, Home, LogOut, Menu, Settings, Sparkles, User, Utensils, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import CoachingPanel from './components/CoachingPanel';
 import WeeklyCheckInCard from './components/WeeklyCheckInCard';
 import ProgressPanel from './components/ProgressPanel';
 import AdministrationPanel from './components/AdministrationPanel';
 import NotificationsBell from './components/NotificationsBell';
+import SelfNutritionSetup from './components/SelfNutritionSetup';
+import WorkoutCard from './components/WorkoutCard';
+import ProfileModal from './components/ProfileModal';
 import { useNutritionToday } from './hooks/useNutritionToday';
+import lionLogo from './assets/lion-logo.png';
 
 const navigation = [
-  { label: 'Overview', icon: Home, active: true },
-  { label: 'Nutrition', icon: Utensils },
-  { label: 'Progress', icon: Activity },
-  { label: 'Wellness', icon: HeartPulse },
+  { label: 'Resumen', icon: Home, active: true },
+  { label: 'Nutrición', icon: Utensils },
+  { label: 'Progreso', icon: Activity },
+  { label: 'Bienestar', icon: HeartPulse },
 ];
 
 function BrandMark() {
   return (
     <div className="flex items-center gap-3">
-      <div className="grid size-10 place-items-center rounded-2xl bg-violet-500 text-sm font-black text-white shadow-[0_0_30px_oklch(0.58_0.24_295_/_0.42)]">
-        P
+      <div className="grid size-10 place-items-center overflow-hidden rounded-2xl bg-black shadow-[0_0_30px_oklch(0.58_0.24_295_/_0.42)]">
+        <img alt="Prime Health" className="size-full object-cover" src={lionLogo} />
       </div>
       <span className="font-display text-lg font-semibold tracking-tight text-slate-50">prime health</span>
     </div>
@@ -28,12 +32,15 @@ function BrandMark() {
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const [waterMl, setWaterMl] = useState(1600);
   const { user, logout } = useAuth();
   const { plans, todayPlan, loading: nutritionLoading, error: nutritionError, activatePlan, logMeal, isClient } = useNutritionToday();
-  const displayName = user?.fullName || user?.name || 'there';
-  const firstName = displayName.split(' ')[0] || 'There';
-  const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const displayName = user?.fullName || user?.name || 'ahí';
+  const firstName = displayName.split(' ')[0] || 'Hola';
+  const todayLabel = new Date().toLocaleDateString('es-MX', { weekday: 'long', month: 'long', day: 'numeric' });
 
   const completedCalories = (todayPlan?.meals ?? [])
     .filter((meal) => meal.status === 'completed')
@@ -52,6 +59,16 @@ function App() {
     setWaterMl((current) => Math.min(current + 250, waterGoalMl));
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <div className="min-h-screen bg-ink text-slate-100">
       <div className="ambient-orb ambient-orb-top" />
@@ -60,12 +77,12 @@ function App() {
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 border-r border-white/7 bg-panel/75 px-6 py-8 backdrop-blur-xl lg:block">
         <BrandMark />
         <div className="mt-14">
-          <p className="px-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">My space</p>
+          <p className="px-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Mi espacio</p>
           <nav className="mt-4 space-y-2">
             {navigation.map(({ label, icon: Icon, active }) => (
               <a
                 className={`flex h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium transition ${
-                  active ? 'bg-violet-500/15 text-violet-200 ring-1 ring-violet-400/20' : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                  active ? 'bg-amber-500/15 text-amber-200 ring-1 ring-amber-400/20' : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
                 href="#overview"
                 key={label}
@@ -78,12 +95,12 @@ function App() {
         </div>
         <div className="absolute inset-x-6 bottom-8 rounded-2xl border border-white/8 bg-white/[0.035] p-4">
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-violet-500/15 text-violet-300">
+            <div className="grid size-10 place-items-center rounded-xl bg-amber-500/15 text-amber-300">
               <Sparkles size={19} />
             </div>
             <div>
               <p className="text-sm font-medium text-white">Prime Plus</p>
-              <p className="mt-0.5 text-xs text-slate-500">Your personalized path</p>
+              <p className="mt-0.5 text-xs text-slate-500">Tu camino personalizado</p>
             </div>
           </div>
         </div>
@@ -96,28 +113,55 @@ function App() {
           </div>
           <div className="hidden lg:block">
             <p className="text-sm text-slate-500">{todayLabel}</p>
-            <p className="mt-0.5 text-sm font-medium text-slate-300">Make today intentional.</p>
+            <p className="mt-0.5 text-sm font-medium text-slate-300">Haz que hoy cuente.</p>
           </div>
           <div className="flex items-center gap-3">
             <NotificationsBell />
             <div className="hidden items-center gap-3 sm:flex">
-              <button className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.035] py-1.5 pl-1.5 pr-3 text-sm">
-                <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-violet-400 to-fuchsia-600 text-xs font-bold text-white">
-                  {firstName.substring(0, 2).toUpperCase()}
-                </span>
-                <span className="font-medium text-slate-200">{firstName}</span>
-                <ChevronDown size={16} className="text-slate-500" />
-              </button>
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.035] py-1.5 pl-1.5 pr-3 text-sm"
+                  onClick={() => setUserMenuOpen((current) => !current)}
+                  type="button"
+                >
+                  <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-amber-400 to-yellow-600 text-xs font-bold text-white">
+                    {firstName.substring(0, 2).toUpperCase()}
+                  </span>
+                  <span className="font-medium text-slate-200">{firstName}</span>
+                  <ChevronDown size={16} className="text-slate-500" />
+                </button>
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-14 z-50 w-48 rounded-2xl border border-white/10 bg-panel p-2 shadow-2xl">
+                    <button
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-200 hover:bg-white/8"
+                      onClick={() => {
+                        setProfileOpen(true);
+                        setUserMenuOpen(false);
+                      }}
+                      type="button"
+                    >
+                      <User size={16} /> Mi perfil
+                    </button>
+                    <button
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-200 hover:bg-white/8"
+                      onClick={logout}
+                      type="button"
+                    >
+                      <LogOut size={16} /> Cerrar sesión
+                    </button>
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={logout}
-                aria-label="Log out"
+                aria-label="Cerrar sesión"
                 className="grid size-11 place-items-center rounded-xl border border-white/8 bg-white/[0.035] text-slate-300 transition hover:bg-white/8"
               >
                 <LogOut size={18} />
               </button>
             </div>
-            <button aria-label="Open menu" className="grid size-11 place-items-center rounded-xl border border-white/8 bg-white/[0.035] lg:hidden" onClick={() => setMenuOpen((open) => !open)}>
+            <button aria-label="Abrir menú" className="grid size-11 place-items-center rounded-xl border border-white/8 bg-white/[0.035] lg:hidden" onClick={() => setMenuOpen((open) => !open)}>
               {menuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
@@ -139,12 +183,16 @@ function App() {
           <div>
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="mb-3 flex items-center gap-2 text-sm font-medium text-violet-300"><span className="size-2 rounded-full bg-violet-400" /> YOUR DAILY RHYTHM</p>
-                <h1 className="font-display text-4xl font-semibold tracking-[-0.04em] text-slate-50 sm:text-5xl">Good morning, {firstName}.</h1>
-                <p className="mt-3 max-w-xl text-base leading-7 text-slate-300">Small, deliberate actions. A stronger you, one day at a time.</p>
+                <p className="mb-3 flex items-center gap-2 text-sm font-medium text-amber-300"><span className="size-2 rounded-full bg-amber-400" /> TU RITMO DIARIO</p>
+                <h1 className="font-display text-4xl font-semibold tracking-[-0.04em] text-slate-50 sm:text-5xl">Buenos días, {firstName}.</h1>
+                <p className="mt-3 max-w-xl text-base leading-7 text-slate-300">Pequeñas acciones con propósito. Una mejor versión de ti, un día a la vez.</p>
               </div>
-              <button className="hidden h-11 items-center gap-2 rounded-xl border border-white/9 px-4 text-sm font-medium text-slate-300 transition hover:border-violet-400/40 hover:text-white sm:flex">
-                <Settings size={17} /> Personalize
+              <button
+                className="hidden h-11 items-center gap-2 rounded-xl border border-white/9 px-4 text-sm font-medium text-slate-300 transition hover:border-amber-400/40 hover:text-white sm:flex"
+                onClick={() => setProfileOpen(true)}
+                type="button"
+              >
+                <Settings size={17} /> Personalizar
               </button>
             </div>
 
@@ -152,26 +200,26 @@ function App() {
               <article className="metric-card md:col-span-2">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="eyebrow">Nutrition budget</p>
+                    <p className="eyebrow">Presupuesto de nutrición</p>
                    <p className="mt-4 font-display text-5xl font-semibold tracking-[-0.05em] text-slate-50">
                      {leftCalories}
-                     <span className="text-lg font-medium text-slate-400"> kcal left</span>
+                     <span className="text-lg font-medium text-slate-400"> kcal restantes</span>
                    </p>
                  </div>
-                 <span className="grid size-11 place-items-center rounded-xl bg-violet-500/15 text-violet-300"><Utensils size={20} /></span>
+                 <span className="grid size-11 place-items-center rounded-xl bg-amber-500/15 text-amber-300"><Utensils size={20} /></span>
                 </div>
                <div className="mt-8 h-2 overflow-hidden rounded-full bg-white/8">
-                 <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400" style={{ width: `${progressPercent}%` }} />
+                 <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-400" style={{ width: `${progressPercent}%` }} />
                </div>
                <div className="mt-3 flex justify-between text-xs text-slate-500">
-                 <span>{completedCalories} consumed</span>
-                 <span>{goalCalories} goal</span>
+                 <span>{completedCalories} consumidas</span>
+                 <span>{goalCalories} meta</span>
                </div>
              </article>
              <article className="metric-card">
                <div className="flex items-start justify-between">
                  <div>
-                   <p className="eyebrow">Water</p>
+                   <p className="eyebrow">Agua</p>
                    <p className="mt-4 font-display text-4xl font-semibold tracking-[-0.04em] text-slate-50">
                      {(waterMl / 1000).toFixed(1)} <span className="text-base font-medium text-slate-400">/ 2.5 L</span>
                    </p>
@@ -186,7 +234,7 @@ function App() {
                  onClick={handleWaterLog}
                  className="mt-8 w-full rounded-xl bg-white/7 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/12"
                >
-                 {waterMl >= waterGoalMl ? 'Goal reached' : 'Log 250 ml'}
+                 {waterMl >= waterGoalMl ? 'Meta alcanzada' : 'Registrar 250 ml'}
                </button>
              </article>
             </section>
@@ -194,8 +242,8 @@ function App() {
             <section className="mt-8 rounded-3xl border border-white/8 bg-panel/70 p-5 shadow-panel sm:p-7">
              <div className="flex items-start justify-between gap-4">
                <div>
-                 <p className="eyebrow">Today's meals</p>
-                 <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.03em] text-slate-50">Nourish with intention</h2>
+                 <p className="eyebrow">Comidas de hoy</p>
+                 <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.03em] text-slate-50">Nutre con intención</h2>
                </div>
                {plans.length > 1 && (
                  <div className="flex flex-wrap gap-2">
@@ -206,7 +254,7 @@ function App() {
                        onClick={() => activatePlan(plan.id)}
                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                          plan.isActive
-                           ? 'bg-violet-500 text-white shadow-[0_10px_24px_rgba(139,92,246,0.28)]'
+                           ? 'bg-amber-500 text-white shadow-[0_10px_24px_rgba(217,158,45,0.28)]'
                            : 'bg-white/5 text-slate-300 hover:bg-white/10'
                        }`}
                      >
@@ -217,12 +265,17 @@ function App() {
                )}
              </div>
              {!isClient && (
-               <p className="mt-7 text-sm text-slate-400">Nutrition plans are tracked on client accounts.</p>
+               <p className="mt-7 text-sm text-slate-400">Los planes de nutrición se registran en cuentas de cliente.</p>
              )}
-             {isClient && nutritionLoading && <p className="mt-7 text-sm text-slate-500">Loading your plan…</p>}
+             {isClient && nutritionLoading && <p className="mt-7 text-sm text-slate-500">Cargando tu plan…</p>}
              {isClient && !nutritionLoading && nutritionError && <p className="mt-7 text-sm text-rose-300">{nutritionError}</p>}
-             {isClient && !nutritionLoading && !nutritionError && !todayPlan && (
-               <p className="mt-7 text-sm text-slate-400">No nutrition plan assigned yet. Ask your coach to create one for you.</p>
+             {isClient && !nutritionLoading && !nutritionError && !todayPlan && user?.role === 'client' && (
+               <p className="mt-7 text-sm text-slate-400">Aún no tienes un plan de nutrición. Pídele a tu coach que te cree uno.</p>
+             )}
+             {isClient && !nutritionLoading && !nutritionError && !todayPlan && user?.role === 'super_admin' && (
+               <div className="mt-7">
+                 <SelfNutritionSetup hasPlan={false} />
+               </div>
              )}
              {isClient && !nutritionLoading && !nutritionError && todayPlan && (
                <div className="mt-7 divide-y divide-white/7">
@@ -243,9 +296,9 @@ function App() {
                        <button
                          type="button"
                          onClick={() => handleMealStatusChange(meal.id, meal.status)}
-                         className={`mt-1 text-xs font-medium ${meal.status === 'completed' ? 'text-emerald-300' : 'text-slate-500'} hover:text-violet-300`}
+                         className={`mt-1 text-xs font-medium ${meal.status === 'completed' ? 'text-emerald-300' : 'text-slate-500'} hover:text-amber-300`}
                        >
-                         {meal.status === 'completed' ? 'Completed' : meal.status === 'next' ? 'Mark done' : 'Start'}
+                         {meal.status === 'completed' ? 'Completado' : meal.status === 'next' ? 'Marcar hecho' : 'Comenzar'}
                        </button>
                      </div>
                    </article>
@@ -258,22 +311,14 @@ function App() {
           <aside className="space-y-5">
             <CoachingPanel />
             <AdministrationPanel />
-            <section className="overflow-hidden rounded-3xl border border-violet-400/15 bg-gradient-to-br from-violet-500/20 via-panel to-panel p-6 shadow-panel">
-              <div className="flex items-center justify-between">
-                <span className="grid size-11 place-items-center rounded-xl bg-violet-400/15 text-violet-200"><Dumbbell size={20} /></span>
-                <span className="rounded-full border border-violet-300/20 bg-violet-300/10 px-3 py-1 text-xs font-semibold text-violet-200">Day 12</span>
-              </div>
-              <p className="eyebrow mt-8">Training focus</p>
-              <h2 className="mt-3 font-display text-3xl font-semibold tracking-[-0.04em] text-slate-50">Build your<br />foundation.</h2>
-              <p className="mt-4 text-sm leading-6 text-slate-300">Upper body strength · 45 minutes</p>
-              <button className="mt-7 w-full rounded-xl bg-violet-400 py-3 text-sm font-semibold text-violet-950 transition hover:bg-violet-300">Start workout</button>
-            </section>
+            <WorkoutCard />
 
             <WeeklyCheckInCard />
             <ProgressPanel />
           </aside>
         </section>
       </main>
+      <ProfileModal onClose={() => setProfileOpen(false)} open={profileOpen} />
     </div>
   );
 }

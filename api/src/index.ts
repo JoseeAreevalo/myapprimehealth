@@ -12,6 +12,7 @@ import progressRouter from './modules/progress/progress.router';
 import administrationRouter from './modules/administration/administration.router';
 import notificationsRouter from './modules/notifications/notifications.router';
 import filesRouter from './modules/files/files.router';
+import workoutsRouter from './modules/workouts/workouts.router';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -75,17 +76,18 @@ app.use('/api/v1/progress', progressRouter);
 app.use('/api/v1/administration', administrationRouter);
 app.use('/api/v1/notifications', notificationsRouter);
 app.use('/api/v1/files', filesRouter);
+app.use('/api/v1/workouts', workoutsRouter);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApi));
 app.get('/api-docs.json', (_req, res): void => {
   res.json(openApi);
 });
 
 app.use((_req, res): void => {
-  res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Resource not found.' } });
+  res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Recurso no encontrado.' } });
 });
 app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   console.error(error);
-  res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred.' } });
+  res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Ocurrió un error inesperado.' } });
 });
 
 async function start(): Promise<void> {

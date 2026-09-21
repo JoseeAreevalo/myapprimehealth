@@ -17,7 +17,7 @@ const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 async function getCheckInOwnerId(checkInId: number): Promise<number> {
   const checkIn = await checkInsRepository.findById(checkInId);
   if (!checkIn) {
-    throw new NotFoundError('Check-in not found.');
+    throw new NotFoundError('Check-in no encontrado.');
   }
   return checkIn.clientId;
 }
@@ -29,7 +29,7 @@ async function assertCanView(requester: AuthenticatedUser, ownerId: number): Pro
     const link = await coachClientsRepository.findActiveByClientId(ownerId);
     if (link && link.coachId === requester.id) return;
   }
-  throw new ForbiddenError('You do not have permission to access this file.');
+  throw new ForbiddenError('No tienes permiso para acceder a este archivo.');
 }
 
 export function createFilesService() {
@@ -41,13 +41,13 @@ export function createFilesService() {
     ): Promise<StoredFile> {
       const ownerId = await getCheckInOwnerId(checkInId);
       if (requester.role !== 'super_admin' && requester.id !== ownerId) {
-        throw new ForbiddenError('You can only attach photos to your own check-in.');
+        throw new ForbiddenError('Solo puedes adjuntar fotos a tu propio check-in.');
       }
       if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
-        throw new ValidationError('Only JPEG, PNG, or WebP images are allowed.');
+        throw new ValidationError('Solo se permiten imágenes JPEG, PNG o WebP.');
       }
       if (file.size > MAX_SIZE_BYTES) {
-        throw new ValidationError('File exceeds the 5 MB size limit.');
+        throw new ValidationError('El archivo supera el límite de 5 MB.');
       }
 
       const storedName = generateStoredName(file.originalname);
@@ -73,7 +73,7 @@ export function createFilesService() {
     async getFileForDownload(requester: AuthenticatedUser, fileId: number): Promise<{ meta: StoredFile; buffer: Buffer }> {
       const meta = await filesRepository.findById(fileId);
       if (!meta) {
-        throw new NotFoundError('File not found.');
+        throw new NotFoundError('Archivo no encontrado.');
       }
       await assertCanView(requester, meta.ownerId);
       const buffer = await readFile(meta.storedName);
@@ -83,10 +83,10 @@ export function createFilesService() {
     async deleteFile(requester: AuthenticatedUser, fileId: number): Promise<void> {
       const meta = await filesRepository.findById(fileId);
       if (!meta) {
-        throw new NotFoundError('File not found.');
+        throw new NotFoundError('Archivo no encontrado.');
       }
       if (requester.role !== 'super_admin' && requester.id !== meta.ownerId) {
-        throw new ForbiddenError('You can only delete your own files.');
+        throw new ForbiddenError('Solo puedes eliminar tus propios archivos.');
       }
       await deleteFile(meta.storedName);
       await filesRepository.delete(fileId);

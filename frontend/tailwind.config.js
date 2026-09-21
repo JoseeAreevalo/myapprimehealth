@@ -7,10 +7,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        'primary': '#9f7aea',
+        'primary': '#d4a017',
         'dark': '#10131d',
         'light': '#f8fafc',
-        'accent': '#c084fc',
+        'accent': '#f2c14e',
+        'ink': 'oklch(0.1 0.014 285 / <alpha-value>)',
+        'panel': 'oklch(0.16 0.02 285 / <alpha-value>)',
         'gray': {
           100: '#f8fafc',
           200: '#e2e8f0',

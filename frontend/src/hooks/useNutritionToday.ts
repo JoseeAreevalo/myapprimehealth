@@ -38,7 +38,7 @@ export function useNutritionToday() {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    if (!user || user.role !== 'client') {
+    if (!user || (user.role !== 'client' && user.role !== 'super_admin')) {
       setLoading(false);
       return;
     }
@@ -53,7 +53,7 @@ export function useNutritionToday() {
       setPlans(plansRes.data?.data ?? []);
       setTodayPlan(todayRes.data?.plan ?? null);
     } catch {
-      setError('Unable to load your nutrition plan.');
+      setError('No se pudo cargar tu plan de nutrición.');
     } finally {
       setLoading(false);
     }
@@ -92,5 +92,5 @@ export function useNutritionToday() {
     [token],
   );
 
-  return { plans, todayPlan, loading, error, activatePlan, logMeal, isClient: user?.role === 'client' };
+  return { plans, todayPlan, loading, error, activatePlan, logMeal, isClient: user?.role === 'client' || user?.role === 'super_admin' };
 }

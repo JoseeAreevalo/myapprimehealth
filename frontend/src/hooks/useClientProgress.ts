@@ -48,7 +48,7 @@ export function useClientProgress(clientId: number | null) {
     axios
       .get(`${api.baseURL}${api.endpoints.progress(clientId)}`, { headers: authHeaders(token) })
       .then((res) => setProgress(res.data?.progress ?? null))
-      .catch(() => setError('Unable to load progress.'))
+      .catch(() => setError('No se pudo cargar el progreso.'))
       .finally(() => setLoading(false));
   }, [clientId, token]);
 

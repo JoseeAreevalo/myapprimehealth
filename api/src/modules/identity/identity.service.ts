@@ -50,19 +50,19 @@ export function createIdentityService() {
       const fullName = input.fullName ?? null;
 
       if (!email || !password) {
-        throw new Error('Email and password are required.');
+        throw new Error('El correo y la contraseña son obligatorios.');
       }
 
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        throw new Error('Invalid email format.');
+        throw new Error('El formato del correo no es válido.');
       }
 
       if (password.length < 8) {
-        throw new Error('Password must be at least 8 characters long.');
+        throw new Error('La contraseña debe tener al menos 8 caracteres.');
       }
 
       if (await usersRepository.findByEmail(email)) {
-        throw new Error('Email already in use.');
+        throw new Error('Ese correo ya está en uso.');
       }
 
       // Self-registration is always a client; coaches and admins are provisioned by an administrator.
@@ -77,17 +77,17 @@ export function createIdentityService() {
       const password = String(input.password ?? '');
 
       if (!email || !password) {
-        throw new Error('Email and password are required.');
+        throw new Error('El correo y la contraseña son obligatorios.');
       }
 
       const userRecord = await usersRepository.findByEmail(email);
       if (!userRecord || !userRecord.isActive) {
-        throw new Error('Invalid credentials.');
+        throw new Error('Credenciales inválidas.');
       }
 
       const passwordMatches = await bcrypt.compare(password, userRecord.passwordHash);
       if (!passwordMatches) {
-        throw new Error('Invalid credentials.');
+        throw new Error('Credenciales inválidas.');
       }
 
       return issueSession(toAuthenticatedUser(userRecord));
@@ -96,28 +96,28 @@ export function createIdentityService() {
     async refresh(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
       const token = (refreshToken ?? '').trim();
       if (!token) {
-        throw new Error('Refresh token is required.');
+        throw new Error('El refresh token es obligatorio.');
       }
 
       const tokenHash = hashToken(token);
       const session = await refreshSessionsRepository.findByTokenHash(tokenHash);
       if (!session) {
-        throw new Error('Invalid refresh token.');
+        throw new Error('Refresh token inválido.');
       }
 
       if (session.revokedAt) {
         // Reuse of an already-rotated token indicates the token family may be compromised.
         await refreshSessionsRepository.revokeAllForUser(session.userId);
-        throw new Error('Invalid refresh token.');
+        throw new Error('Refresh token inválido.');
       }
 
       if (new Date(session.expiresAt).getTime() < Date.now()) {
-        throw new Error('Refresh token has expired.');
+        throw new Error('El refresh token expiró.');
       }
 
       const user = await usersRepository.findById(session.userId);
       if (!user || !user.isActive) {
-        throw new Error('Invalid refresh token.');
+        throw new Error('Refresh token inválido.');
       }
 
       const authenticatedUser = toAuthenticatedUser(user);
@@ -149,7 +149,7 @@ export function createIdentityService() {
     async getCurrentUser(id: number): Promise<AuthenticatedUser> {
       const user = await usersRepository.findById(id);
       if (!user || !user.isActive) {
-        throw new Error('User not found.');
+        throw new Error('Usuario no encontrado.');
       }
 
       return toAuthenticatedUser(user);

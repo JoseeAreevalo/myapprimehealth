@@ -38,13 +38,13 @@ filesRouter.post(
   async (req: Request, res: Response): Promise<void> => {
     try {
       if (!req.file) {
-        res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'A photo file is required.' } });
+        res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Se requiere un archivo de foto.' } });
         return;
       }
       const file = await filesService.uploadCheckInPhoto(req.authenticatedUser!, Number(req.params.checkInId), req.file);
       res.status(201).json({ file });
     } catch (error) {
-      handleError(res, error, 'Unable to upload the photo.');
+      handleError(res, error, 'No se pudo subir la foto.');
     }
   },
 );
@@ -54,7 +54,7 @@ filesRouter.get('/check-ins/:checkInId/photos', authenticate, async (req: Reques
     const files = await filesService.listCheckInPhotos(req.authenticatedUser!, Number(req.params.checkInId));
     res.status(200).json({ data: files, meta: { total: files.length } });
   } catch (error) {
-    handleError(res, error, 'Unable to load photos.');
+    handleError(res, error, 'No se pudieron cargar las fotos.');
   }
 });
 
@@ -65,7 +65,7 @@ filesRouter.get('/:id', authenticate, async (req: Request, res: Response): Promi
     res.setHeader('Cache-Control', 'private, max-age=0, no-store');
     res.send(buffer);
   } catch (error) {
-    handleError(res, error, 'Unable to load the file.');
+    handleError(res, error, 'No se pudo cargar el archivo.');
   }
 });
 
@@ -74,7 +74,7 @@ filesRouter.delete('/:id', authenticate, async (req: Request, res: Response): Pr
     await filesService.deleteFile(req.authenticatedUser!, Number(req.params.id));
     res.status(204).send();
   } catch (error) {
-    handleError(res, error, 'Unable to delete the file.');
+    handleError(res, error, 'No se pudo eliminar el archivo.');
   }
 });
 

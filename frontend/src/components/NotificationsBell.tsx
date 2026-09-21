@@ -89,30 +89,30 @@ export default function NotificationsBell() {
   return (
     <div className="relative" ref={containerRef}>
       <button
-        aria-label="Notifications"
+        aria-label="Notificaciones"
         className="relative grid size-11 place-items-center rounded-xl border border-white/8 bg-white/[0.035] text-slate-300 transition hover:bg-white/8"
         onClick={handleOpen}
         type="button"
       >
         <Bell size={19} />
-        {unreadCount > 0 && <span className="absolute right-2.5 top-2.5 size-1.5 rounded-full bg-violet-400" />}
+        {unreadCount > 0 && <span className="absolute right-2.5 top-2.5 size-1.5 rounded-full bg-amber-400" />}
       </button>
 
       {open && (
         <div className="absolute right-0 top-14 z-50 w-80 rounded-2xl border border-white/10 bg-panel p-3 shadow-2xl">
           <div className="flex items-center justify-between px-2 py-1">
-            <p className="text-sm font-semibold text-slate-100">Notifications</p>
+            <p className="text-sm font-semibold text-slate-100">Notificaciones</p>
             {unreadCount > 0 && (
-              <button className="text-xs text-violet-300 hover:text-violet-200" onClick={markAllRead} type="button">
-                Mark all read
+              <button className="text-xs text-amber-300 hover:text-amber-200" onClick={markAllRead} type="button">
+                Marcar todas como leídas
               </button>
             )}
           </div>
           <div className="mt-2 max-h-80 space-y-1 overflow-y-auto">
-            {items.length === 0 && <p className="px-2 py-4 text-sm text-slate-500">No notifications yet.</p>}
+            {items.length === 0 && <p className="px-2 py-4 text-sm text-slate-500">Aun no tienes notificaciones.</p>}
             {items.map((item) => (
               <button
-                className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${item.isRead ? 'text-slate-400 hover:bg-white/5' : 'bg-violet-500/10 text-slate-100 hover:bg-violet-500/15'}`}
+                className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${item.isRead ? 'text-slate-400 hover:bg-white/5' : 'bg-amber-500/10 text-slate-100 hover:bg-amber-500/15'}`}
                 key={item.id}
                 onClick={() => !item.isRead && markRead(item.id)}
                 type="button"
@@ -125,11 +125,11 @@ export default function NotificationsBell() {
           {preferences && (
             <div className="mt-2 space-y-1 border-t border-white/7 pt-2">
               <label className="flex items-center justify-between px-2 py-1 text-xs text-slate-400">
-                Check-in reminders
+                Recordatorios de check-in
                 <input checked={preferences.checkinReminders} onChange={() => togglePreference('checkinReminders')} type="checkbox" />
               </label>
               <label className="flex items-center justify-between px-2 py-1 text-xs text-slate-400">
-                Coach messages
+                Mensajes del coach
                 <input checked={preferences.coachMessages} onChange={() => togglePreference('coachMessages')} type="checkbox" />
               </label>
             </div>

@@ -34,7 +34,7 @@ export default function CheckInPhotos({ checkInId, canUpload }: { checkInId: num
       );
       setThumbs(Object.fromEntries(entries));
     } catch {
-      setError('Unable to load photos.');
+      setError('No se pudieron cargar las fotos.');
     }
   };
 
@@ -58,7 +58,7 @@ export default function CheckInPhotos({ checkInId, canUpload }: { checkInId: num
       await axios.post(`${api.baseURL}${api.endpoints.checkInPhotos(checkInId)}`, formData, { headers: authHeaders(token) });
       await load();
     } catch {
-      setError('Unable to upload the photo.');
+      setError('No se pudo subir la foto.');
     } finally {
       setUploading(false);
       event.target.value = '';
@@ -69,12 +69,12 @@ export default function CheckInPhotos({ checkInId, canUpload }: { checkInId: num
     <div className="mt-3">
       <div className="flex flex-wrap gap-2">
         {Object.entries(thumbs).map(([id, url]) => (
-          <img alt="Progress" className="size-16 rounded-lg object-cover" key={id} src={url} />
+          <img alt="Progreso" className="size-16 rounded-lg object-cover" key={id} src={url} />
         ))}
       </div>
       {canUpload && (
         <label className="mt-2 flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-white/8 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/8">
-          <Camera size={14} /> {uploading ? 'Uploading…' : 'Add photo'}
+          <Camera size={14} /> {uploading ? 'Subiendo…' : 'Agregar foto'}
           <input accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploading} onChange={handleFileChange} type="file" />
         </label>
       )}

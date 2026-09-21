@@ -27,7 +27,7 @@ identityRouter.post('/register', async (req: Request, res: Response): Promise<vo
     });
     res.status(201).json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Registration failed.';
+    const message = error instanceof Error ? error.message : 'No se pudo completar el registro.';
     res.status(400).json({ error: { code: 'REGISTRATION_FAILED', message } });
   }
 });
@@ -40,7 +40,7 @@ identityRouter.post('/login', async (req: Request, res: Response): Promise<void>
     });
     res.status(200).json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Login failed.';
+    const message = error instanceof Error ? error.message : 'No se pudo iniciar sesión.';
     res.status(401).json({ error: { code: 'UNAUTHENTICATED', message } });
   }
 });
@@ -50,7 +50,7 @@ identityRouter.post('/refresh', async (req: Request, res: Response): Promise<voi
     const result = await identityService.refresh(req.body.refreshToken);
     res.status(200).json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Refresh failed.';
+    const message = error instanceof Error ? error.message : 'No se pudo renovar la sesión.';
     res.status(401).json({ error: { code: 'INVALID_REFRESH_TOKEN', message } });
   }
 });
@@ -60,7 +60,7 @@ identityRouter.post('/logout', async (req: Request, res: Response): Promise<void
     await identityService.logout(req.body.refreshToken);
     res.status(204).send();
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Logout failed.';
+    const message = error instanceof Error ? error.message : 'No se pudo cerrar sesión.';
     res.status(400).json({ error: { code: 'LOGOUT_FAILED', message } });
   }
 });
@@ -70,13 +70,13 @@ identityRouter.get('/me', authenticate, async (req: Request, res: Response): Pro
     const user = await identityService.getCurrentUser(req.authenticatedUser!.id);
     res.status(200).json({ user });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load the current user.';
+    const message = error instanceof Error ? error.message : 'No se pudo cargar el usuario actual.';
     res.status(404).json({ error: { code: 'USER_NOT_FOUND', message } });
   }
 });
 
 identityRouter.get('/admin-only', authenticate, authorizeRoles('super_admin'), (_req, res): void => {
-  res.status(200).json({ message: 'Access granted.' });
+  res.status(200).json({ message: 'Acceso concedido.' });
 });
 
 export default identityRouter;

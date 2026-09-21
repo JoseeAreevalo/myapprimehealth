@@ -13,13 +13,13 @@ export { ForbiddenError, NotFoundError, ValidationError };
 function assertCanActAsClient(requester: AuthenticatedUser, clientId: number): void {
   if (requester.role === 'super_admin') return;
   if (requester.id === clientId) return;
-  throw new ForbiddenError('You do not have permission to act on behalf of this client.');
+  throw new ForbiddenError('No tienes permiso para actuar en nombre de este cliente.');
 }
 
 async function assertCoachOwnsClient(coachId: number, clientId: number): Promise<void> {
   const link = await coachClientsRepository.findActiveByClientId(clientId);
   if (!link || link.coachId !== coachId) {
-    throw new ForbiddenError('This client is not assigned to you.');
+    throw new ForbiddenError('Este cliente no está asignado a ti.');
   }
 }
 
@@ -34,11 +34,11 @@ export function getWeekStartDate(reference: Date = new Date()): string {
 export function createCheckInsService() {
   return {
     async submitWeeklyCheckIn(requester: AuthenticatedUser, input: CheckInInput): Promise<CheckIn> {
-      if (requester.role !== 'client') {
-        throw new ForbiddenError('Only clients can submit a weekly check-in.');
+      if (requester.role === 'coach') {
+        throw new ForbiddenError('Los coaches no env\u00edan check-ins semanales propios.');
       }
       if (input.adherencePercent != null && (input.adherencePercent < 0 || input.adherencePercent > 100)) {
-        throw new ValidationError('adherencePercent must be between 0 and 100.');
+        throw new ValidationError('El porcentaje de adherencia debe estar entre 0 y 100.');
       }
 
       const activeCoach = await coachClientsRepository.findActiveByClientId(requester.id);
@@ -56,10 +56,10 @@ export function createCheckInsService() {
 
     async listPendingForCoach(requester: AuthenticatedUser, coachId: number): Promise<CheckIn[]> {
       if (requester.role === 'client') {
-        throw new ForbiddenError('Clients cannot view a coach review queue.');
+        throw new ForbiddenError('Los clientes no pueden ver una cola de revisión de coach.');
       }
       if (requester.role === 'coach' && requester.id !== coachId) {
-        throw new ForbiddenError('Coaches can only view their own review queue.');
+        throw new ForbiddenError('Los coaches solo pueden ver su propia cola de revisión.');
       }
       return checkInsRepository.listPendingByCoachId(coachId);
     },
@@ -67,23 +67,23 @@ export function createCheckInsService() {
     async review(requester: AuthenticatedUser, checkInId: number, feedback: string): Promise<CheckIn> {
       const checkIn = await checkInsRepository.findById(checkInId);
       if (!checkIn) {
-        throw new NotFoundError('Check-in not found.');
+        throw new NotFoundError('Check-in no encontrado.');
       }
       if (requester.role === 'client') {
-        throw new ForbiddenError('Clients cannot review check-ins.');
+        throw new ForbiddenError('Los clientes no pueden revisar check-ins.');
       }
       if (requester.role === 'coach' && checkIn.coachId !== requester.id) {
-        throw new ForbiddenError('You can only review check-ins for your own clients.');
+        throw new ForbiddenError('Solo puedes revisar check-ins de tus propios clientes.');
       }
       if (!feedback || !feedback.trim()) {
-        throw new ValidationError('Feedback is required to review a check-in.');
+        throw new ValidationError('Se requiere un comentario para revisar un check-in.');
       }
 
       const reviewed = await checkInsRepository.review(checkInId, feedback.trim());
       await notificationsRepository.create(
         checkIn.clientId,
         'checkin_reviewed',
-        'Your coach reviewed your check-in',
+        'Tu coach revisó tu check-in',
         feedback.trim(),
       );
       return reviewed;

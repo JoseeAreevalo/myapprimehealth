@@ -34,7 +34,7 @@ peopleRouter.get('/me/profile', authenticate, async (req: Request, res: Response
     const profile = await peopleService.getProfile(req.authenticatedUser!, req.authenticatedUser!.id);
     res.status(200).json({ profile });
   } catch (error) {
-    handleError(res, error, 'Unable to load the profile.');
+    handleError(res, error, 'No se pudo cargar el perfil.');
   }
 });
 
@@ -48,7 +48,7 @@ peopleRouter.put('/me/profile', authenticate, async (req: Request, res: Response
     });
     res.status(200).json({ profile });
   } catch (error) {
-    handleError(res, error, 'Unable to update the profile.');
+    handleError(res, error, 'No se pudo actualizar el perfil.');
   }
 });
 
@@ -58,7 +58,7 @@ peopleRouter.get('/coaches/:coachId/clients', authenticate, async (req: Request,
     const clients = await peopleService.listCoachClients(req.authenticatedUser!, coachId);
     res.status(200).json({ data: clients, meta: { total: clients.length } });
   } catch (error) {
-    handleError(res, error, 'Unable to load the client roster.');
+    handleError(res, error, 'No se pudo cargar la cartera de clientes.');
   }
 });
 
@@ -68,7 +68,7 @@ peopleRouter.get('/clients/:clientId/coach', authenticate, async (req: Request, 
     const coach = await peopleService.getClientCoach(req.authenticatedUser!, clientId);
     res.status(200).json({ coach });
   } catch (error) {
-    handleError(res, error, 'Unable to load the assigned coach.');
+    handleError(res, error, 'No se pudo cargar el coach asignado.');
   }
 });
 
@@ -79,7 +79,7 @@ peopleRouter.post('/coach-assignments', authenticate, async (req: Request, res: 
     const link = await peopleService.assignClientToCoach(req.authenticatedUser!, coachId, clientId);
     res.status(201).json({ assignment: link });
   } catch (error) {
-    handleError(res, error, 'Unable to create the coach assignment.');
+    handleError(res, error, 'No se pudo crear la asignación de coach.');
   }
 });
 
@@ -88,7 +88,7 @@ peopleRouter.delete('/coach-assignments/:id', authenticate, async (req: Request,
     await peopleService.endAssignment(req.authenticatedUser!, Number(req.params.id));
     res.status(204).send();
   } catch (error) {
-    handleError(res, error, 'Unable to end the coach assignment.');
+    handleError(res, error, 'No se pudo finalizar la asignación de coach.');
   }
 });
 

@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const nextUser = normaliseUser(payload?.user ?? null);
 
     if (!token) {
-      throw new Error('Authentication response did not include a token.');
+      throw new Error('La respuesta de autenticación no incluyó un token.');
     }
 
     localStorage.setItem(TOKEN_KEY, token);

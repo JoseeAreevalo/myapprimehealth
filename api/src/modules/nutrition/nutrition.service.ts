@@ -17,14 +17,14 @@ function todayIsoDate(): string {
 async function assertCoachOwnsClient(coachId: number, clientId: number): Promise<void> {
   const link = await coachClientsRepository.findActiveByClientId(clientId);
   if (!link || link.coachId !== coachId) {
-    throw new ForbiddenError('This client is not assigned to you.');
+    throw new ForbiddenError('Este cliente no está asignado a ti.');
   }
 }
 
 function assertCanActAsClient(requester: AuthenticatedUser, clientId: number): void {
   if (requester.role === 'super_admin') return;
   if (requester.id === clientId) return;
-  throw new ForbiddenError('You do not have permission to act on behalf of this client.');
+  throw new ForbiddenError('No tienes permiso para actuar en nombre de este cliente.');
 }
 
 export function createNutritionService() {
@@ -62,24 +62,24 @@ export function createNutritionService() {
       input: { clientId: number; planKey: string; label: string; goalCalories: number; meals: NutritionMealInput[] },
     ): Promise<NutritionPlanWithMeals> {
       if (requester.role === 'client') {
-        throw new ForbiddenError('Clients cannot create nutrition plans.');
+        throw new ForbiddenError('Los clientes no pueden crear planes de nutrición.');
       }
       if (requester.role === 'coach') {
         await assertCoachOwnsClient(requester.id, input.clientId);
       }
 
       if (!input.planKey || !input.label) {
-        throw new ValidationError('A plan key and label are required.');
+        throw new ValidationError('Se requieren una clave y una etiqueta para el plan.');
       }
       if (!Number.isFinite(input.goalCalories) || input.goalCalories <= 0) {
-        throw new ValidationError('goalCalories must be a positive number.');
+        throw new ValidationError('goalCalories debe ser un número positivo.');
       }
       if (!Array.isArray(input.meals) || input.meals.length === 0) {
-        throw new ValidationError('At least one meal is required.');
+        throw new ValidationError('Se requiere al menos una comida.');
       }
       for (const meal of input.meals) {
         if (!meal.name || !Number.isFinite(meal.calories) || meal.calories < 0) {
-          throw new ValidationError('Each meal requires a name and a non-negative calorie count.');
+          throw new ValidationError('Cada comida requiere un nombre y una cantidad de calorías no negativa.');
         }
       }
 
@@ -95,8 +95,8 @@ export function createNutritionService() {
       await notificationsRepository.create(
         input.clientId,
         'plan_assigned',
-        'New nutrition plan',
-        `Your coach assigned you the "${input.label}" plan.`,
+        'Nuevo plan de nutrición',
+        `Tu coach te asignó el plan "${input.label}".`,
       );
 
       return { ...plan, meals: meals.map((meal) => ({ ...meal, status: 'planned' as MealStatus })) };
@@ -107,7 +107,7 @@ export function createNutritionService() {
 
       const plan = await nutritionPlansRepository.findById(planId);
       if (!plan || plan.clientId !== clientId) {
-        throw new NotFoundError('Nutrition plan not found.');
+        throw new NotFoundError('Plan de nutrición no encontrado.');
       }
 
       await nutritionPlansRepository.activate(clientId, planId);
@@ -116,18 +116,18 @@ export function createNutritionService() {
     async logMeal(requester: AuthenticatedUser, mealId: number, status: MealStatus): Promise<void> {
       const meal = await nutritionMealsRepository.findById(mealId);
       if (!meal) {
-        throw new NotFoundError('Meal not found.');
+        throw new NotFoundError('Comida no encontrada.');
       }
 
       const plan = await nutritionPlansRepository.findById(meal.planId);
       if (!plan) {
-        throw new NotFoundError('Meal not found.');
+        throw new NotFoundError('Comida no encontrada.');
       }
 
       assertCanActAsClient(requester, plan.clientId);
 
       if (!['completed', 'next', 'planned'].includes(status)) {
-        throw new ValidationError('Invalid meal status.');
+        throw new ValidationError('Estado de comida inválido.');
       }
 
       await nutritionMealLogsRepository.upsert(mealId, plan.clientId, todayIsoDate(), status);

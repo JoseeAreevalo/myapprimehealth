@@ -39,7 +39,7 @@ checkInsRouter.post('/', authenticate, async (req: Request, res: Response): Prom
     });
     res.status(201).json({ checkIn });
   } catch (error) {
-    handleError(res, error, 'Unable to submit the check-in.');
+    handleError(res, error, 'No se pudo enviar el check-in.');
   }
 });
 
@@ -48,7 +48,7 @@ checkInsRouter.get('/clients/:clientId', authenticate, async (req: Request, res:
     const checkIns = await checkInsService.listForClient(req.authenticatedUser!, Number(req.params.clientId));
     res.status(200).json({ data: checkIns, meta: { total: checkIns.length } });
   } catch (error) {
-    handleError(res, error, 'Unable to load check-ins.');
+    handleError(res, error, 'No se pudieron cargar los check-ins.');
   }
 });
 
@@ -57,7 +57,7 @@ checkInsRouter.get('/coaches/:coachId/pending', authenticate, async (req: Reques
     const checkIns = await checkInsService.listPendingForCoach(req.authenticatedUser!, Number(req.params.coachId));
     res.status(200).json({ data: checkIns, meta: { total: checkIns.length } });
   } catch (error) {
-    handleError(res, error, 'Unable to load the review queue.');
+    handleError(res, error, 'No se pudo cargar la cola de revisión.');
   }
 });
 
@@ -66,7 +66,7 @@ checkInsRouter.patch('/:id/review', authenticate, async (req: Request, res: Resp
     const checkIn = await checkInsService.review(req.authenticatedUser!, Number(req.params.id), req.body.feedback);
     res.status(200).json({ checkIn });
   } catch (error) {
-    handleError(res, error, 'Unable to review the check-in.');
+    handleError(res, error, 'No se pudo revisar el check-in.');
   }
 });
 

@@ -34,7 +34,7 @@ nutritionRouter.get('/clients/:clientId/plans', authenticate, async (req: Reques
     const plans = await nutritionService.listPlans(req.authenticatedUser!, Number(req.params.clientId));
     res.status(200).json({ data: plans, meta: { total: plans.length } });
   } catch (error) {
-    handleError(res, error, 'Unable to load nutrition plans.');
+    handleError(res, error, 'No se pudieron cargar los planes de nutrición.');
   }
 });
 
@@ -43,7 +43,7 @@ nutritionRouter.get('/clients/:clientId/today', authenticate, async (req: Reques
     const plan = await nutritionService.getTodayPlan(req.authenticatedUser!, Number(req.params.clientId));
     res.status(200).json({ plan });
   } catch (error) {
-    handleError(res, error, "Unable to load today's plan.");
+    handleError(res, error, 'No se pudo cargar el plan de hoy.');
   }
 });
 
@@ -58,7 +58,7 @@ nutritionRouter.post('/plans', authenticate, async (req: Request, res: Response)
     });
     res.status(201).json({ plan });
   } catch (error) {
-    handleError(res, error, 'Unable to create the nutrition plan.');
+    handleError(res, error, 'No se pudo crear el plan de nutrición.');
   }
 });
 
@@ -67,7 +67,7 @@ nutritionRouter.patch('/clients/:clientId/plans/:planId/activate', authenticate,
     await nutritionService.activatePlan(req.authenticatedUser!, Number(req.params.clientId), Number(req.params.planId));
     res.status(204).send();
   } catch (error) {
-    handleError(res, error, 'Unable to activate the nutrition plan.');
+    handleError(res, error, 'No se pudo activar el plan de nutrición.');
   }
 });
 
@@ -76,7 +76,7 @@ nutritionRouter.patch('/meals/:mealId/log', authenticate, async (req: Request, r
     await nutritionService.logMeal(req.authenticatedUser!, Number(req.params.mealId), req.body.status);
     res.status(204).send();
   } catch (error) {
-    handleError(res, error, 'Unable to update the meal log.');
+    handleError(res, error, 'No se pudo actualizar el registro de la comida.');
   }
 });
 

@@ -29,9 +29,9 @@ interface MealDraft {
 }
 
 const emptyMeals: MealDraft[] = [
-  { name: 'Breakfast', mealTime: '08:00', calories: '450' },
-  { name: 'Lunch', mealTime: '13:00', calories: '600' },
-  { name: 'Dinner', mealTime: '19:00', calories: '550' },
+  { name: 'Desayuno', mealTime: '08:00', calories: '450' },
+  { name: 'Almuerzo', mealTime: '13:00', calories: '600' },
+  { name: 'Cena', mealTime: '19:00', calories: '550' },
 ];
 
 function authHeaders(token: string | null) {
@@ -57,7 +57,7 @@ function PendingCheckIns({ clients }: { clients: PersonSummary[] }) {
 
   useEffect(load, [user, token]);
 
-  const clientName = (clientId: number) => clients.find((client) => client.id === clientId)?.fullName ?? `Client #${clientId}`;
+  const clientName = (clientId: number) => clients.find((client) => client.id === clientId)?.fullName ?? `Cliente #${clientId}`;
 
   const handleReview = async (id: number) => {
     setSubmittingId(id);
@@ -78,36 +78,36 @@ function PendingCheckIns({ clients }: { clients: PersonSummary[] }) {
       <div className="flex items-center justify-between">
         <div>
           <p className="eyebrow">Coaching</p>
-          <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Check-ins to review</h2>
+          <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Check-ins por revisar</h2>
         </div>
-        <ClipboardCheck className="text-violet-300" size={20} />
+        <ClipboardCheck className="text-amber-300" size={20} />
       </div>
-      {loading && <p className="mt-5 text-sm text-slate-500">Loading…</p>}
-      {!loading && pending.length === 0 && <p className="mt-5 text-sm text-slate-400">Nothing pending review.</p>}
+      {loading && <p className="mt-5 text-sm text-slate-500">Cargando…</p>}
+      {!loading && pending.length === 0 && <p className="mt-5 text-sm text-slate-400">No hay nada pendiente por revisar.</p>}
       {!loading && pending.length > 0 && (
         <ul className="mt-5 space-y-4">
           {pending.map((checkIn) => (
             <li className="rounded-xl border border-white/7 bg-white/[0.03] p-4" key={checkIn.id}>
-              <p className="text-sm font-medium text-slate-100">{clientName(checkIn.clientId)} · week of {checkIn.weekStartDate}</p>
+              <p className="text-sm font-medium text-slate-100">{clientName(checkIn.clientId)} · semana del {checkIn.weekStartDate}</p>
               <p className="mt-1 text-xs text-slate-500">
-                {checkIn.weightKg != null ? `${checkIn.weightKg} kg` : 'No weight logged'} · {checkIn.adherencePercent != null ? `${checkIn.adherencePercent}% adherence` : 'No adherence logged'}
+                {checkIn.weightKg != null ? `${checkIn.weightKg} kg` : 'Sin peso registrado'} · {checkIn.adherencePercent != null ? `${checkIn.adherencePercent}% de adherencia` : 'Sin adherencia registrada'}
               </p>
               {checkIn.notes && <p className="mt-2 text-sm text-slate-300">"{checkIn.notes}"</p>}
               <CheckInPhotos canUpload={false} checkInId={checkIn.id} />
               <textarea
                 className="mt-3 w-full rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-xs text-slate-100"
                 onChange={(event) => setDrafts((current) => ({ ...current, [checkIn.id]: event.target.value }))}
-                placeholder="Write feedback for this client…"
+                placeholder="Escribe una respuesta para este cliente…"
                 rows={2}
                 value={drafts[checkIn.id] ?? ''}
               />
               <button
-                className="mt-2 rounded-lg bg-violet-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-400 disabled:opacity-50"
+                className="mt-2 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-400 disabled:opacity-50"
                 disabled={submittingId === checkIn.id}
                 onClick={() => handleReview(checkIn.id)}
                 type="button"
               >
-                {submittingId === checkIn.id ? 'Saving…' : 'Send feedback'}
+                {submittingId === checkIn.id ? 'Guardando…' : 'Enviar respuesta'}
               </button>
             </li>
           ))}
@@ -133,7 +133,7 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!clientId) {
-      setFeedback({ type: 'error', message: 'Select a client first.' });
+      setFeedback({ type: 'error', message: 'Selecciona un cliente primero.' });
       return;
     }
 
@@ -151,10 +151,10 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
         },
         { headers: authHeaders(token) },
       );
-      setFeedback({ type: 'success', message: 'Plan created for the client.' });
+      setFeedback({ type: 'success', message: 'Plan creado para el cliente.' });
     } catch (error) {
       const message = axios.isAxiosError(error) ? error.response?.data?.error?.message : undefined;
-      setFeedback({ type: 'error', message: message ?? 'Unable to create the plan.' });
+      setFeedback({ type: 'error', message: message ?? 'No se pudo crear el plan.' });
     } finally {
       setSubmitting(false);
     }
@@ -162,13 +162,13 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
 
   return (
     <form className="mt-6 space-y-4 border-t border-white/7 pt-6" onSubmit={handleSubmit}>
-      <p className="eyebrow">New meal plan</p>
+      <p className="eyebrow">Nuevo plan de comidas</p>
       <select
         className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
         value={clientId}
         onChange={(event) => setClientId(event.target.value ? Number(event.target.value) : '')}
       >
-        <option value="">Select a client…</option>
+        <option value="">Selecciona un cliente…</option>
         {clients.map((client) => (
           <option key={client.id} value={client.id}>
             {client.fullName ?? client.email}
@@ -179,13 +179,13 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
         <input
           className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
           onChange={(event) => setLabel(event.target.value)}
-          placeholder="Plan label"
+          placeholder="Nombre del plan"
           value={label}
         />
         <input
           className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
           onChange={(event) => setGoalCalories(event.target.value)}
-          placeholder="Goal calories"
+          placeholder="Calorías meta"
           type="number"
           value={goalCalories}
         />
@@ -216,11 +216,11 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
         <p className={`text-xs ${feedback.type === 'success' ? 'text-emerald-300' : 'text-rose-300'}`}>{feedback.message}</p>
       )}
       <button
-        className="w-full rounded-xl bg-violet-500 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-400 disabled:opacity-50"
+        className="w-full rounded-xl bg-amber-500 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-400 disabled:opacity-50"
         disabled={submitting}
         type="submit"
       >
-        {submitting ? 'Creating…' : 'Create plan'}
+        {submitting ? 'Creando…' : 'Crear plan'}
       </button>
     </form>
   );
@@ -242,17 +242,17 @@ function ClientRosterItem({ client }: { client: PersonSummary }) {
           onClick={() => setExpanded((current) => !current)}
           type="button"
         >
-          <TrendingUp size={14} /> Progress
+          <TrendingUp size={14} /> Progreso
         </button>
       </div>
       {expanded && (
         <div className="mt-3 border-t border-white/7 pt-3 text-xs text-slate-400">
-          {loading && <p>Loading…</p>}
-          {!loading && progress && progress.summary.totalCheckIns === 0 && <p>No check-ins yet.</p>}
+          {loading && <p>Cargando…</p>}
+          {!loading && progress && progress.summary.totalCheckIns === 0 && <p>Aún no hay check-ins.</p>}
           {!loading && progress && progress.summary.totalCheckIns > 0 && (
             <div className="grid grid-cols-2 gap-2">
-              <p>Weight change: <span className="text-slate-200">{progress.summary.weightChangeKg != null ? `${progress.summary.weightChangeKg} kg` : '—'}</span></p>
-              <p>Avg. adherence: <span className="text-slate-200">{progress.summary.averageAdherencePercent != null ? `${progress.summary.averageAdherencePercent}%` : '—'}</span></p>
+              <p>Cambio de peso: <span className="text-slate-200">{progress.summary.weightChangeKg != null ? `${progress.summary.weightChangeKg} kg` : '—'}</span></p>
+              <p>Adherencia prom.: <span className="text-slate-200">{progress.summary.averageAdherencePercent != null ? `${progress.summary.averageAdherencePercent}%` : '—'}</span></p>
             </div>
           )}
         </div>
@@ -273,7 +273,7 @@ function CoachDashboard() {
     axios
       .get(`${api.baseURL}${api.endpoints.coachClients(user.id)}`, { headers: authHeaders(token) })
       .then((res) => setClients(res.data?.data ?? []))
-      .catch(() => setError('Unable to load your client roster.'))
+      .catch(() => setError('No se pudo cargar tu lista de clientes.'))
       .finally(() => setLoading(false));
   }, [user, token]);
 
@@ -283,14 +283,14 @@ function CoachDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <p className="eyebrow">Coaching</p>
-            <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Your clients</h2>
+            <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Tus clientes</h2>
           </div>
-          <Users className="text-violet-300" size={20} />
+          <Users className="text-amber-300" size={20} />
         </div>
-        {loading && <p className="mt-5 text-sm text-slate-500">Loading roster…</p>}
+        {loading && <p className="mt-5 text-sm text-slate-500">Cargando lista…</p>}
         {error && <p className="mt-5 text-sm text-rose-300">{error}</p>}
         {!loading && !error && clients.length === 0 && (
-          <p className="mt-5 text-sm text-slate-400">No clients assigned yet.</p>
+          <p className="mt-5 text-sm text-slate-400">Aún no tienes clientes asignados.</p>
         )}
         {!loading && clients.length > 0 && (
           <ul className="mt-5 space-y-3">
@@ -318,7 +318,7 @@ function ClientCoach() {
     axios
       .get(`${api.baseURL}${api.endpoints.clientCoach(user.id)}`, { headers: authHeaders(token) })
       .then((res) => setCoach(res.data?.coach ?? null))
-      .catch(() => setError('Unable to load your coach.'))
+      .catch(() => setError('No se pudo cargar tu coach.'))
       .finally(() => setLoading(false));
   }, [user, token]);
 
@@ -327,14 +327,14 @@ function ClientCoach() {
       <div className="flex items-center justify-between">
         <div>
           <p className="eyebrow">Coaching</p>
-          <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Your coach</h2>
+          <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Tu coach</h2>
         </div>
-        <HeartHandshake className="text-violet-300" size={20} />
+        <HeartHandshake className="text-amber-300" size={20} />
       </div>
-      {loading && <p className="mt-5 text-sm text-slate-500">Loading…</p>}
+      {loading && <p className="mt-5 text-sm text-slate-500">Cargando…</p>}
       {error && <p className="mt-5 text-sm text-rose-300">{error}</p>}
       {!loading && !error && !coach && (
-        <p className="mt-5 text-sm text-slate-400">No coach assigned yet. Reach out to the team to get paired with one.</p>
+        <p className="mt-5 text-sm text-slate-400">Aún no tienes un coach asignado. Contacta al equipo para que te asignen uno.</p>
       )}
       {!loading && coach && (
         <div className="mt-5 rounded-xl border border-white/7 bg-white/[0.03] px-4 py-3">

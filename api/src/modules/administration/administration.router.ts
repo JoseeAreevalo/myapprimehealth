@@ -28,7 +28,7 @@ administrationRouter.get('/users', async (_req: Request, res: Response): Promise
     const users = await administrationService.listUsers();
     res.status(200).json({ data: users, meta: { total: users.length } });
   } catch (error) {
-    handleError(res, error, 'Unable to load users.');
+    handleError(res, error, 'No se pudieron cargar los usuarios.');
   }
 });
 
@@ -42,7 +42,7 @@ administrationRouter.post('/users', async (req: Request, res: Response): Promise
     });
     res.status(201).json({ user });
   } catch (error) {
-    handleError(res, error, 'Unable to create the user.');
+    handleError(res, error, 'No se pudo crear el usuario.');
   }
 });
 
@@ -54,7 +54,7 @@ administrationRouter.patch('/users/:id', async (req: Request, res: Response): Pr
     });
     res.status(200).json({ user });
   } catch (error) {
-    handleError(res, error, 'Unable to update the user.');
+    handleError(res, error, 'No se pudo actualizar el usuario.');
   }
 });
 

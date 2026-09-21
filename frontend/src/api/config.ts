@@ -63,5 +63,7 @@ export const api = {
         notificationPreferences: '/api/v1/notifications/preferences',
         checkInPhotos: (checkInId: number) => `/api/v1/files/check-ins/${checkInId}/photos`,
         fileDownload: (id: number) => `/api/v1/files/${id}`,
+        workoutToday: '/api/v1/workouts/today',
+        workoutComplete: (id: number) => `/api/v1/workouts/${id}/complete`,
     }
 };

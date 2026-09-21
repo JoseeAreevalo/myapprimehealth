@@ -38,16 +38,16 @@ export function createAdministrationService() {
       const password = String(input.password ?? '');
 
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        throw new ValidationError('A valid email is required.');
+        throw new ValidationError('Se requiere un correo válido.');
       }
       if (password.length < 8) {
-        throw new ValidationError('Password must be at least 8 characters long.');
+        throw new ValidationError('La contraseña debe tener al menos 8 caracteres.');
       }
       if (!userRoles.includes(input.role as UserRole)) {
-        throw new ValidationError(`Role must be one of: ${userRoles.join(', ')}.`);
+        throw new ValidationError(`El rol debe ser uno de: ${userRoles.join(', ')}.`);
       }
       if (await usersRepository.findByEmail(email)) {
-        throw new ValidationError('Email already in use.');
+        throw new ValidationError('Ese correo ya está en uso.');
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
@@ -57,7 +57,7 @@ export function createAdministrationService() {
 
     async updateUser(id: number, updates: { role?: string; isActive?: boolean }): Promise<AdminUserView> {
       if (updates.role !== undefined && !userRoles.includes(updates.role as UserRole)) {
-        throw new ValidationError(`Role must be one of: ${userRoles.join(', ')}.`);
+        throw new ValidationError(`El rol debe ser uno de: ${userRoles.join(', ')}.`);
       }
 
       const user = await usersRepository.updateRoleAndStatus(id, {
@@ -65,7 +65,7 @@ export function createAdministrationService() {
         isActive: updates.isActive,
       });
       if (!user) {
-        throw new ValidationError('User not found.');
+        throw new ValidationError('Usuario no encontrado.');
       }
       return toAdminUserView(user);
     },

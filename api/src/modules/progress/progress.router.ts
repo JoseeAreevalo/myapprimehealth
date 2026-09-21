@@ -21,7 +21,7 @@ progressRouter.get('/clients/:clientId', authenticate, async (req: Request, res:
       res.status(403).json({ error: { code: 'FORBIDDEN', message: error.message } });
       return;
     }
-    const message = error instanceof Error ? error.message : 'Unable to load progress.';
+    const message = error instanceof Error ? error.message : 'No se pudo cargar el progreso.';
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message } });
   }
 });

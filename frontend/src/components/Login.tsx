@@ -3,7 +3,7 @@ import { ArrowRight, HeartPulse, ShieldCheck, Sparkles } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import lionLogo from '../assets/lion-logo.png';
 
 export default function Login() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -14,7 +14,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login, register } = useAuth();
-  const { darkMode } = useTheme();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -35,9 +34,9 @@ export default function Login() {
       navigate('/');
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.error || 'Request failed');
+        setError(err.response?.data?.error?.message || 'La solicitud falló.');
       } else {
-        setError('Something went wrong. Please try again.');
+        setError('Algo salió mal. Inténtalo de nuevo.');
       }
     } finally {
       setLoading(false);
@@ -45,42 +44,42 @@ export default function Login() {
   };
 
   return (
-    <div className={`relative min-h-screen overflow-hidden ${darkMode ? 'bg-ink text-slate-100' : 'bg-slate-100 text-slate-900'} transition-colors duration-300`}>
+    <div className="relative min-h-screen overflow-hidden bg-ink text-slate-100">
       <div className="ambient-orb ambient-orb-top" />
       <div className="ambient-orb ambient-orb-bottom" />
 
       <div className="relative mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid w-full max-w-6xl overflow-hidden rounded-[2rem] border border-white/8 bg-panel/80 shadow-[0_25px_80px_rgba(15,23,42,0.45)] backdrop-blur-xl lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="relative hidden overflow-hidden border-r border-white/8 bg-gradient-to-br from-violet-500/20 via-panel to-panel p-8 lg:block">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.28),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.20),transparent_30%)]" />
+          <div className="relative hidden overflow-hidden border-r border-white/8 bg-gradient-to-br from-amber-500/20 via-panel to-panel p-8 lg:block">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(217,158,45,0.28),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.20),transparent_30%)]" />
             <div className="relative flex h-full flex-col justify-between">
               <div>
                 <div className="flex items-center gap-3">
-                  <div className="grid size-11 place-items-center rounded-2xl bg-violet-500 text-sm font-black text-white shadow-[0_0_30px_rgba(139,92,246,0.5)]">
-                    P
+                  <div className="grid size-11 place-items-center overflow-hidden rounded-2xl bg-black shadow-[0_0_30px_rgba(217,158,45,0.5)]">
+                    <img alt="Prime Health" className="size-full object-cover" src={lionLogo} />
                   </div>
                   <span className="font-display text-2xl font-semibold tracking-tight text-white">prime health</span>
                 </div>
 
                 <div className="mt-12 space-y-6">
-                  <p className="eyebrow text-violet-200">Your daily rhythm</p>
+                  <p className="eyebrow text-amber-200">Tu ritmo diario</p>
                   <h1 className="font-display text-4xl font-semibold tracking-[-0.05em] text-slate-50 xl:text-5xl">
-                    Smarter habits for a stronger you.
+                    Hábitos más inteligentes para una mejor versión de ti.
                   </h1>
                   <p className="max-w-md text-base leading-7 text-slate-200">
-                    Personalized nutrition, wellness insights, and progress tracking designed to help you feel your best every day.
+                    Nutrición personalizada, información de bienestar y seguimiento de progreso pensados para ayudarte a sentirte mejor cada día.
                   </p>
                 </div>
               </div>
 
               <div className="space-y-4">
                 {[
-                  { icon: Sparkles, text: 'AI-guided wellness plan' },
-                  { icon: HeartPulse, text: 'Real-time progress insights' },
-                  { icon: ShieldCheck, text: 'Secure and private by design' },
+                  { icon: Sparkles, text: 'Plan de bienestar guiado por IA' },
+                  { icon: HeartPulse, text: 'Información de progreso en tiempo real' },
+                  { icon: ShieldCheck, text: 'Seguro y privado por diseño' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3 rounded-2xl border border-white/7 bg-white/[0.03] px-4 py-3 text-sm text-slate-200">
-                    <span className="grid size-9 place-items-center rounded-xl bg-violet-500/15 text-violet-200">
+                    <span className="grid size-9 place-items-center rounded-xl bg-amber-500/15 text-amber-200">
                       <Icon size={18} />
                     </span>
                     {text}
@@ -94,12 +93,12 @@ export default function Login() {
             <div className="w-full max-w-md">
               <div className="mb-8 flex items-center justify-between">
                 <div>
-                  <p className="eyebrow text-slate-400">Welcome</p>
+                  <p className="eyebrow text-slate-400">Bienvenido</p>
                   <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-slate-50">
-                    {mode === 'login' ? 'Welcome back' : 'Create account'}
+                    {mode === 'login' ? 'Qué bueno verte de nuevo' : 'Crea tu cuenta'}
                   </h2>
                 </div>
-                <span className="rounded-full border border-violet-300/30 bg-violet-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200">
+                <span className="rounded-full border border-amber-300/30 bg-amber-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200">
                   Prime
                 </span>
               </div>
@@ -115,11 +114,11 @@ export default function Login() {
                     }}
                     className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                       mode === tab
-                        ? 'bg-violet-500 text-white shadow-[0_10px_30px_rgba(139,92,246,0.35)]'
+                        ? 'bg-amber-500 text-white shadow-[0_10px_30px_rgba(217,158,45,0.35)]'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    {tab === 'login' ? 'Login' : 'Register'}
+                    {tab === 'login' ? 'Iniciar sesión' : 'Registrarme'}
                   </button>
                 ))}
               </div>
@@ -134,30 +133,30 @@ export default function Login() {
                 {mode === 'register' && (
                   <div>
                     <label htmlFor="name" className="mb-2 block text-sm font-medium text-slate-300">
-                      Full name
+                      Nombre completo
                     </label>
                     <input
                       id="name"
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full rounded-xl border border-white/12 bg-slate-950/60 px-3.5 py-3 text-sm text-slate-50 placeholder:text-slate-400 focus:border-violet-300/70 focus:outline-none focus:ring-2 focus:ring-violet-500/25"
-                      placeholder="Your name"
+                      className="w-full rounded-xl border border-white/12 bg-slate-950/60 px-3.5 py-3 text-sm text-slate-50 placeholder:text-slate-400 focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-500/25"
+                      placeholder="Tu nombre"
                     />
                   </div>
                 )}
 
                 <div>
                   <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-300">
-                    Email address
+                    Correo electrónico
                   </label>
                   <input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-white/12 bg-slate-950/60 px-3.5 py-3 text-sm text-slate-50 placeholder:text-slate-400 focus:border-violet-300/70 focus:outline-none focus:ring-2 focus:ring-violet-500/25"
-                    placeholder="name@example.com"
+                    className="w-full rounded-xl border border-white/12 bg-slate-950/60 px-3.5 py-3 text-sm text-slate-50 placeholder:text-slate-400 focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-500/25"
+                    placeholder="nombre@ejemplo.com"
                     required
                     autoFocus
                   />
@@ -165,14 +164,14 @@ export default function Login() {
 
                 <div>
                   <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-300">
-                    Password {mode === 'register' && <span className="text-slate-500">(min 8 chars)</span>}
+                    Contraseña {mode === 'register' && <span className="text-slate-500">(mínimo 8 caracteres)</span>}
                   </label>
                   <input
                     id="password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-white/12 bg-slate-950/60 px-3.5 py-3 text-sm text-slate-50 placeholder:text-slate-400 focus:border-violet-300/70 focus:outline-none focus:ring-2 focus:ring-violet-500/25"
+                    className="w-full rounded-xl border border-white/12 bg-slate-950/60 px-3.5 py-3 text-sm text-slate-50 placeholder:text-slate-400 focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-500/25"
                     placeholder="••••••••"
                     required
                     minLength={mode === 'register' ? 8 : undefined}
@@ -182,9 +181,9 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading ? 'Please wait…' : mode === 'login' ? 'Login to your account' : 'Create my account'}
+                  {loading ? 'Un momento…' : mode === 'login' ? 'Entrar a tu cuenta' : 'Crear mi cuenta'}
                   <ArrowRight size={16} className="transition group-hover:translate-x-0.5" />
                 </button>
               </form>

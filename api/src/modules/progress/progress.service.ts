@@ -14,7 +14,7 @@ async function assertCanViewClient(requester: AuthenticatedUser, clientId: numbe
     const link = await coachClientsRepository.findActiveByClientId(clientId);
     if (link && link.coachId === requester.id) return;
   }
-  throw new ForbiddenError('You do not have permission to view this client\u2019s progress.');
+  throw new ForbiddenError('No tienes permiso para ver el progreso de este cliente.');
 }
 
 export function createProgressService() {
