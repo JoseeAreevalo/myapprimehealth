@@ -38,7 +38,7 @@ export function useNutritionToday() {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    if (!user || (user.role !== 'client' && user.role !== 'super_admin')) {
+    if (!user) {
       setLoading(false);
       return;
     }
@@ -92,5 +92,5 @@ export function useNutritionToday() {
     [token],
   );
 
-  return { plans, todayPlan, loading, error, activatePlan, logMeal, isClient: user?.role === 'client' || user?.role === 'super_admin' };
+  return { plans, todayPlan, loading, error, activatePlan, logMeal, refresh: load, isClient: !!user };
 }

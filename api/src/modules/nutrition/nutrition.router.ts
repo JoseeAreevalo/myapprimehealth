@@ -71,6 +71,53 @@ nutritionRouter.patch('/clients/:clientId/plans/:planId/activate', authenticate,
   }
 });
 
+nutritionRouter.patch('/plans/:planId', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const plan = await nutritionService.updatePlan(req.authenticatedUser!, Number(req.params.planId), {
+      label: req.body.label,
+      goalCalories: req.body.goalCalories != null ? Number(req.body.goalCalories) : undefined,
+    });
+    res.status(200).json({ plan });
+  } catch (error) {
+    handleError(res, error, 'No se pudo actualizar el plan de nutrición.');
+  }
+});
+
+nutritionRouter.post('/plans/:planId/meals', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const meal = await nutritionService.addMeal(req.authenticatedUser!, Number(req.params.planId), {
+      name: req.body.name,
+      mealTime: req.body.mealTime,
+      calories: Number(req.body.calories),
+    });
+    res.status(201).json({ meal });
+  } catch (error) {
+    handleError(res, error, 'No se pudo agregar la comida.');
+  }
+});
+
+nutritionRouter.patch('/meals/:mealId', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const meal = await nutritionService.updateMeal(req.authenticatedUser!, Number(req.params.mealId), {
+      name: req.body.name,
+      mealTime: req.body.mealTime,
+      calories: req.body.calories != null ? Number(req.body.calories) : undefined,
+    });
+    res.status(200).json({ meal });
+  } catch (error) {
+    handleError(res, error, 'No se pudo actualizar la comida.');
+  }
+});
+
+nutritionRouter.delete('/meals/:mealId', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    await nutritionService.deleteMeal(req.authenticatedUser!, Number(req.params.mealId));
+    res.status(204).send();
+  } catch (error) {
+    handleError(res, error, 'No se pudo eliminar la comida.');
+  }
+});
+
 nutritionRouter.patch('/meals/:mealId/log', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     await nutritionService.logMeal(req.authenticatedUser!, Number(req.params.mealId), req.body.status);

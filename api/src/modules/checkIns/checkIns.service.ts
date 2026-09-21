@@ -34,9 +34,7 @@ export function getWeekStartDate(reference: Date = new Date()): string {
 export function createCheckInsService() {
   return {
     async submitWeeklyCheckIn(requester: AuthenticatedUser, input: CheckInInput): Promise<CheckIn> {
-      if (requester.role === 'coach') {
-        throw new ForbiddenError('Los coaches no env\u00edan check-ins semanales propios.');
-      }
+      // Always self-referential (writes to requester.id), so every role may track their own week.
       if (input.adherencePercent != null && (input.adherencePercent < 0 || input.adherencePercent > 100)) {
         throw new ValidationError('El porcentaje de adherencia debe estar entre 0 y 100.');
       }

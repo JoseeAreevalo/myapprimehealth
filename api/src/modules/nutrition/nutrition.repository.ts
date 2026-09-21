@@ -100,6 +100,17 @@ export const nutritionPlansRepository = {
       client.release();
     }
   },
+
+  async update(id: number, updates: { label?: string; goalCalories?: number }): Promise<NutritionPlan> {
+    const { rows } = await pool.query<PlanRow>(
+      `UPDATE nutrition_plans
+       SET label = COALESCE($2, label), goal_calories = COALESCE($3, goal_calories), updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      [id, updates.label ?? null, updates.goalCalories ?? null],
+    );
+    return toPlan(rows[0]);
+  },
 };
 
 export const nutritionMealsRepository = {
@@ -128,6 +139,36 @@ export const nutritionMealsRepository = {
       created.push(toMeal(rows[0]));
     }
     return created;
+  },
+
+  async create(planId: number, meal: NutritionMealInput, sortOrder: number): Promise<NutritionMeal> {
+    const { rows } = await pool.query<MealRow>(
+      `INSERT INTO nutrition_meals (plan_id, name, detail, meal_time, calories, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [planId, meal.name, meal.detail ?? null, meal.mealTime ?? null, meal.calories, sortOrder],
+    );
+    return toMeal(rows[0]);
+  },
+
+  async update(id: number, updates: { name?: string; mealTime?: string | null; calories?: number }): Promise<NutritionMeal> {
+    const { rows } = await pool.query<MealRow>(
+      `UPDATE nutrition_meals
+       SET name = COALESCE($2, name), meal_time = COALESCE($3, meal_time), calories = COALESCE($4, calories)
+       WHERE id = $1
+       RETURNING *`,
+      [id, updates.name ?? null, updates.mealTime ?? null, updates.calories ?? null],
+    );
+    return toMeal(rows[0]);
+  },
+
+  async delete(id: number): Promise<void> {
+    await pool.query('DELETE FROM nutrition_meals WHERE id = $1', [id]);
+  },
+
+  async countByPlanId(planId: number): Promise<number> {
+    const { rows } = await pool.query<{ count: string }>('SELECT COUNT(*) AS count FROM nutrition_meals WHERE plan_id = $1', [planId]);
+    return Number(rows[0]?.count ?? 0);
   },
 };
 

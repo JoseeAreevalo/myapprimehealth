@@ -1,5 +1,5 @@
 import { pool } from '../../db/pool';
-import { Workout, WorkoutStatus } from './workouts.types';
+import { Workout, WorkoutSet, WorkoutStatus } from './workouts.types';
 
 interface WorkoutRow {
   id: number;
@@ -10,6 +10,15 @@ interface WorkoutRow {
   status: WorkoutStatus;
 }
 
+interface WorkoutSetRow {
+  id: number;
+  workout_id: number;
+  exercise_name: string;
+  sets: number;
+  reps: number;
+  weight_kg: string | null;
+}
+
 function toWorkout(row: WorkoutRow): Workout {
   return {
     id: row.id,
@@ -18,6 +27,17 @@ function toWorkout(row: WorkoutRow): Workout {
     durationMinutes: row.duration_minutes,
     workoutDate: row.workout_date,
     status: row.status,
+  };
+}
+
+function toWorkoutSet(row: WorkoutSetRow): WorkoutSet {
+  return {
+    id: row.id,
+    workoutId: row.workout_id,
+    exerciseName: row.exercise_name,
+    sets: row.sets,
+    reps: row.reps,
+    weightKg: row.weight_kg === null ? null : Number(row.weight_kg),
   };
 }
 
@@ -60,5 +80,34 @@ export const workoutsRepository = {
       [id],
     );
     return toWorkout(rows[0]);
+  },
+};
+
+export const workoutSetsRepository = {
+  async listByWorkoutId(workoutId: number): Promise<WorkoutSet[]> {
+    const { rows } = await pool.query<WorkoutSetRow>(
+      'SELECT * FROM workout_sets WHERE workout_id = $1 ORDER BY id ASC',
+      [workoutId],
+    );
+    return rows.map(toWorkoutSet);
+  },
+
+  async create(input: { workoutId: number; exerciseName: string; sets: number; reps: number; weightKg: number | null }): Promise<WorkoutSet> {
+    const { rows } = await pool.query<WorkoutSetRow>(
+      `INSERT INTO workout_sets (workout_id, exercise_name, sets, reps, weight_kg)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [input.workoutId, input.exerciseName, input.sets, input.reps, input.weightKg],
+    );
+    return toWorkoutSet(rows[0]);
+  },
+
+  async findById(id: number): Promise<WorkoutSet | undefined> {
+    const { rows } = await pool.query<WorkoutSetRow>('SELECT * FROM workout_sets WHERE id = $1', [id]);
+    return rows[0] ? toWorkoutSet(rows[0]) : undefined;
+  },
+
+  async delete(id: number): Promise<void> {
+    await pool.query('DELETE FROM workout_sets WHERE id = $1', [id]);
   },
 };

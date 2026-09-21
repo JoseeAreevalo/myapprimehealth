@@ -10,6 +10,14 @@ export interface Workout {
   status: 'planned' | 'completed';
 }
 
+export interface WorkoutSet {
+  id: number;
+  exerciseName: string;
+  sets: number;
+  reps: number;
+  weightKg: number | null;
+}
+
 function authHeaders(token: string | null) {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -17,6 +25,7 @@ function authHeaders(token: string | null) {
 export function useWorkoutToday() {
   const { user, token } = useAuth();
   const [workout, setWorkout] = useState<Workout | null>(null);
+  const [sets, setSets] = useState<WorkoutSet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -30,6 +39,7 @@ export function useWorkoutToday() {
     try {
       const res = await axios.get(`${api.baseURL}${api.endpoints.workoutToday}`, { headers: authHeaders(token) });
       setWorkout(res.data?.workout ?? null);
+      setSets(res.data?.sets ?? []);
     } catch {
       setError('No se pudo cargar tu entrenamiento de hoy.');
     } finally {
@@ -63,5 +73,26 @@ export function useWorkoutToday() {
     setWorkout(res.data?.workout ?? null);
   }, [workout, token]);
 
-  return { workout, loading, error, save, complete };
+  const addSet = useCallback(
+    async (input: { exerciseName: string; sets: number; reps: number; weightKg: number | null }) => {
+      if (!workout) return;
+      const res = await axios.post(
+        `${api.baseURL}${api.endpoints.workoutSets(workout.id)}`,
+        input,
+        { headers: authHeaders(token) },
+      );
+      setSets((current) => [...current, res.data.set]);
+    },
+    [workout, token],
+  );
+
+  const removeSet = useCallback(
+    async (setId: number) => {
+      await axios.delete(`${api.baseURL}${api.endpoints.workoutSetDelete(setId)}`, { headers: authHeaders(token) });
+      setSets((current) => current.filter((set) => set.id !== setId));
+    },
+    [token],
+  );
+
+  return { workout, sets, loading, error, save, complete, addSet, removeSet };
 }

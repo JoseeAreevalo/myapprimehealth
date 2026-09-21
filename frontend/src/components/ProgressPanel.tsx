@@ -23,11 +23,10 @@ function Sparkbars({ values }: { values: number[] }) {
 
 export default function ProgressPanel() {
   const { user } = useAuth();
-  const canTrack = user?.role === 'client' || user?.role === 'super_admin';
-  const clientId = canTrack ? user!.id : null;
+  const clientId = user?.id ?? null;
   const { progress, loading, error } = useClientProgress(clientId);
 
-  if (!canTrack) return null;
+  if (!user) return null;
 
   return (
     <section className="rounded-3xl border border-white/8 bg-panel/70 p-6 shadow-panel">

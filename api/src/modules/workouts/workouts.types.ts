@@ -8,3 +8,12 @@ export interface Workout {
   workoutDate: string;
   status: WorkoutStatus;
 }
+
+export interface WorkoutSet {
+  id: number;
+  workoutId: number;
+  exerciseName: string;
+  sets: number;
+  reps: number;
+  weightKg: number | null;
+}

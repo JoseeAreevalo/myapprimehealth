@@ -30,7 +30,7 @@ export function useCheckIns() {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    if (!user || (user.role !== 'client' && user.role !== 'super_admin')) {
+    if (!user) {
       setLoading(false);
       return;
     }
@@ -61,5 +61,5 @@ export function useCheckIns() {
 
   const latest = history[0] ?? null;
 
-  return { latest, history, loading, error, submit, isClient: user?.role === 'client' || user?.role === 'super_admin' };
+  return { latest, history, loading, error, submit, isClient: !!user };
 }

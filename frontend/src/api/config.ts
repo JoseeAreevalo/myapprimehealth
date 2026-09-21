@@ -49,6 +49,9 @@ export const api = {
         nutritionToday: (clientId: number) => `/api/v1/nutrition/clients/${clientId}/today`,
         nutritionActivatePlan: (clientId: number, planId: number) => `/api/v1/nutrition/clients/${clientId}/plans/${planId}/activate`,
         nutritionPlanCreate: '/api/v1/nutrition/plans',
+        nutritionPlanUpdate: (planId: number) => `/api/v1/nutrition/plans/${planId}`,
+        nutritionPlanAddMeal: (planId: number) => `/api/v1/nutrition/plans/${planId}/meals`,
+        nutritionMealUpdate: (mealId: number) => `/api/v1/nutrition/meals/${mealId}`,
         nutritionMealLog: (mealId: number) => `/api/v1/nutrition/meals/${mealId}/log`,
         checkInSubmit: '/api/v1/check-ins',
         checkInHistory: (clientId: number) => `/api/v1/check-ins/clients/${clientId}`,
@@ -65,5 +68,10 @@ export const api = {
         fileDownload: (id: number) => `/api/v1/files/${id}`,
         workoutToday: '/api/v1/workouts/today',
         workoutComplete: (id: number) => `/api/v1/workouts/${id}/complete`,
+        workoutSets: (workoutId: number) => `/api/v1/workouts/${workoutId}/sets`,
+        workoutSetDelete: (setId: number) => `/api/v1/workouts/sets/${setId}`,
+        foodsSearch: '/api/v1/foods',
+        foodsCreate: '/api/v1/foods',
+        foodsBarcode: (code: string) => `/api/v1/foods/barcode/${encodeURIComponent(code)}`,
     }
 };

@@ -16,8 +16,8 @@ const defaultMeals: MealDraft[] = [
   { name: 'Cena', mealTime: '19:00', calories: '550' },
 ];
 
-// Lets a super_admin (who has no coach) set up their own nutrition plan, same endpoint coaches use.
-export default function SelfNutritionSetup({ hasPlan }: { hasPlan: boolean }) {
+// Lets any user without an existing plan (e.g. no coach yet) set up their own nutrition plan.
+export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: boolean; onCreated?: () => void }) {
   const { user, token } = useAuth();
   const [open, setOpen] = useState(false);
   const [label, setLabel] = useState('Mi plan');
@@ -26,7 +26,7 @@ export default function SelfNutritionSetup({ hasPlan }: { hasPlan: boolean }) {
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  if (user?.role !== 'super_admin' || hasPlan) return null;
+  if (!user || hasPlan) return null;
 
   const updateMeal = (index: number, field: keyof MealDraft, value: string) => {
     setMeals((current) => current.map((meal, i) => (i === index ? { ...meal, [field]: value } : meal)));
@@ -48,7 +48,8 @@ export default function SelfNutritionSetup({ hasPlan }: { hasPlan: boolean }) {
         },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      setFeedback({ type: 'success', message: 'Plan creado. Recarga la p\u00e1gina para verlo en tu resumen.' });
+      setFeedback({ type: 'success', message: 'Plan creado.' });
+      onCreated?.();
     } catch (error) {
       const message = axios.isAxiosError(error) ? error.response?.data?.error?.message : undefined;
       setFeedback({ type: 'error', message: message ?? 'No se pudo crear el plan.' });

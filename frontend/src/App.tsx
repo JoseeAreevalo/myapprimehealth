@@ -7,8 +7,10 @@ import ProgressPanel from './components/ProgressPanel';
 import AdministrationPanel from './components/AdministrationPanel';
 import NotificationsBell from './components/NotificationsBell';
 import SelfNutritionSetup from './components/SelfNutritionSetup';
+import EditNutritionPlan from './components/EditNutritionPlan';
 import WorkoutCard from './components/WorkoutCard';
 import ProfileModal from './components/ProfileModal';
+import FoodCalculator from './components/FoodCalculator';
 import { useNutritionToday } from './hooks/useNutritionToday';
 import lionLogo from './assets/lion-logo.png';
 
@@ -37,7 +39,7 @@ function App() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [waterMl, setWaterMl] = useState(1600);
   const { user, logout } = useAuth();
-  const { plans, todayPlan, loading: nutritionLoading, error: nutritionError, activatePlan, logMeal, isClient } = useNutritionToday();
+  const { plans, todayPlan, loading: nutritionLoading, error: nutritionError, activatePlan, logMeal, refresh: refreshNutrition, isClient } = useNutritionToday();
   const displayName = user?.fullName || user?.name || 'ahí';
   const firstName = displayName.split(' ')[0] || 'Hola';
   const todayLabel = new Date().toLocaleDateString('es-MX', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -264,17 +266,11 @@ function App() {
                  </div>
                )}
              </div>
-             {!isClient && (
-               <p className="mt-7 text-sm text-slate-400">Los planes de nutrición se registran en cuentas de cliente.</p>
-             )}
              {isClient && nutritionLoading && <p className="mt-7 text-sm text-slate-500">Cargando tu plan…</p>}
              {isClient && !nutritionLoading && nutritionError && <p className="mt-7 text-sm text-rose-300">{nutritionError}</p>}
-             {isClient && !nutritionLoading && !nutritionError && !todayPlan && user?.role === 'client' && (
-               <p className="mt-7 text-sm text-slate-400">Aún no tienes un plan de nutrición. Pídele a tu coach que te cree uno.</p>
-             )}
-             {isClient && !nutritionLoading && !nutritionError && !todayPlan && user?.role === 'super_admin' && (
+             {isClient && !nutritionLoading && !nutritionError && !todayPlan && (
                <div className="mt-7">
-                 <SelfNutritionSetup hasPlan={false} />
+                 <SelfNutritionSetup hasPlan={false} onCreated={refreshNutrition} />
                </div>
              )}
              {isClient && !nutritionLoading && !nutritionError && todayPlan && (
@@ -305,6 +301,9 @@ function App() {
                  ))}
                </div>
              )}
+             {isClient && !nutritionLoading && !nutritionError && todayPlan && (
+               <EditNutritionPlan onUpdated={refreshNutrition} plan={todayPlan} />
+             )}
             </section>
           </div>
 
@@ -315,6 +314,7 @@ function App() {
 
             <WeeklyCheckInCard />
             <ProgressPanel />
+            <FoodCalculator />
           </aside>
         </section>
       </main>
