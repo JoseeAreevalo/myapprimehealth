@@ -19,6 +19,10 @@ export interface NutritionPlan {
   planKey: string;
   label: string;
   goalCalories: number;
+  proteinGTarget: number | null;
+  carbsGTarget: number | null;
+  fatGTarget: number | null;
+  waterGoalMl: number;
   isActive: boolean;
 }
 

@@ -1,10 +1,14 @@
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from 'react-query'
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './index.css'
-import App from './App.tsx'
+import AppLayout from './components/AppLayout.tsx'
 import Login from './components/Login.tsx'
 import ErrorBoundary from './components/ErrorBoundary.tsx'
+import OverviewPage from './pages/OverviewPage.tsx'
+import NutritionPage from './pages/NutritionPage.tsx'
+import TrainingPage from './pages/TrainingPage.tsx'
+import ProgressPage from './pages/ProgressPage.tsx'
 import { AuthProvider, useAuth } from './context/AuthContext.tsx'
 import { ThemeProvider } from './context/ThemeContext.tsx'
 
@@ -13,7 +17,19 @@ const queryClient = new QueryClient()
 function AppShell() {
   const { isLoggedIn } = useAuth()
 
-  return isLoggedIn ? <App /> : <Login />
+  if (!isLoggedIn) return <Login />
+
+  return (
+    <Routes>
+      <Route element={<AppLayout />} path="/">
+        <Route element={<OverviewPage />} index />
+        <Route element={<NutritionPage />} path="nutrition" />
+        <Route element={<TrainingPage />} path="training" />
+        <Route element={<ProgressPage />} path="progress" />
+        <Route element={<OverviewPage />} path="*" />
+      </Route>
+    </Routes>
+  )
 }
 
 createRoot(document.getElementById('root')!).render(

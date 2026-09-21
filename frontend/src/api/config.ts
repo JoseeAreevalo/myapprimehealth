@@ -73,5 +73,6 @@ export const api = {
         foodsSearch: '/api/v1/foods',
         foodsCreate: '/api/v1/foods',
         foodsBarcode: (code: string) => `/api/v1/foods/barcode/${encodeURIComponent(code)}`,
+        hydrationToday: '/api/v1/hydration/today',
     }
 };

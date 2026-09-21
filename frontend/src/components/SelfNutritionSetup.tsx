@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useState } from 'react';
-import { ChefHat } from 'lucide-react';
+import { ChefHat, Plus, Trash2 } from 'lucide-react';
 import { api } from '../api/config';
 import { useAuth } from '../context/AuthContext';
 
@@ -22,6 +22,10 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
   const [open, setOpen] = useState(false);
   const [label, setLabel] = useState('Mi plan');
   const [goalCalories, setGoalCalories] = useState('2200');
+  const [proteinG, setProteinG] = useState('150');
+  const [carbsG, setCarbsG] = useState('220');
+  const [fatG, setFatG] = useState('70');
+  const [waterGoalMl, setWaterGoalMl] = useState('2500');
   const [meals, setMeals] = useState<MealDraft[]>(defaultMeals);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -30,6 +34,14 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
 
   const updateMeal = (index: number, field: keyof MealDraft, value: string) => {
     setMeals((current) => current.map((meal, i) => (i === index ? { ...meal, [field]: value } : meal)));
+  };
+
+  const addMealRow = () => {
+    setMeals((current) => [...current, { name: `Comida ${current.length + 1}`, mealTime: '', calories: '200' }]);
+  };
+
+  const removeMealRow = (index: number) => {
+    setMeals((current) => current.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -44,6 +56,10 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
           planKey: label.toLowerCase().replace(/\s+/g, '-'),
           label,
           goalCalories: Number(goalCalories),
+          proteinGTarget: proteinG ? Number(proteinG) : undefined,
+          carbsGTarget: carbsG ? Number(carbsG) : undefined,
+          fatGTarget: fatG ? Number(fatG) : undefined,
+          waterGoalMl: waterGoalMl ? Number(waterGoalMl) : undefined,
           meals: meals.map((meal) => ({ name: meal.name, mealTime: meal.mealTime, calories: Number(meal.calories) })),
         },
         { headers: { Authorization: `Bearer ${token}` } },
@@ -62,7 +78,7 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
     <section className="rounded-3xl border border-white/8 bg-panel/70 p-6 shadow-panel">
       <div className="flex items-center justify-between">
         <div>
-          <p className="eyebrow">Nutrici\u00f3n</p>
+          <p className="eyebrow">Nutrición</p>
           <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Configura tu plan</h2>
         </div>
         <ChefHat className="text-amber-300" size={20} />
@@ -73,7 +89,7 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
           onClick={() => setOpen(true)}
           type="button"
         >
-          Crear mi plan de nutrici\u00f3n
+          Crear mi plan de nutrición
         </button>
       ) : (
         <form className="mt-5 space-y-3" onSubmit={handleSubmit}>
@@ -87,14 +103,44 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
             <input
               className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
               onChange={(event) => setGoalCalories(event.target.value)}
-              placeholder="Calor\u00edas meta"
+              placeholder="Calorías meta"
               type="number"
               value={goalCalories}
             />
           </div>
+          <div className="grid grid-cols-4 gap-2">
+            <input
+              className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+              onChange={(event) => setProteinG(event.target.value)}
+              placeholder="Prot. (g)"
+              type="number"
+              value={proteinG}
+            />
+            <input
+              className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+              onChange={(event) => setCarbsG(event.target.value)}
+              placeholder="Carb. (g)"
+              type="number"
+              value={carbsG}
+            />
+            <input
+              className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+              onChange={(event) => setFatG(event.target.value)}
+              placeholder="Grasa (g)"
+              type="number"
+              value={fatG}
+            />
+            <input
+              className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+              onChange={(event) => setWaterGoalMl(event.target.value)}
+              placeholder="Agua (ml)"
+              type="number"
+              value={waterGoalMl}
+            />
+          </div>
           <div className="space-y-2">
             {meals.map((meal, index) => (
-              <div className="grid grid-cols-3 gap-2" key={meal.name}>
+              <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2" key={index}>
                 <input
                   className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
                   onChange={(event) => updateMeal(index, 'name', event.target.value)}
@@ -111,8 +157,23 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
                   type="number"
                   value={meal.calories}
                 />
+                <button
+                  className="rounded-lg bg-rose-500/15 px-2 text-xs text-rose-300 hover:bg-rose-500/25 disabled:opacity-30"
+                  disabled={meals.length <= 1}
+                  onClick={() => removeMealRow(index)}
+                  type="button"
+                >
+                  <Trash2 size={13} />
+                </button>
               </div>
             ))}
+            <button
+              className="flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-amber-200"
+              onClick={addMealRow}
+              type="button"
+            >
+              <Plus size={13} /> Agregar comida
+            </button>
           </div>
           {feedback && (
             <p className={`text-xs ${feedback.type === 'success' ? 'text-emerald-300' : 'text-rose-300'}`}>{feedback.message}</p>
@@ -122,7 +183,7 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
             disabled={submitting}
             type="submit"
           >
-            {submitting ? 'Creando\u2026' : 'Guardar plan'}
+            {submitting ? 'Creando…' : 'Guardar plan'}
           </button>
         </form>
       )}

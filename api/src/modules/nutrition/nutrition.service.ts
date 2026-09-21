@@ -69,7 +69,17 @@ export function createNutritionService() {
 
     async createPlan(
       requester: AuthenticatedUser,
-      input: { clientId: number; planKey: string; label: string; goalCalories: number; meals: NutritionMealInput[] },
+      input: {
+        clientId: number;
+        planKey: string;
+        label: string;
+        goalCalories: number;
+        proteinGTarget?: number | null;
+        carbsGTarget?: number | null;
+        fatGTarget?: number | null;
+        waterGoalMl?: number;
+        meals: NutritionMealInput[];
+      },
     ): Promise<NutritionPlanWithMeals> {
       await assertCanManagePlan(requester, input.clientId);
 
@@ -94,6 +104,10 @@ export function createNutritionService() {
         planKey: input.planKey,
         label: input.label,
         goalCalories: input.goalCalories,
+        proteinGTarget: input.proteinGTarget,
+        carbsGTarget: input.carbsGTarget,
+        fatGTarget: input.fatGTarget,
+        waterGoalMl: input.waterGoalMl,
       });
       const meals = await nutritionMealsRepository.createMany(plan.id, input.meals);
 
@@ -112,7 +126,14 @@ export function createNutritionService() {
     async updatePlan(
       requester: AuthenticatedUser,
       planId: number,
-      updates: { label?: string; goalCalories?: number },
+      updates: {
+        label?: string;
+        goalCalories?: number;
+        proteinGTarget?: number | null;
+        carbsGTarget?: number | null;
+        fatGTarget?: number | null;
+        waterGoalMl?: number;
+      },
     ): Promise<NutritionPlan> {
       const plan = await nutritionPlansRepository.findById(planId);
       if (!plan) {

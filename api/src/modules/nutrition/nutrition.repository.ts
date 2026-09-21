@@ -8,6 +8,10 @@ interface PlanRow {
   plan_key: string;
   label: string;
   goal_calories: number;
+  protein_g_target: string | null;
+  carbs_g_target: string | null;
+  fat_g_target: string | null;
+  water_goal_ml: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -36,6 +40,10 @@ function toPlan(row: PlanRow): NutritionPlan {
     planKey: row.plan_key,
     label: row.label,
     goalCalories: row.goal_calories,
+    proteinGTarget: row.protein_g_target === null ? null : Number(row.protein_g_target),
+    carbsGTarget: row.carbs_g_target === null ? null : Number(row.carbs_g_target),
+    fatGTarget: row.fat_g_target === null ? null : Number(row.fat_g_target),
+    waterGoalMl: row.water_goal_ml,
     isActive: row.is_active,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -76,12 +84,32 @@ export const nutritionPlansRepository = {
     return rows[0] ? toPlan(rows[0]) : undefined;
   },
 
-  async create(input: { clientId: number; coachId: number; planKey: string; label: string; goalCalories: number }): Promise<NutritionPlan> {
+  async create(input: {
+    clientId: number;
+    coachId: number;
+    planKey: string;
+    label: string;
+    goalCalories: number;
+    proteinGTarget?: number | null;
+    carbsGTarget?: number | null;
+    fatGTarget?: number | null;
+    waterGoalMl?: number;
+  }): Promise<NutritionPlan> {
     const { rows } = await pool.query<PlanRow>(
-      `INSERT INTO nutrition_plans (client_id, coach_id, plan_key, label, goal_calories)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO nutrition_plans (client_id, coach_id, plan_key, label, goal_calories, protein_g_target, carbs_g_target, fat_g_target, water_goal_ml)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 2000))
        RETURNING *`,
-      [input.clientId, input.coachId, input.planKey, input.label, input.goalCalories],
+      [
+        input.clientId,
+        input.coachId,
+        input.planKey,
+        input.label,
+        input.goalCalories,
+        input.proteinGTarget ?? null,
+        input.carbsGTarget ?? null,
+        input.fatGTarget ?? null,
+        input.waterGoalMl ?? null,
+      ],
     );
     return toPlan(rows[0]);
   },
@@ -101,13 +129,30 @@ export const nutritionPlansRepository = {
     }
   },
 
-  async update(id: number, updates: { label?: string; goalCalories?: number }): Promise<NutritionPlan> {
+  async update(
+    id: number,
+    updates: { label?: string; goalCalories?: number; proteinGTarget?: number | null; carbsGTarget?: number | null; fatGTarget?: number | null; waterGoalMl?: number },
+  ): Promise<NutritionPlan> {
     const { rows } = await pool.query<PlanRow>(
       `UPDATE nutrition_plans
-       SET label = COALESCE($2, label), goal_calories = COALESCE($3, goal_calories), updated_at = now()
+       SET label = COALESCE($2, label),
+           goal_calories = COALESCE($3, goal_calories),
+           protein_g_target = COALESCE($4, protein_g_target),
+           carbs_g_target = COALESCE($5, carbs_g_target),
+           fat_g_target = COALESCE($6, fat_g_target),
+           water_goal_ml = COALESCE($7, water_goal_ml),
+           updated_at = now()
        WHERE id = $1
        RETURNING *`,
-      [id, updates.label ?? null, updates.goalCalories ?? null],
+      [
+        id,
+        updates.label ?? null,
+        updates.goalCalories ?? null,
+        updates.proteinGTarget ?? null,
+        updates.carbsGTarget ?? null,
+        updates.fatGTarget ?? null,
+        updates.waterGoalMl ?? null,
+      ],
     );
     return toPlan(rows[0]);
   },

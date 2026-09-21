@@ -1,10 +1,12 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { ClipboardCheck, HeartHandshake, TrendingUp, Users } from 'lucide-react';
+import { ClipboardCheck, HeartHandshake, Plus, Trash2, TrendingUp, Users, Utensils } from 'lucide-react';
 import { api } from '../api/config';
 import { useAuth } from '../context/AuthContext';
 import { useClientProgress } from '../hooks/useClientProgress';
+import { NutritionPlanWithMeals } from '../hooks/useNutritionToday';
 import CheckInPhotos from './CheckInPhotos';
+import EditNutritionPlan from './EditNutritionPlan';
 
 interface PersonSummary {
   id: number;
@@ -122,12 +124,24 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
   const [clientId, setClientId] = useState<number | ''>('');
   const [label, setLabel] = useState('Balanced');
   const [goalCalories, setGoalCalories] = useState('2200');
+  const [proteinG, setProteinG] = useState('150');
+  const [carbsG, setCarbsG] = useState('220');
+  const [fatG, setFatG] = useState('70');
+  const [waterGoalMl, setWaterGoalMl] = useState('2500');
   const [meals, setMeals] = useState<MealDraft[]>(emptyMeals);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const updateMeal = (index: number, field: keyof MealDraft, value: string) => {
     setMeals((current) => current.map((meal, i) => (i === index ? { ...meal, [field]: value } : meal)));
+  };
+
+  const addMealRow = () => {
+    setMeals((current) => [...current, { name: `Comida ${current.length + 1}`, mealTime: '', calories: '200' }]);
+  };
+
+  const removeMealRow = (index: number) => {
+    setMeals((current) => current.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -147,6 +161,10 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
           planKey: label.toLowerCase().replace(/\s+/g, '-'),
           label,
           goalCalories: Number(goalCalories),
+          proteinGTarget: proteinG ? Number(proteinG) : undefined,
+          carbsGTarget: carbsG ? Number(carbsG) : undefined,
+          fatGTarget: fatG ? Number(fatG) : undefined,
+          waterGoalMl: waterGoalMl ? Number(waterGoalMl) : undefined,
           meals: meals.map((meal) => ({ name: meal.name, mealTime: meal.mealTime, calories: Number(meal.calories) })),
         },
         { headers: authHeaders(token) },
@@ -190,9 +208,39 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
           value={goalCalories}
         />
       </div>
+      <div className="grid grid-cols-4 gap-2">
+        <input
+          className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+          onChange={(event) => setProteinG(event.target.value)}
+          placeholder="Prot. (g)"
+          type="number"
+          value={proteinG}
+        />
+        <input
+          className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+          onChange={(event) => setCarbsG(event.target.value)}
+          placeholder="Carb. (g)"
+          type="number"
+          value={carbsG}
+        />
+        <input
+          className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+          onChange={(event) => setFatG(event.target.value)}
+          placeholder="Grasa (g)"
+          type="number"
+          value={fatG}
+        />
+        <input
+          className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+          onChange={(event) => setWaterGoalMl(event.target.value)}
+          placeholder="Agua (ml)"
+          type="number"
+          value={waterGoalMl}
+        />
+      </div>
       <div className="space-y-2">
         {meals.map((meal, index) => (
-          <div className="grid grid-cols-3 gap-2" key={meal.name}>
+          <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2" key={index}>
             <input
               className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
               onChange={(event) => updateMeal(index, 'name', event.target.value)}
@@ -209,8 +257,23 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
               type="number"
               value={meal.calories}
             />
+            <button
+              className="rounded-lg bg-rose-500/15 px-2 text-xs text-rose-300 hover:bg-rose-500/25 disabled:opacity-30"
+              disabled={meals.length <= 1}
+              onClick={() => removeMealRow(index)}
+              type="button"
+            >
+              <Trash2 size={13} />
+            </button>
           </div>
         ))}
+        <button
+          className="flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-amber-200"
+          onClick={addMealRow}
+          type="button"
+        >
+          <Plus size={13} /> Agregar comida
+        </button>
       </div>
       {feedback && (
         <p className={`text-xs ${feedback.type === 'success' ? 'text-emerald-300' : 'text-rose-300'}`}>{feedback.message}</p>
@@ -227,8 +290,21 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
 }
 
 function ClientRosterItem({ client }: { client: PersonSummary }) {
+  const { token } = useAuth();
   const [expanded, setExpanded] = useState(false);
+  const [nutritionOpen, setNutritionOpen] = useState(false);
+  const [clientPlan, setClientPlan] = useState<NutritionPlanWithMeals | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
   const { progress, loading } = useClientProgress(expanded ? client.id : null);
+
+  const loadPlan = () => {
+    setPlanLoading(true);
+    axios
+      .get(`${api.baseURL}${api.endpoints.nutritionToday(client.id)}`, { headers: authHeaders(token) })
+      .then((res) => setClientPlan(res.data?.plan ?? null))
+      .catch(() => setClientPlan(null))
+      .finally(() => setPlanLoading(false));
+  };
 
   return (
     <li className="rounded-xl border border-white/7 bg-white/[0.03] px-4 py-3">
@@ -237,13 +313,26 @@ function ClientRosterItem({ client }: { client: PersonSummary }) {
           <span className="text-sm font-medium text-slate-100">{client.fullName ?? client.email}</span>
           <span className="block text-xs text-slate-500">{client.email}</span>
         </div>
-        <button
-          className="flex items-center gap-1 rounded-lg border border-white/8 px-2 py-1 text-xs text-slate-300 hover:bg-white/8"
-          onClick={() => setExpanded((current) => !current)}
-          type="button"
-        >
-          <TrendingUp size={14} /> Progreso
-        </button>
+        <div className="flex gap-1.5">
+          <button
+            className="flex items-center gap-1 rounded-lg border border-white/8 px-2 py-1 text-xs text-slate-300 hover:bg-white/8"
+            onClick={() => setExpanded((current) => !current)}
+            type="button"
+          >
+            <TrendingUp size={14} /> Progreso
+          </button>
+          <button
+            className="flex items-center gap-1 rounded-lg border border-white/8 px-2 py-1 text-xs text-slate-300 hover:bg-white/8"
+            onClick={() => {
+              const next = !nutritionOpen;
+              setNutritionOpen(next);
+              if (next) loadPlan();
+            }}
+            type="button"
+          >
+            <Utensils size={14} /> Nutrición
+          </button>
+        </div>
       </div>
       {expanded && (
         <div className="mt-3 border-t border-white/7 pt-3 text-xs text-slate-400">
@@ -255,6 +344,15 @@ function ClientRosterItem({ client }: { client: PersonSummary }) {
               <p>Adherencia prom.: <span className="text-slate-200">{progress.summary.averageAdherencePercent != null ? `${progress.summary.averageAdherencePercent}%` : '—'}</span></p>
             </div>
           )}
+        </div>
+      )}
+      {nutritionOpen && (
+        <div className="mt-3 border-t border-white/7 pt-3">
+          {planLoading && <p className="text-xs text-slate-400">Cargando…</p>}
+          {!planLoading && !clientPlan && (
+            <p className="text-xs text-slate-400">Este cliente no tiene un plan activo todav\u00eda. Cr\u00e9alo abajo en "Nuevo plan de comidas".</p>
+          )}
+          {!planLoading && clientPlan && <EditNutritionPlan onUpdated={loadPlan} plan={clientPlan} />}
         </div>
       )}
     </li>

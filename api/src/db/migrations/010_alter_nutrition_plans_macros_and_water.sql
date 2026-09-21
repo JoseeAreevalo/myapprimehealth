@@ -1,0 +1,14 @@
+ALTER TABLE nutrition_plans
+  ADD COLUMN IF NOT EXISTS protein_g_target NUMERIC(6, 2),
+  ADD COLUMN IF NOT EXISTS carbs_g_target NUMERIC(6, 2),
+  ADD COLUMN IF NOT EXISTS fat_g_target NUMERIC(6, 2),
+  ADD COLUMN IF NOT EXISTS water_goal_ml INTEGER NOT NULL DEFAULT 2000;
+
+CREATE TABLE IF NOT EXISTS water_logs (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  log_date DATE NOT NULL DEFAULT current_date,
+  consumed_ml INTEGER NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, log_date)
+);

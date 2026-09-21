@@ -54,6 +54,10 @@ nutritionRouter.post('/plans', authenticate, async (req: Request, res: Response)
       planKey: req.body.planKey,
       label: req.body.label,
       goalCalories: Number(req.body.goalCalories),
+      proteinGTarget: req.body.proteinGTarget != null ? Number(req.body.proteinGTarget) : undefined,
+      carbsGTarget: req.body.carbsGTarget != null ? Number(req.body.carbsGTarget) : undefined,
+      fatGTarget: req.body.fatGTarget != null ? Number(req.body.fatGTarget) : undefined,
+      waterGoalMl: req.body.waterGoalMl != null ? Number(req.body.waterGoalMl) : undefined,
       meals: Array.isArray(req.body.meals) ? req.body.meals : [],
     });
     res.status(201).json({ plan });
@@ -76,6 +80,10 @@ nutritionRouter.patch('/plans/:planId', authenticate, async (req: Request, res: 
     const plan = await nutritionService.updatePlan(req.authenticatedUser!, Number(req.params.planId), {
       label: req.body.label,
       goalCalories: req.body.goalCalories != null ? Number(req.body.goalCalories) : undefined,
+      proteinGTarget: req.body.proteinGTarget != null ? Number(req.body.proteinGTarget) : undefined,
+      carbsGTarget: req.body.carbsGTarget != null ? Number(req.body.carbsGTarget) : undefined,
+      fatGTarget: req.body.fatGTarget != null ? Number(req.body.fatGTarget) : undefined,
+      waterGoalMl: req.body.waterGoalMl != null ? Number(req.body.waterGoalMl) : undefined,
     });
     res.status(200).json({ plan });
   } catch (error) {

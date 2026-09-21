@@ -14,6 +14,10 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
   const [open, setOpen] = useState(false);
   const [label, setLabel] = useState(plan.label);
   const [goalCalories, setGoalCalories] = useState(String(plan.goalCalories));
+  const [proteinG, setProteinG] = useState(String(plan.proteinGTarget ?? ''));
+  const [carbsG, setCarbsG] = useState(String(plan.carbsGTarget ?? ''));
+  const [fatG, setFatG] = useState(String(plan.fatGTarget ?? ''));
+  const [waterGoalMl, setWaterGoalMl] = useState(String(plan.waterGoalMl));
   const [meals, setMeals] = useState<NutritionMeal[]>(plan.meals);
   const [newMeal, setNewMeal] = useState({ name: '', mealTime: '', calories: '' });
   const [saving, setSaving] = useState(false);
@@ -41,7 +45,14 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
     try {
       await axios.patch(
         `${api.baseURL}${api.endpoints.nutritionPlanUpdate(plan.id)}`,
-        { label, goalCalories: Number(goalCalories) },
+        {
+          label,
+          goalCalories: Number(goalCalories),
+          proteinGTarget: proteinG ? Number(proteinG) : null,
+          carbsGTarget: carbsG ? Number(carbsG) : null,
+          fatGTarget: fatG ? Number(fatG) : null,
+          waterGoalMl: waterGoalMl ? Number(waterGoalMl) : undefined,
+        },
         { headers: authHeaders(token) },
       );
       setFeedback('Plan actualizado.');
@@ -117,6 +128,36 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
           onChange={(event) => setGoalCalories(event.target.value)}
           type="number"
           value={goalCalories}
+        />
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        <input
+          className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+          onChange={(event) => setProteinG(event.target.value)}
+          placeholder="Prot. (g)"
+          type="number"
+          value={proteinG}
+        />
+        <input
+          className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+          onChange={(event) => setCarbsG(event.target.value)}
+          placeholder="Carb. (g)"
+          type="number"
+          value={carbsG}
+        />
+        <input
+          className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+          onChange={(event) => setFatG(event.target.value)}
+          placeholder="Grasa (g)"
+          type="number"
+          value={fatG}
+        />
+        <input
+          className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+          onChange={(event) => setWaterGoalMl(event.target.value)}
+          placeholder="Agua (ml)"
+          type="number"
+          value={waterGoalMl}
         />
       </div>
       <button
