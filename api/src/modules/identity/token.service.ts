@@ -38,6 +38,12 @@ export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
+const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+export function createRefreshExpiry(): Date {
+  return new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
+}
+
 export function authenticate(req: Request, res: Response, next: NextFunction): void {
   const header = req.header('authorization');
   if (!header?.startsWith('Bearer ')) {

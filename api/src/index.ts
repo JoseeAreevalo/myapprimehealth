@@ -3,6 +3,7 @@ import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import { runMigrations } from './db/migrate';
 import identityRouter from './modules/identity/identity.router';
 import peopleRouter from './modules/people/people.router';
 
@@ -75,4 +76,12 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred.' } });
 });
 
-app.listen(port, () => console.log(`Prime Health API listening on port ${port}.`));
+async function start(): Promise<void> {
+  await runMigrations();
+  app.listen(port, () => console.log(`Prime Health API listening on port ${port}.`));
+}
+
+start().catch((error) => {
+  console.error('Failed to start the Prime Health API.', error);
+  process.exit(1);
+});

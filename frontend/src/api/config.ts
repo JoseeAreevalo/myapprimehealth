@@ -36,17 +36,14 @@ export const API_BASE_URL = getBaseUrl();
 export const api = {
     baseURL: API_BASE_URL,
     endpoints: {
-        products: '/api/products',
-        suppliers: '/api/suppliers',
-        orders: '/api/orders',
-        branches: '/api/branches',
-        headquarters: '/api/headquarters',
-        deliveries: '/api/deliveries',
-        orderDetails: '/api/order-details',
-        orderDetailDeliveries: '/api/order-detail-deliveries',
         authRegister: '/api/v1/identity/register',
         authLogin: '/api/v1/identity/login',
         authMe: '/api/v1/identity/me',
-        checkoutSession: '/api/checkout/session',
+        authRefresh: '/api/v1/identity/refresh',
+        authLogout: '/api/v1/identity/logout',
+        myProfile: '/api/v1/people/me/profile',
+        coachClients: (coachId: number) => `/api/v1/people/coaches/${coachId}/clients`,
+        clientCoach: (clientId: number) => `/api/v1/people/clients/${clientId}/coach`,
+        coachAssignments: '/api/v1/people/coach-assignments',
     }
 };

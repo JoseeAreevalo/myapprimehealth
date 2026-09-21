@@ -1,30 +1,47 @@
 import bcrypt from 'bcryptjs';
-import { users } from '../../db';
-import { createAccessToken, createRefreshToken, hashToken } from './token.service';
-import { AuthenticatedUser, LoginResult, UserRole, userRoles } from './identity.types';
+import { randomUUID } from 'crypto';
+import { refreshSessionsRepository, usersRepository } from './identity.repository';
+import { createAccessToken, createRefreshExpiry, createRefreshToken, hashToken } from './token.service';
+import { AuthenticatedUser, LoginResult, UserRole } from './identity.types';
 
 const DEFAULT_ROLE: UserRole = 'client';
 
-function normalizeRole(role?: string): UserRole {
-  if (role && userRoles.includes(role as UserRole)) {
-    return role as UserRole;
-  }
-  return DEFAULT_ROLE;
-}
-
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+function toAuthenticatedUser(user: { id: number; email: string; fullName: string | null; role: UserRole }): AuthenticatedUser {
+  return {
+    id: user.id,
+    email: user.email,
+    fullName: user.fullName,
+    role: user.role,
+  };
+}
+
+async function issueSession(user: AuthenticatedUser): Promise<LoginResult> {
+  const accessToken = createAccessToken(user);
+  const refreshToken = createRefreshToken();
+
+  await refreshSessionsRepository.create({
+    id: randomUUID(),
+    userId: user.id,
+    tokenHash: hashToken(refreshToken),
+    expiresAt: createRefreshExpiry().toISOString(),
+  });
+
+  return { accessToken, refreshToken, user };
 }
 
 export function createIdentityService() {
   return {
     async bootstrapSuperAdmin(): Promise<void> {
       const email = 'super_admin@primehealth.local';
-      const existing = users.findByEmail(email);
+      const existing = await usersRepository.findByEmail(email);
       if (existing) return;
 
       const passwordHash = await bcrypt.hash('PrimeHealth123!', 12);
-      users.create(email, passwordHash, 'Super Admin', 'super_admin');
+      await usersRepository.create(email, passwordHash, 'Super Admin', 'super_admin');
     },
 
     async register(input: { email: string; password: string; fullName?: string | null; role?: string }): Promise<LoginResult> {
@@ -44,29 +61,15 @@ export function createIdentityService() {
         throw new Error('Password must be at least 8 characters long.');
       }
 
-      if (users.findByEmail(email)) {
+      if (await usersRepository.findByEmail(email)) {
         throw new Error('Email already in use.');
       }
 
-      const role = normalizeRole(input.role ?? (email.endsWith('@github.com') ? 'coach' : undefined));
+      // Self-registration is always a client; coaches and admins are provisioned by an administrator.
       const passwordHash = await bcrypt.hash(password, 12);
-      const createdUser = users.create(email, passwordHash, fullName, role);
+      const createdUser = await usersRepository.create(email, passwordHash, fullName, DEFAULT_ROLE);
 
-      const user: AuthenticatedUser = {
-        id: createdUser.id,
-        email: createdUser.email,
-        fullName: createdUser.name,
-        role,
-      };
-
-      const accessToken = createAccessToken(user);
-      const refreshToken = createRefreshToken();
-
-      return {
-        accessToken,
-        refreshToken,
-        user,
-      };
+      return issueSession(toAuthenticatedUser(createdUser));
     },
 
     async login(input: { email: string; password: string }): Promise<LoginResult> {
@@ -77,31 +80,17 @@ export function createIdentityService() {
         throw new Error('Email and password are required.');
       }
 
-      const userRecord = users.findByEmail(email);
-      if (!userRecord) {
+      const userRecord = await usersRepository.findByEmail(email);
+      if (!userRecord || !userRecord.isActive) {
         throw new Error('Invalid credentials.');
       }
 
-      const passwordMatches = await bcrypt.compare(password, userRecord.password_hash);
+      const passwordMatches = await bcrypt.compare(password, userRecord.passwordHash);
       if (!passwordMatches) {
         throw new Error('Invalid credentials.');
       }
 
-      const user: AuthenticatedUser = {
-        id: userRecord.id,
-        email: userRecord.email,
-        fullName: userRecord.name,
-        role: normalizeRole(userRecord.role),
-      };
-
-      const accessToken = createAccessToken(user);
-      const refreshToken = createRefreshToken();
-
-      return {
-        accessToken,
-        refreshToken,
-        user,
-      };
+      return issueSession(toAuthenticatedUser(userRecord));
     },
 
     async refresh(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
@@ -111,40 +100,59 @@ export function createIdentityService() {
       }
 
       const tokenHash = hashToken(token);
-      if (!tokenHash) {
+      const session = await refreshSessionsRepository.findByTokenHash(tokenHash);
+      if (!session) {
         throw new Error('Invalid refresh token.');
       }
 
-      const currentUser = users.findByEmail('super_admin@primehealth.local');
-      if (!currentUser) {
+      if (session.revokedAt) {
+        // Reuse of an already-rotated token indicates the token family may be compromised.
+        await refreshSessionsRepository.revokeAllForUser(session.userId);
         throw new Error('Invalid refresh token.');
       }
 
-      const user: AuthenticatedUser = {
-        id: currentUser.id,
-        email: currentUser.email,
-        fullName: currentUser.name,
-        role: normalizeRole(currentUser.role),
-      };
+      if (new Date(session.expiresAt).getTime() < Date.now()) {
+        throw new Error('Refresh token has expired.');
+      }
+
+      const user = await usersRepository.findById(session.userId);
+      if (!user || !user.isActive) {
+        throw new Error('Invalid refresh token.');
+      }
+
+      const authenticatedUser = toAuthenticatedUser(user);
+      const newRefreshToken = createRefreshToken();
+      const newSession = await refreshSessionsRepository.create({
+        id: randomUUID(),
+        userId: user.id,
+        tokenHash: hashToken(newRefreshToken),
+        expiresAt: createRefreshExpiry().toISOString(),
+      });
+      await refreshSessionsRepository.revoke(session.id, newSession.id);
 
       return {
-        accessToken: createAccessToken(user),
-        refreshToken: createRefreshToken(),
+        accessToken: createAccessToken(authenticatedUser),
+        refreshToken: newRefreshToken,
       };
     },
 
+    async logout(refreshToken: string): Promise<void> {
+      const token = (refreshToken ?? '').trim();
+      if (!token) return;
+
+      const session = await refreshSessionsRepository.findByTokenHash(hashToken(token));
+      if (session && !session.revokedAt) {
+        await refreshSessionsRepository.revoke(session.id, null);
+      }
+    },
+
     async getCurrentUser(id: number): Promise<AuthenticatedUser> {
-      const user = users.findById(id);
-      if (!user) {
+      const user = await usersRepository.findById(id);
+      if (!user || !user.isActive) {
         throw new Error('User not found.');
       }
 
-      return {
-        id: user.id,
-        email: user.email,
-        fullName: user.name,
-        role: normalizeRole(user.role),
-      };
+      return toAuthenticatedUser(user);
     },
   };
 }

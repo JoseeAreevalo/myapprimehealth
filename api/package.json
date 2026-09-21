@@ -6,6 +6,7 @@
 		"build": "tsc",
 		"start": "node dist/index.js",
 		"dev": "tsx src/index.ts",
+		"migrate": "tsx src/db/migrate.ts",
 		"test": "vitest",
 		"test:coverage": "vitest run --coverage"
 	},
@@ -23,9 +24,7 @@
 		"swagger-ui-express": "^5.0.1"
 	},
 	"devDependencies": {
-		"@types/bcrypt": "^6.0.0",
 		"@types/bcryptjs": "^2.4.6",
-		"@types/better-sqlite3": "^9.6.0",
 		"@types/express": "^5.0.0",
 		"@types/jsonwebtoken": "^9.0.10",
 		"@types/node": "^22.12.0",

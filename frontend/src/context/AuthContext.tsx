@@ -14,6 +14,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   isAdmin: boolean;
   user: User | null;
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => void;
@@ -42,9 +43,9 @@ function normaliseUser(rawUser?: Partial<User> | null): User | null {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setTokenState] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
 
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
 
     axios
@@ -59,8 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         localStorage.removeItem(TOKEN_KEY);
+        setTokenState(null);
       });
-  }, []);
+  }, [token]);
 
   const persistSession = (payload: any) => {
     const token = payload?.accessToken ?? payload?.token;
@@ -71,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     localStorage.setItem(TOKEN_KEY, token);
+    setTokenState(token);
     if (nextUser) {
       setUser(nextUser);
     }
@@ -92,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
+    setTokenState(null);
     setUser(null);
   };
 
@@ -101,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoggedIn: !!user,
         isAdmin: user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'coach',
         user,
+        token,
         login,
         register,
         logout,

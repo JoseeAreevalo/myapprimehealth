@@ -52,6 +52,16 @@ identityRouter.post('/refresh', async (req: Request, res: Response): Promise<voi
   }
 });
 
+identityRouter.post('/logout', async (req: Request, res: Response): Promise<void> => {
+  try {
+    await identityService.logout(req.body.refreshToken);
+    res.status(204).send();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Logout failed.';
+    res.status(400).json({ error: { code: 'LOGOUT_FAILED', message } });
+  }
+});
+
 identityRouter.get('/me', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     const user = await identityService.getCurrentUser(req.authenticatedUser!.id);

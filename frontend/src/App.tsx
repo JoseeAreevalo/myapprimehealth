@@ -1,6 +1,7 @@
 import { Activity, Bell, ChevronDown, Droplets, Dumbbell, HeartPulse, Home, LogOut, Menu, Moon, Settings, Sparkles, Utensils, X } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from './context/AuthContext';
+import CoachingPanel from './components/CoachingPanel';
 
 type MealStatus = 'Completed' | 'Next' | 'Planned';
 
@@ -306,6 +307,7 @@ function App() {
           </div>
 
           <aside className="space-y-5">
+            <CoachingPanel />
             <section className="overflow-hidden rounded-3xl border border-violet-400/15 bg-gradient-to-br from-violet-500/20 via-panel to-panel p-6 shadow-panel">
               <div className="flex items-center justify-between">
                 <span className="grid size-11 place-items-center rounded-xl bg-violet-400/15 text-violet-200"><Dumbbell size={20} /></span>
