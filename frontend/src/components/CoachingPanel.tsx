@@ -11,8 +11,129 @@ interface PersonSummary {
   role: string;
 }
 
+interface MealDraft {
+  name: string;
+  mealTime: string;
+  calories: string;
+}
+
+const emptyMeals: MealDraft[] = [
+  { name: 'Breakfast', mealTime: '08:00', calories: '450' },
+  { name: 'Lunch', mealTime: '13:00', calories: '600' },
+  { name: 'Dinner', mealTime: '19:00', calories: '550' },
+];
+
 function authHeaders(token: string | null) {
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
+  const { token } = useAuth();
+  const [clientId, setClientId] = useState<number | ''>('');
+  const [label, setLabel] = useState('Balanced');
+  const [goalCalories, setGoalCalories] = useState('2200');
+  const [meals, setMeals] = useState<MealDraft[]>(emptyMeals);
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const updateMeal = (index: number, field: keyof MealDraft, value: string) => {
+    setMeals((current) => current.map((meal, i) => (i === index ? { ...meal, [field]: value } : meal)));
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!clientId) {
+      setFeedback({ type: 'error', message: 'Select a client first.' });
+      return;
+    }
+
+    setSubmitting(true);
+    setFeedback(null);
+    try {
+      await axios.post(
+        `${api.baseURL}${api.endpoints.nutritionPlanCreate}`,
+        {
+          clientId,
+          planKey: label.toLowerCase().replace(/\s+/g, '-'),
+          label,
+          goalCalories: Number(goalCalories),
+          meals: meals.map((meal) => ({ name: meal.name, mealTime: meal.mealTime, calories: Number(meal.calories) })),
+        },
+        { headers: authHeaders(token) },
+      );
+      setFeedback({ type: 'success', message: 'Plan created for the client.' });
+    } catch (error) {
+      const message = axios.isAxiosError(error) ? error.response?.data?.error?.message : undefined;
+      setFeedback({ type: 'error', message: message ?? 'Unable to create the plan.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form className="mt-6 space-y-4 border-t border-white/7 pt-6" onSubmit={handleSubmit}>
+      <p className="eyebrow">New meal plan</p>
+      <select
+        className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+        value={clientId}
+        onChange={(event) => setClientId(event.target.value ? Number(event.target.value) : '')}
+      >
+        <option value="">Select a client…</option>
+        {clients.map((client) => (
+          <option key={client.id} value={client.id}>
+            {client.fullName ?? client.email}
+          </option>
+        ))}
+      </select>
+      <div className="grid grid-cols-2 gap-3">
+        <input
+          className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+          onChange={(event) => setLabel(event.target.value)}
+          placeholder="Plan label"
+          value={label}
+        />
+        <input
+          className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+          onChange={(event) => setGoalCalories(event.target.value)}
+          placeholder="Goal calories"
+          type="number"
+          value={goalCalories}
+        />
+      </div>
+      <div className="space-y-2">
+        {meals.map((meal, index) => (
+          <div className="grid grid-cols-3 gap-2" key={meal.name}>
+            <input
+              className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+              onChange={(event) => updateMeal(index, 'name', event.target.value)}
+              value={meal.name}
+            />
+            <input
+              className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+              onChange={(event) => updateMeal(index, 'mealTime', event.target.value)}
+              value={meal.mealTime}
+            />
+            <input
+              className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+              onChange={(event) => updateMeal(index, 'calories', event.target.value)}
+              type="number"
+              value={meal.calories}
+            />
+          </div>
+        ))}
+      </div>
+      {feedback && (
+        <p className={`text-xs ${feedback.type === 'success' ? 'text-emerald-300' : 'text-rose-300'}`}>{feedback.message}</p>
+      )}
+      <button
+        className="w-full rounded-xl bg-violet-500 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-400 disabled:opacity-50"
+        disabled={submitting}
+        type="submit"
+      >
+        {submitting ? 'Creating…' : 'Create plan'}
+      </button>
+    </form>
+  );
 }
 
 function CoachRoster() {
@@ -55,6 +176,7 @@ function CoachRoster() {
           ))}
         </ul>
       )}
+      {!loading && clients.length > 0 && <CreateMealPlanForm clients={clients} />}
     </section>
   );
 }

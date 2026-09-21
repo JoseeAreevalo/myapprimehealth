@@ -45,5 +45,10 @@ export const api = {
         coachClients: (coachId: number) => `/api/v1/people/coaches/${coachId}/clients`,
         clientCoach: (clientId: number) => `/api/v1/people/clients/${clientId}/coach`,
         coachAssignments: '/api/v1/people/coach-assignments',
+        nutritionPlans: (clientId: number) => `/api/v1/nutrition/clients/${clientId}/plans`,
+        nutritionToday: (clientId: number) => `/api/v1/nutrition/clients/${clientId}/today`,
+        nutritionActivatePlan: (clientId: number, planId: number) => `/api/v1/nutrition/clients/${clientId}/plans/${planId}/activate`,
+        nutritionPlanCreate: '/api/v1/nutrition/plans',
+        nutritionMealLog: (mealId: number) => `/api/v1/nutrition/meals/${mealId}/log`,
     }
 };

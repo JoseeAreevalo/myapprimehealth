@@ -2,24 +2,7 @@ import { Activity, Bell, ChevronDown, Droplets, Dumbbell, HeartPulse, Home, LogO
 import { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import CoachingPanel from './components/CoachingPanel';
-
-type MealStatus = 'Completed' | 'Next' | 'Planned';
-
-type Meal = {
-  name: string;
-  detail: string;
-  time: string;
-  status: MealStatus;
-  calories: number;
-};
-
-type MenuPlanKey = 'balanced' | 'protein' | 'vegetarian';
-
-type MenuPlan = {
-  label: string;
-  goalCalories: number;
-  meals: Meal[];
-};
+import { useNutritionToday } from './hooks/useNutritionToday';
 
 const navigation = [
   { label: 'Overview', icon: Home, active: true },
@@ -27,36 +10,6 @@ const navigation = [
   { label: 'Progress', icon: Activity },
   { label: 'Wellness', icon: HeartPulse },
 ];
-
-const menuPlans: Record<MenuPlanKey, MenuPlan> = {
-  balanced: {
-    label: 'Balanced',
-    goalCalories: 2400,
-    meals: [
-      { name: 'Breakfast', detail: 'Overnight oats with berries', time: '08:00', status: 'Completed', calories: 482 },
-      { name: 'Lunch', detail: 'Chicken harvest bowl', time: '13:00', status: 'Next', calories: 625 },
-      { name: 'Dinner', detail: 'Miso salmon with greens', time: '19:30', status: 'Planned', calories: 540 },
-    ],
-  },
-  protein: {
-    label: 'High Protein',
-    goalCalories: 2550,
-    meals: [
-      { name: 'Breakfast', detail: 'Greek yogurt bowl with chia and seeds', time: '08:15', status: 'Completed', calories: 520 },
-      { name: 'Lunch', detail: 'Turkey quinoa power salad', time: '12:45', status: 'Completed', calories: 710 },
-      { name: 'Dinner', detail: 'Grilled chicken and sweet potato', time: '19:00', status: 'Next', calories: 680 },
-    ],
-  },
-  vegetarian: {
-    label: 'Vegetarian',
-    goalCalories: 2300,
-    meals: [
-      { name: 'Breakfast', detail: 'Avocado toast with hemp seeds', time: '08:30', status: 'Next', calories: 440 },
-      { name: 'Lunch', detail: 'Lentil tabbouleh bowl', time: '13:00', status: 'Planned', calories: 610 },
-      { name: 'Dinner', detail: 'Tofu stir-fry with brown rice', time: '19:15', status: 'Planned', calories: 645 },
-    ],
-  },
-};
 
 function BrandMark() {
   return (
@@ -71,41 +24,24 @@ function BrandMark() {
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<MenuPlanKey>('balanced');
-  const [mealPlan, setMealPlan] = useState<Meal[]>(() => menuPlans.balanced.meals.map((meal) => ({ ...meal })));
   const [waterMl, setWaterMl] = useState(1600);
   const { user, logout } = useAuth();
+  const { plans, todayPlan, loading: nutritionLoading, error: nutritionError, activatePlan, logMeal, isClient } = useNutritionToday();
   const displayName = user?.fullName || user?.name || 'there';
   const firstName = displayName.split(' ')[0] || 'There';
   const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-  const selectedPlanConfig = menuPlans[selectedPlan];
-  const completedCalories = mealPlan
-    .filter((meal) => meal.status === 'Completed')
+  const completedCalories = (todayPlan?.meals ?? [])
+    .filter((meal) => meal.status === 'completed')
     .reduce((total, meal) => total + meal.calories, 0);
-  const goalCalories = selectedPlanConfig.goalCalories;
+  const goalCalories = todayPlan?.goalCalories ?? 0;
   const leftCalories = Math.max(goalCalories - completedCalories, 0);
-  const progressPercent = Math.min((completedCalories / goalCalories) * 100, 100);
+  const progressPercent = goalCalories > 0 ? Math.min((completedCalories / goalCalories) * 100, 100) : 0;
   const waterGoalMl = 2500;
   const waterProgress = Math.min((waterMl / waterGoalMl) * 100, 100);
 
-  const handlePlanChange = (planKey: MenuPlanKey) => {
-    const nextPlan = menuPlans[planKey];
-    setSelectedPlan(planKey);
-    setMealPlan(nextPlan.meals.map((meal) => ({ ...meal })));
-  };
-
-  const handleMealStatusChange = (mealName: string) => {
-    setMealPlan((currentMeals) =>
-      currentMeals.map((meal) =>
-        meal.name === mealName
-          ? {
-              ...meal,
-              status: meal.status === 'Completed' ? 'Next' : 'Completed',
-            }
-          : meal,
-      ),
-    );
+  const handleMealStatusChange = (mealId: number, currentStatus: string) => {
+    void logMeal(mealId, currentStatus === 'completed' ? 'next' : 'completed');
   };
 
   const handleWaterLog = () => {
@@ -260,49 +196,61 @@ function App() {
                  <p className="eyebrow">Today's meals</p>
                  <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.03em] text-slate-50">Nourish with intention</h2>
                </div>
-               <div className="flex flex-wrap gap-2">
-                 {Object.entries(menuPlans).map(([key, plan]) => (
-                   <button
-                     key={key}
-                     type="button"
-                     onClick={() => handlePlanChange(key as MenuPlanKey)}
-                     className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                       selectedPlan === key
-                         ? 'bg-violet-500 text-white shadow-[0_10px_24px_rgba(139,92,246,0.28)]'
-                         : 'bg-white/5 text-slate-300 hover:bg-white/10'
-                     }`}
-                   >
-                     {plan.label}
-                   </button>
+               {plans.length > 1 && (
+                 <div className="flex flex-wrap gap-2">
+                   {plans.map((plan) => (
+                     <button
+                       key={plan.id}
+                       type="button"
+                       onClick={() => activatePlan(plan.id)}
+                       className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                         plan.isActive
+                           ? 'bg-violet-500 text-white shadow-[0_10px_24px_rgba(139,92,246,0.28)]'
+                           : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                       }`}
+                     >
+                       {plan.label}
+                     </button>
+                   ))}
+                 </div>
+               )}
+             </div>
+             {!isClient && (
+               <p className="mt-7 text-sm text-slate-400">Nutrition plans are tracked on client accounts.</p>
+             )}
+             {isClient && nutritionLoading && <p className="mt-7 text-sm text-slate-500">Loading your plan…</p>}
+             {isClient && !nutritionLoading && nutritionError && <p className="mt-7 text-sm text-rose-300">{nutritionError}</p>}
+             {isClient && !nutritionLoading && !nutritionError && !todayPlan && (
+               <p className="mt-7 text-sm text-slate-400">No nutrition plan assigned yet. Ask your coach to create one for you.</p>
+             )}
+             {isClient && !nutritionLoading && !nutritionError && todayPlan && (
+               <div className="mt-7 divide-y divide-white/7">
+                 {todayPlan.meals.map((meal) => (
+                   <article className="flex items-center gap-4 py-5 first:pt-0 last:pb-0" key={meal.id}>
+                     <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${meal.status === 'completed' ? 'bg-emerald-400/12 text-emerald-300' : 'bg-white/6 text-slate-400'}`}>
+                       {meal.status === 'completed' ? <span className="text-lg">✓</span> : <Utensils size={18} />}
+                     </span>
+                     <div className="min-w-0 flex-1">
+                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                         <h3 className="font-medium text-slate-50">{meal.name}</h3>
+                         {meal.mealTime && <span className="text-xs text-slate-400">{meal.mealTime}</span>}
+                       </div>
+                       {meal.detail && <p className="mt-1 truncate text-sm text-slate-500">{meal.detail}</p>}
+                     </div>
+                     <div className="text-right">
+                       <p className="text-sm font-medium text-slate-300">{meal.calories} kcal</p>
+                       <button
+                         type="button"
+                         onClick={() => handleMealStatusChange(meal.id, meal.status)}
+                         className={`mt-1 text-xs font-medium ${meal.status === 'completed' ? 'text-emerald-300' : 'text-slate-500'} hover:text-violet-300`}
+                       >
+                         {meal.status === 'completed' ? 'Completed' : meal.status === 'next' ? 'Mark done' : 'Start'}
+                       </button>
+                     </div>
+                   </article>
                  ))}
                </div>
-             </div>
-             <div className="mt-7 divide-y divide-white/7">
-               {mealPlan.map((meal) => (
-                 <article className="flex items-center gap-4 py-5 first:pt-0 last:pb-0" key={meal.name}>
-                   <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${meal.status === 'Completed' ? 'bg-emerald-400/12 text-emerald-300' : 'bg-white/6 text-slate-400'}`}>
-                     {meal.status === 'Completed' ? <span className="text-lg">✓</span> : <Utensils size={18} />}
-                   </span>
-                   <div className="min-w-0 flex-1">
-                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                       <h3 className="font-medium text-slate-50">{meal.name}</h3>
-                       <span className="text-xs text-slate-400">{meal.time}</span>
-                     </div>
-                     <p className="mt-1 truncate text-sm text-slate-500">{meal.detail}</p>
-                   </div>
-                   <div className="text-right">
-                     <p className="text-sm font-medium text-slate-300">{meal.calories} kcal</p>
-                     <button
-                       type="button"
-                       onClick={() => handleMealStatusChange(meal.name)}
-                       className={`mt-1 text-xs font-medium ${meal.status === 'Completed' ? 'text-emerald-300' : 'text-slate-500'} hover:text-violet-300`}
-                     >
-                       {meal.status === 'Completed' ? 'Completed' : meal.status === 'Next' ? 'Mark done' : 'Start'}
-                     </button>
-                   </div>
-                 </article>
-               ))}
-             </div>
+             )}
             </section>
           </div>
 

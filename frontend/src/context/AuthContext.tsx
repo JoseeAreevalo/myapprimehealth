@@ -64,9 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
   }, [token]);
 
-  const persistSession = (payload: any) => {
+  const persistSession = (payload: { accessToken?: string; token?: string; user?: Partial<User> | null }) => {
     const token = payload?.accessToken ?? payload?.token;
-    const nextUser = normaliseUser(payload?.user ?? payload ?? null);
+    const nextUser = normaliseUser(payload?.user ?? null);
 
     if (!token) {
       throw new Error('Authentication response did not include a token.');

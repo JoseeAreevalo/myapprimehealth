@@ -6,6 +6,7 @@ import swaggerUi from 'swagger-ui-express';
 import { runMigrations } from './db/migrate';
 import identityRouter from './modules/identity/identity.router';
 import peopleRouter from './modules/people/people.router';
+import nutritionRouter from './modules/nutrition/nutrition.router';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -63,6 +64,7 @@ app.get('/health', (_req, res): void => {
 });
 app.use('/api/v1/identity', identityRouter);
 app.use('/api/v1/people', peopleRouter);
+app.use('/api/v1/nutrition', nutritionRouter);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApi));
 app.get('/api-docs.json', (_req, res): void => {
   res.json(openApi);
