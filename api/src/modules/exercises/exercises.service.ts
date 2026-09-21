@@ -20,8 +20,8 @@ async function assertCanExtendCatalog(requester: AuthenticatedUser): Promise<voi
 export function createExercisesService() {
   return {
     async search(query: string): Promise<Exercise[]> {
-      if (!query || query.trim().length < 2) {
-        throw new ValidationError('Escribe al menos 2 caracteres para buscar.');
+      if (!query || query.trim().length < 1) {
+        throw new ValidationError('Escribe al menos 1 carácter para buscar.');
       }
       return exercisesRepository.search(query.trim());
     },

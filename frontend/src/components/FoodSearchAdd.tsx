@@ -29,7 +29,7 @@ export default function FoodSearchAdd({ onSelect }: { onSelect: (food: FoodOptio
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!query || query.trim().length < 2) {
+    if (!query || query.trim().length < 1) {
       setResults([]);
       setSearched(false);
       return;
@@ -119,7 +119,7 @@ export default function FoodSearchAdd({ onSelect }: { onSelect: (food: FoodOptio
           ))}
         </ul>
       )}
-      {open && searched && results.length === 0 && query.trim().length >= 2 && (
+      {open && searched && results.length === 0 && query.trim().length >= 1 && (
         <div className="absolute z-20 mt-1 w-full space-y-2 rounded-lg border border-white/10 bg-slate-900 p-3 shadow-xl">
           <p className="text-[11px] text-slate-400">No encontramos "{query}". Agrégalo con sus valores por 100g (alimento cocido):</p>
           <div className="grid grid-cols-4 gap-1.5">

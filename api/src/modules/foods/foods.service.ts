@@ -67,8 +67,8 @@ async function fetchFromOpenFoodFacts(barcode: string): Promise<Food | null> {
 export function createFoodsService() {
     return {
         async search(query: string): Promise<Food[]> {
-            if (!query || query.trim().length < 2) {
-                throw new ValidationError('Escribe al menos 2 caracteres para buscar.');
+            if (!query || query.trim().length < 1) {
+                throw new ValidationError('Escribe al menos 1 carácter para buscar.');
             }
             return foodsRepository.search(query.trim());
         },

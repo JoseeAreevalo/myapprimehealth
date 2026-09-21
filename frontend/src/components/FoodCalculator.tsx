@@ -39,7 +39,7 @@ export default function FoodCalculator() {
     const [adding, setAdding] = useState(false);
 
     const handleSearch = async () => {
-        if (query.trim().length < 2) return;
+        if (query.trim().length < 1) return;
         setSearching(true);
         setError('');
         setAddError('');

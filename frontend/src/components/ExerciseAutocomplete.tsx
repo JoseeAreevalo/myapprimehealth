@@ -36,7 +36,7 @@ export default function ExerciseAutocomplete({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!value || value.trim().length < 2) {
+    if (!value || value.trim().length < 1) {
       setSuggestions([]);
       return;
     }
