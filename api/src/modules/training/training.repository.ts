@@ -33,6 +33,16 @@ interface SetLogRow {
     actual_weight_kg: string | null;
 }
 
+interface HistoryRow {
+    exercise_id: number;
+    log_date: string;
+    set_number: number;
+    actual_reps: number | null;
+    actual_weight_kg: string | null;
+    exercise_name: string;
+    day_label: string;
+}
+
 function toPlan(row: PlanRow): TrainingPlan {
     return { id: row.id, clientId: row.client_id, coachId: row.coach_id, label: row.label, isActive: row.is_active };
 }
@@ -214,5 +224,22 @@ export const trainingSetLogsRepository = {
          updated_at = now()`,
             [exerciseId, logDate, setNumber, actualReps, actualWeightKg],
         );
+    },
+
+    async listHistoryForClient(clientId: number, fromDate: string, toDate: string): Promise<HistoryRow[]> {
+        const { rows } = await pool.query<HistoryRow>(
+            `SELECT tsl.exercise_id, tsl.log_date::text AS log_date, tsl.set_number, tsl.actual_reps, tsl.actual_weight_kg,
+              tpe.name AS exercise_name, tpd.label AS day_label
+       FROM training_set_logs tsl
+       JOIN training_plan_exercises tpe ON tpe.id = tsl.exercise_id
+       JOIN training_plan_days tpd ON tpd.id = tpe.day_id
+       JOIN training_plans tp ON tp.id = tpd.plan_id
+       WHERE tp.client_id = $1
+         AND tsl.log_date BETWEEN $2 AND $3
+         AND (tsl.actual_reps IS NOT NULL OR tsl.actual_weight_kg IS NOT NULL)
+       ORDER BY tsl.log_date ASC, tpd.day_order ASC, tpe.sort_order ASC, tsl.set_number ASC`,
+            [clientId, fromDate, toDate],
+        );
+        return rows;
     },
 };

@@ -52,3 +52,15 @@ export interface TrainingDayWithExercises extends TrainingDay {
 export interface TrainingPlanWithDays extends TrainingPlan {
     days: TrainingDayWithExercises[];
 }
+
+export interface TrainingHistoryExercise {
+    exerciseId: number;
+    exerciseName: string;
+    dayLabel: string;
+    sets: SetLog[];
+}
+
+export interface TrainingHistoryDay {
+    date: string;
+    exercises: TrainingHistoryExercise[];
+}

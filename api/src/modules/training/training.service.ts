@@ -6,7 +6,7 @@ import {
   trainingPlansRepository,
   trainingSetLogsRepository,
 } from './training.repository';
-import { TrainingDayInput, TrainingExercise, TrainingExerciseInput, TrainingPlan, TrainingPlanWithDays } from './training.types';
+import { TrainingDayInput, TrainingExercise, TrainingExerciseInput, TrainingHistoryDay, TrainingPlan, TrainingPlanWithDays } from './training.types';
 
 class ForbiddenError extends Error {}
 class NotFoundError extends Error {}
@@ -224,6 +224,48 @@ export function createTrainingService() {
       for (const set of sets) {
         await trainingSetLogsRepository.upsertSet(exerciseId, logDate, set.setNumber, set.actualReps, set.actualWeightKg);
       }
+    },
+
+    async getMonthHistory(requester: AuthenticatedUser, clientId: number, year: number, month: number): Promise<TrainingHistoryDay[]> {
+      if (requester.role === 'client' && requester.id !== clientId) {
+        throw new ForbiddenError('No tienes permiso para ver este historial.');
+      }
+      if (requester.role === 'coach' && requester.id !== clientId) {
+        await assertCoachOwnsClient(requester.id, clientId);
+      }
+      if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+        throw new ValidationError('Año o mes inválido.');
+      }
+
+      const pad = (value: number) => String(value).padStart(2, '0');
+      const fromDate = `${year}-${pad(month)}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const toDate = `${year}-${pad(month)}-${pad(lastDay)}`;
+
+      const rows = await trainingSetLogsRepository.listHistoryForClient(clientId, fromDate, toDate);
+
+      const dayMap = new Map<string, Map<number, TrainingHistoryDay['exercises'][number]>>();
+      for (const row of rows) {
+        if (!dayMap.has(row.log_date)) dayMap.set(row.log_date, new Map());
+        const exercisesForDay = dayMap.get(row.log_date)!;
+        if (!exercisesForDay.has(row.exercise_id)) {
+          exercisesForDay.set(row.exercise_id, {
+            exerciseId: row.exercise_id,
+            exerciseName: row.exercise_name,
+            dayLabel: row.day_label,
+            sets: [],
+          });
+        }
+        exercisesForDay.get(row.exercise_id)!.sets.push({
+          setNumber: row.set_number,
+          actualReps: row.actual_reps,
+          actualWeightKg: row.actual_weight_kg === null ? null : Number(row.actual_weight_kg),
+        });
+      }
+
+      return Array.from(dayMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, exercises]) => ({ date, exercises: Array.from(exercises.values()) }));
     },
   };
 }

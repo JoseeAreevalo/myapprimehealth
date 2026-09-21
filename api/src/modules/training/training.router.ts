@@ -124,4 +124,16 @@ trainingRouter.put('/exercises/:exerciseId/logs', authenticate, async (req: Requ
   }
 });
 
+trainingRouter.get('/clients/:clientId/history', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const now = new Date();
+    const year = req.query.year != null ? Number(req.query.year) : now.getFullYear();
+    const month = req.query.month != null ? Number(req.query.month) : now.getMonth() + 1;
+    const days = await trainingService.getMonthHistory(req.authenticatedUser!, Number(req.params.clientId), year, month);
+    res.status(200).json({ data: days });
+  } catch (error) {
+    handleError(res, error, 'No se pudo cargar el historial de entrenamiento.');
+  }
+});
+
 export default trainingRouter;

@@ -82,6 +82,7 @@ export const api = {
         trainingExerciseUpdate: (exerciseId: number) => `/api/v1/training/exercises/${exerciseId}`,
         trainingExerciseDelete: (exerciseId: number) => `/api/v1/training/exercises/${exerciseId}`,
         trainingExerciseLogs: (exerciseId: number) => `/api/v1/training/exercises/${exerciseId}/logs`,
+        trainingHistory: (clientId: number) => `/api/v1/training/clients/${clientId}/history`,
         exercisesSearch: '/api/v1/exercises',
         exercisesCreate: '/api/v1/exercises',
     }

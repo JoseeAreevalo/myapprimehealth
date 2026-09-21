@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Dumbbell, Pencil, Plus, Trash2 } from 'lucide-react';
+import { CalendarDays, Dumbbell, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useTrainingPlan, DayDraft, ExerciseDraft, TrainingExercise } from '../hooks/useTrainingPlan';
 import ExerciseAutocomplete, { registerExerciseName } from './ExerciseAutocomplete';
+import TrainingCalendar from './TrainingCalendar';
 import { dayVolumeTotals, loggedVolume } from '../utils/trainingMath';
 
 const emptyExercise = (): ExerciseDraft => ({ name: '', targetSets: '3', targetReps: '10', targetWeightKg: '' });
@@ -243,6 +244,7 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
   const { plan, loading, error, createPlan, addDay, deleteDay, addExercise, deleteExercise, logSets } = useTrainingPlan(clientId);
   const [selectedDayId, setSelectedDayId] = useState<number | null>(null);
   const [editing, setEditing] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [newDayLabel, setNewDayLabel] = useState('');
   const [newExercise, setNewExercise] = useState<ExerciseDraft>(emptyExercise());
 
@@ -304,6 +306,19 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
           <Pencil size={13} /> {editing ? 'Listo' : 'Editar'}
         </button>
       </div>
+
+      <button
+        className="mt-3 flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-slate-100"
+        onClick={() => setShowCalendar((current) => !current)}
+        type="button"
+      >
+        <CalendarDays size={13} /> {showCalendar ? 'Ocultar calendario' : 'Ver calendario de entrenamientos'}
+      </button>
+      {showCalendar && (
+        <div className="mt-3">
+          <TrainingCalendar clientId={clientId} />
+        </div>
+      )}
 
       <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-500">D\u00edas de la semana configurados</p>
       <div className="mt-1.5 flex flex-wrap gap-2">
