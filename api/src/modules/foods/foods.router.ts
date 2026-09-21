@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../identity/token.service';
-import { NotFoundError, ValidationError, createFoodsService } from './foods.service';
+import { ForbiddenError, NotFoundError, ValidationError, createFoodsService } from './foods.service';
 
 export const foodsRouter = Router();
 const foodsService = createFoodsService();
@@ -13,6 +13,10 @@ const foodsService = createFoodsService();
  */
 
 function handleError(res: Response, error: unknown, fallbackMessage: string): void {
+    if (error instanceof ForbiddenError) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: error.message } });
+        return;
+    }
     if (error instanceof NotFoundError) {
         res.status(404).json({ error: { code: 'NOT_FOUND', message: error.message } });
         return;

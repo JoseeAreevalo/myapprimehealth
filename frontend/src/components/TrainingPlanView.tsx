@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Dumbbell, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useTrainingPlan, DayDraft, ExerciseDraft, TrainingExercise } from '../hooks/useTrainingPlan';
+import ExerciseAutocomplete, { registerExerciseName } from './ExerciseAutocomplete';
 
 const emptyExercise = (): ExerciseDraft => ({ name: '', targetSets: '3', targetReps: '10', targetWeightKg: '' });
 const emptyDay = (index: number): DayDraft => ({ label: `Día ${index}`, exercises: [emptyExercise()] });
@@ -36,6 +37,9 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
     setFeedback('');
     try {
       await onCreate(label, days);
+      await Promise.all(
+        days.flatMap((day) => day.exercises.map((exercise) => registerExerciseName(exercise.name))),
+      );
     } catch {
       setFeedback('No se pudo crear el plan.');
     } finally {
@@ -72,10 +76,9 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
             <div className="mt-3 space-y-2">
               {day.exercises.map((exercise, exIndex) => (
                 <div className="grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5" key={exIndex}>
-                  <input
+                  <ExerciseAutocomplete
                     className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
-                    onChange={(event) => updateExercise(dayIndex, exIndex, 'name', event.target.value)}
-                    placeholder="Ejercicio"
+                    onChange={(newValue) => updateExercise(dayIndex, exIndex, 'name', newValue)}
                     value={exercise.name}
                   />
                   <input
@@ -251,6 +254,7 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
       targetReps: Number(newExercise.targetReps),
       targetWeightKg: newExercise.targetWeightKg ? Number(newExercise.targetWeightKg) : null,
     });
+    await registerExerciseName(newExercise.name);
     setNewExercise(emptyExercise());
   };
 
@@ -334,10 +338,9 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
 
           {editing && (
             <div className="grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5 border-t border-white/7 pt-3">
-              <input
+              <ExerciseAutocomplete
                 className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
-                onChange={(event) => setNewExercise((current) => ({ ...current, name: event.target.value }))}
-                placeholder="Ejercicio"
+                onChange={(newValue) => setNewExercise((current) => ({ ...current, name: newValue }))}
                 value={newExercise.name}
               />
               <input

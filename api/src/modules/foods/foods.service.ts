@@ -1,11 +1,22 @@
 import { AuthenticatedUser } from '../identity/identity.types';
+import { coachClientsRepository } from '../people/people.repository';
 import { foodsRepository } from './foods.repository';
 import { Food } from './foods.types';
 
 class ValidationError extends Error { }
 class NotFoundError extends Error { }
+class ForbiddenError extends Error { }
 
-export { ValidationError, NotFoundError };
+export { ValidationError, NotFoundError, ForbiddenError };
+
+// Clients being coached must follow their coach's catalog; only self-managed clients, coaches, and admins may extend it.
+async function assertCanExtendCatalog(requester: AuthenticatedUser): Promise<void> {
+    if (requester.role !== 'client') return;
+    const link = await coachClientsRepository.findActiveByClientId(requester.id);
+    if (link) {
+        throw new ForbiddenError('Tu coach define los alimentos disponibles; no puedes agregar nuevos.');
+    }
+}
 
 interface OpenFoodFactsResponse {
     status: number;
@@ -62,7 +73,7 @@ export function createFoodsService() {
             return foodsRepository.search(query.trim());
         },
 
-        async create(requester: AuthenticatedUser, input: { name: string; caloriesPer100g: number; proteinG?: number; carbsG?: number; fatG?: number }): Promise<Food> {
+        async create(requester: AuthenticatedUser, input: { name: string; caloriesPer100g: number; proteinG?: number; carbsG?: number; fatG?: number }): Promise<Food> {            await assertCanExtendCatalog(requester);
             if (!input.name || !input.name.trim()) {
                 throw new ValidationError('El nombre del alimento es obligatorio.');
             }
