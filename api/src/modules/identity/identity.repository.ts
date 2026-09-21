@@ -71,6 +71,22 @@ export const usersRepository = {
     );
     return toUser(rows[0]);
   },
+
+  async listAll(): Promise<IdentityUser[]> {
+    const { rows } = await pool.query<UserRow>('SELECT * FROM users ORDER BY created_at DESC');
+    return rows.map(toUser);
+  },
+
+  async updateRoleAndStatus(id: number, updates: { role?: UserRole; isActive?: boolean }): Promise<IdentityUser | undefined> {
+    const { rows } = await pool.query<UserRow>(
+      `UPDATE users
+       SET role = COALESCE($2, role), is_active = COALESCE($3, is_active), updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      [id, updates.role ?? null, updates.isActive ?? null],
+    );
+    return rows[0] ? toUser(rows[0]) : undefined;
+  },
 };
 
 export const refreshSessionsRepository = {

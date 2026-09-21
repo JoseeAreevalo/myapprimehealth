@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext';
 import CoachingPanel from './components/CoachingPanel';
 import WeeklyCheckInCard from './components/WeeklyCheckInCard';
 import ProgressPanel from './components/ProgressPanel';
+import AdministrationPanel from './components/AdministrationPanel';
 import { useNutritionToday } from './hooks/useNutritionToday';
 
 const navigation = [
@@ -258,6 +259,7 @@ function App() {
 
           <aside className="space-y-5">
             <CoachingPanel />
+            <AdministrationPanel />
             <section className="overflow-hidden rounded-3xl border border-violet-400/15 bg-gradient-to-br from-violet-500/20 via-panel to-panel p-6 shadow-panel">
               <div className="flex items-center justify-between">
                 <span className="grid size-11 place-items-center rounded-xl bg-violet-400/15 text-violet-200"><Dumbbell size={20} /></span>

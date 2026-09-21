@@ -55,5 +55,7 @@ export const api = {
         checkInPending: (coachId: number) => `/api/v1/check-ins/coaches/${coachId}/pending`,
         checkInReview: (id: number) => `/api/v1/check-ins/${id}/review`,
         progress: (clientId: number) => `/api/v1/progress/clients/${clientId}`,
+        adminUsers: '/api/v1/administration/users',
+        adminUserUpdate: (id: number) => `/api/v1/administration/users/${id}`,
     }
 };
