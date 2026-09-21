@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "email": "josee.areevalo@gmail.com",
+    "password_hash": "$2b$12$aMdV74Zg8AhgaCs3R3i1l.Xh.Jjuljzhok.nCuwpf7dixs3qd3Bo2",
+    "name": "jose",
+    "role": "user",
+    "created_at": "2026-08-07T14:14:45.565Z"
+  },
+  {
+    "id": 2,
+    "email": "super_admin@primehealth.local",
+    "password_hash": "$2b$12$MPmlXGrtsbNbLezraEwkDeFKV4xCaAy49BIBW9DmZiMlRK3F6UTdG",
+    "name": "Super Admin",
+    "role": "super_admin",
+    "created_at": "2026-08-25T23:47:51.196Z"
+  },
+  {
+    "id": 3,
+    "email": "demo.user@example.com",
+    "password_hash": "$2b$12$Am2Qlfe8HBThaw7MEiZhYemDtH7mvDss4bMSrQXwnm.zrO0A3to1q",
+    "name": "Demo User",
+    "role": "client",
+    "created_at": "2026-08-25T23:50:18.213Z"
+  },
+  {
+    "id": 4,
+    "email": "browser.tester@example.com",
+    "password_hash": "$2b$12$XtqoFYgr1AqffzYZSA1Rte1LEaEy8Uaw0HYOBlSRekfA.K0uRqmMO",
+    "name": "Browser Tester",
+    "role": "client",
+    "created_at": "2026-08-26T00:12:38.019Z"
+  },
+  {
+    "id": 5,
+    "email": "testuser@example.com",
+    "password_hash": "$2b$12$M1IZqL4JvZHhRywnBdbXUepKz4aefOdc/x35b.4FKcVMOWa2DrrD2",
+    "name": "Test User",
+    "role": "client",
+    "created_at": "2026-08-26T20:49:46.843Z"
+  }
+]
