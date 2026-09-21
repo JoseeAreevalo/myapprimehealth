@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Dumbbell, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useTrainingPlan, DayDraft, ExerciseDraft, TrainingExercise } from '../hooks/useTrainingPlan';
 import ExerciseAutocomplete, { registerExerciseName } from './ExerciseAutocomplete';
+import { dayVolumeTotals, loggedVolume } from '../utils/trainingMath';
 
 const emptyExercise = (): ExerciseDraft => ({ name: '', targetSets: '3', targetReps: '10', targetWeightKg: '' });
 const emptyDay = (index: number): DayDraft => ({ label: `Día ${index}`, exercises: [emptyExercise()] });
@@ -123,6 +124,16 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
                   </button>
                 </div>
               ))}
+              {(() => {
+                const totals = dayVolumeTotals(day.exercises);
+                return (
+                  <p className="text-[11px] text-slate-500">
+                    Total del día: <span className="font-semibold text-slate-300">{totals.totalSets} series</span> ·{' '}
+                    <span className="font-semibold text-slate-300">{totals.totalReps} reps</span> ·{' '}
+                    <span className="font-semibold text-slate-300">{Math.round(totals.totalVolumeKg)} kg</span> de volumen estimado
+                  </p>
+                );
+              })()}
               <button
                 className="flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-amber-200"
                 onClick={() => addExercise(dayIndex)}
@@ -213,6 +224,9 @@ function ExerciseLogRow({
           </div>
         ))}
       </div>
+      <p className="mt-2 text-[11px] text-slate-500">
+        Volumen registrado hoy: <span className="font-semibold text-slate-300">{Math.round(loggedVolume(rows))} kg</span>
+      </p>
       <button
         className="mt-2 w-full rounded-lg bg-amber-500/15 py-1.5 text-xs font-semibold text-amber-200 hover:bg-amber-500/25 disabled:opacity-50"
         disabled={saving}

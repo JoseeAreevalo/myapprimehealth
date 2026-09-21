@@ -4,6 +4,8 @@ import { Pencil } from 'lucide-react';
 import { api } from '../api/config';
 import { useAuth } from '../context/AuthContext';
 import { NutritionMeal, NutritionPlanWithMeals } from '../hooks/useNutritionToday';
+import NutritionLiveTotals from './NutritionLiveTotals';
+import { macroCalories, sumMealCalories } from '../utils/nutritionMath';
 
 function authHeaders(token: string | null) {
     return token ? { Authorization: `Bearer ${token}` } : {};
@@ -167,6 +169,11 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
                     value={waterGoalMl}
                 />
             </div>
+            <NutritionLiveTotals
+                goalCalories={Number(goalCalories) || 0}
+                macroTotalCalories={macroCalories(proteinG, carbsG, fatG)}
+                mealsTotalCalories={sumMealCalories(meals)}
+            />
             <button
                 className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400 disabled:opacity-50"
                 disabled={saving}

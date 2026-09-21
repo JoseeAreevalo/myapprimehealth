@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { ChefHat, Plus, Trash2 } from 'lucide-react';
 import { api } from '../api/config';
 import { useAuth } from '../context/AuthContext';
+import NutritionLiveTotals from './NutritionLiveTotals';
+import { macroCalories, sumMealCalories } from '../utils/nutritionMath';
 
 interface MealDraft {
     name: string;
@@ -146,6 +148,11 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
                             value={waterGoalMl}
                         />
                     </div>
+                    <NutritionLiveTotals
+                        goalCalories={Number(goalCalories) || 0}
+                        macroTotalCalories={macroCalories(proteinG, carbsG, fatG)}
+                        mealsTotalCalories={sumMealCalories(meals)}
+                    />
                     <div className="space-y-2">
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Comidas del plan</p>
                         <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 px-0.5 text-[10px] text-slate-500">

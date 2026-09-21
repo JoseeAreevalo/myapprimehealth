@@ -7,7 +7,9 @@ import { useClientProgress } from '../hooks/useClientProgress';
 import { NutritionPlanWithMeals } from '../hooks/useNutritionToday';
 import CheckInPhotos from './CheckInPhotos';
 import EditNutritionPlan from './EditNutritionPlan';
+import NutritionLiveTotals from './NutritionLiveTotals';
 import TrainingPlanView from './TrainingPlanView';
+import { macroCalories, sumMealCalories } from '../utils/nutritionMath';
 
 interface PersonSummary {
     id: number;
@@ -247,6 +249,11 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
                     value={waterGoalMl}
                 />
             </div>
+            <NutritionLiveTotals
+                goalCalories={Number(goalCalories) || 0}
+                macroTotalCalories={macroCalories(proteinG, carbsG, fatG)}
+                mealsTotalCalories={sumMealCalories(meals)}
+            />
             <div className="space-y-2">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Comidas del plan</p>
                 <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 px-0.5 text-[10px] text-slate-500">
