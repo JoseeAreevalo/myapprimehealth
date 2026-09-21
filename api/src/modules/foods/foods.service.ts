@@ -73,7 +73,8 @@ export function createFoodsService() {
             return foodsRepository.search(query.trim());
         },
 
-        async create(requester: AuthenticatedUser, input: { name: string; caloriesPer100g: number; proteinG?: number; carbsG?: number; fatG?: number }): Promise<Food> {            await assertCanExtendCatalog(requester);
+        async create(requester: AuthenticatedUser, input: { name: string; caloriesPer100g: number; proteinG?: number; carbsG?: number; fatG?: number }): Promise<Food> {
+            await assertCanExtendCatalog(requester);
             if (!input.name || !input.name.trim()) {
                 throw new ValidationError('El nombre del alimento es obligatorio.');
             }
