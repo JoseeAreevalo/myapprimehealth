@@ -49,15 +49,19 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
 
   return (
     <div className="space-y-4">
-      <input
-        className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
-        onChange={(event) => setLabel(event.target.value)}
-        placeholder="Nombre del plan"
-        value={label}
-      />
+      <div>
+        <label className="mb-1 block text-[11px] text-slate-500">Nombre del plan de entrenamiento</label>
+        <input
+          className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+          onChange={(event) => setLabel(event.target.value)}
+          placeholder="Nombre del plan"
+          value={label}
+        />
+      </div>
       <div className="space-y-4">
         {days.map((day, dayIndex) => (
           <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4" key={dayIndex}>
+            <label className="mb-1 block text-[10px] text-slate-500">Nombre del día (ej. "Día 1", "Pecho y tríceps")</label>
             <div className="flex items-center gap-2">
               <input
                 className="flex-1 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-sm text-slate-100"
@@ -74,6 +78,13 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
               </button>
             </div>
             <div className="mt-3 space-y-2">
+              <div className="grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5 px-0.5 text-[10px] text-slate-500">
+                <span>Ejercicio</span>
+                <span>Series</span>
+                <span>Repeticiones</span>
+                <span>Peso (kg)</span>
+                <span />
+              </div>
               {day.exercises.map((exercise, exIndex) => (
                 <div className="grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5" key={exIndex}>
                   <ExerciseAutocomplete
@@ -280,7 +291,8 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
         </button>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-500">D\u00edas de la semana configurados</p>
+      <div className="mt-1.5 flex flex-wrap gap-2">
         {plan.days.map((day) => (
           <button
             className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
@@ -337,36 +349,46 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
           )}
 
           {editing && (
-            <div className="grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5 border-t border-white/7 pt-3">
-              <ExerciseAutocomplete
-                className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
-                onChange={(newValue) => setNewExercise((current) => ({ ...current, name: newValue }))}
-                value={newExercise.name}
-              />
-              <input
-                className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
-                onChange={(event) => setNewExercise((current) => ({ ...current, targetSets: event.target.value }))}
-                placeholder="Series"
-                type="number"
-                value={newExercise.targetSets}
-              />
-              <input
-                className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
-                onChange={(event) => setNewExercise((current) => ({ ...current, targetReps: event.target.value }))}
-                placeholder="Reps"
-                type="number"
-                value={newExercise.targetReps}
-              />
-              <input
-                className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
-                onChange={(event) => setNewExercise((current) => ({ ...current, targetWeightKg: event.target.value }))}
-                placeholder="kg"
-                type="number"
-                value={newExercise.targetWeightKg}
-              />
-              <button className="rounded-lg bg-amber-500 px-2 text-xs font-semibold text-white hover:bg-amber-400" onClick={handleAddExercise} type="button">
-                <Plus size={13} />
-              </button>
+            <div className="border-t border-white/7 pt-3">
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Agregar ejercicio a este d\u00eda</p>
+              <div className="grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5 px-0.5 text-[10px] text-slate-500">
+                <span>Ejercicio</span>
+                <span>Series</span>
+                <span>Repeticiones</span>
+                <span>Peso (kg)</span>
+                <span />
+              </div>
+              <div className="mt-1 grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5">
+                <ExerciseAutocomplete
+                  className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                  onChange={(newValue) => setNewExercise((current) => ({ ...current, name: newValue }))}
+                  value={newExercise.name}
+                />
+                <input
+                  className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                  onChange={(event) => setNewExercise((current) => ({ ...current, targetSets: event.target.value }))}
+                  placeholder="Series"
+                  type="number"
+                  value={newExercise.targetSets}
+                />
+                <input
+                  className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                  onChange={(event) => setNewExercise((current) => ({ ...current, targetReps: event.target.value }))}
+                  placeholder="Reps"
+                  type="number"
+                  value={newExercise.targetReps}
+                />
+                <input
+                  className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                  onChange={(event) => setNewExercise((current) => ({ ...current, targetWeightKg: event.target.value }))}
+                  placeholder="kg"
+                  type="number"
+                  value={newExercise.targetWeightKg}
+                />
+                <button className="rounded-lg bg-amber-500 px-2 text-xs font-semibold text-white hover:bg-amber-400" onClick={handleAddExercise} type="button">
+                  <Plus size={13} />
+                </button>
+              </div>
             </div>
           )}
         </div>

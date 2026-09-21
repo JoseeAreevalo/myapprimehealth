@@ -118,18 +118,25 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
                 </button>
             </div>
             <div className="grid grid-cols-2 gap-2">
-                <input
-                    className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
-                    onChange={(event) => setLabel(event.target.value)}
-                    value={label}
-                />
-                <input
-                    className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
-                    onChange={(event) => setGoalCalories(event.target.value)}
-                    type="number"
-                    value={goalCalories}
-                />
+                <div>
+                    <label className="mb-1 block text-[10px] text-slate-500">Nombre del plan</label>
+                    <input
+                        className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                        onChange={(event) => setLabel(event.target.value)}
+                        value={label}
+                    />
+                </div>
+                <div>
+                    <label className="mb-1 block text-[10px] text-slate-500">Calorías meta al día</label>
+                    <input
+                        className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                        onChange={(event) => setGoalCalories(event.target.value)}
+                        type="number"
+                        value={goalCalories}
+                    />
+                </div>
             </div>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Macros y agua meta (por día)</p>
             <div className="grid grid-cols-4 gap-2">
                 <input
                     className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
@@ -170,6 +177,13 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
             </button>
 
             <div className="space-y-2 border-t border-white/7 pt-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Comidas existentes</p>
+                <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1.5 px-0.5 text-[10px] text-slate-500">
+                    <span>Nombre</span>
+                    <span>Hora</span>
+                    <span>Calorías</span>
+                    <span />
+                </div>
                 {meals.map((meal) => (
                     <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1.5" key={meal.id}>
                         <input
@@ -201,6 +215,7 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
             </div>
 
             <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1.5 border-t border-white/7 pt-3">
+                <p className="col-span-4 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Agregar comida nueva</p>
                 <input
                     className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
                     onChange={(event) => setNewMeal((current) => ({ ...current, name: event.target.value }))}

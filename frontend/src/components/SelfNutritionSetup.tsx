@@ -93,21 +93,29 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
                 </button>
             ) : (
                 <form className="mt-5 space-y-3" onSubmit={handleSubmit}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Datos generales del plan</p>
                     <div className="grid grid-cols-2 gap-3">
-                        <input
-                            className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
-                            onChange={(event) => setLabel(event.target.value)}
-                            placeholder="Nombre del plan"
-                            value={label}
-                        />
-                        <input
-                            className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
-                            onChange={(event) => setGoalCalories(event.target.value)}
-                            placeholder="Calorías meta"
-                            type="number"
-                            value={goalCalories}
-                        />
+                        <div>
+                            <label className="mb-1 block text-[11px] text-slate-500">Nombre del plan</label>
+                            <input
+                                className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                                onChange={(event) => setLabel(event.target.value)}
+                                placeholder="Nombre del plan"
+                                value={label}
+                            />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-[11px] text-slate-500">Calorías meta al día</label>
+                            <input
+                                className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                                onChange={(event) => setGoalCalories(event.target.value)}
+                                placeholder="Calorías meta"
+                                type="number"
+                                value={goalCalories}
+                            />
+                        </div>
                     </div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Macronutrientes y agua meta (por día)</p>
                     <div className="grid grid-cols-4 gap-2">
                         <input
                             className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
@@ -139,6 +147,13 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
                         />
                     </div>
                     <div className="space-y-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Comidas del plan</p>
+                        <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 px-0.5 text-[10px] text-slate-500">
+                            <span>Nombre de la comida</span>
+                            <span>Hora (HH:MM)</span>
+                            <span>Calorías</span>
+                            <span />
+                        </div>
                         {meals.map((meal, index) => (
                             <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2" key={index}>
                                 <input
