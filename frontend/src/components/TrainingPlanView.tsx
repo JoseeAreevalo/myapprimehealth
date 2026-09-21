@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CalendarDays, Dumbbell, Pencil, Plus, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { useTrainingPlan, DayDraft, ExerciseDraft, TrainingExercise } from '../hooks/useTrainingPlan';
 import ExerciseAutocomplete, { registerExerciseName } from './ExerciseAutocomplete';
 import TrainingCalendar from './TrainingCalendar';
@@ -9,6 +10,7 @@ const emptyExercise = (): ExerciseDraft => ({ name: '', targetSets: '3', targetR
 const emptyDay = (index: number): DayDraft => ({ label: `Día ${index}`, exercises: [emptyExercise()] });
 
 function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft[]) => Promise<void> }) {
+  const { token } = useAuth();
   const [label, setLabel] = useState('Mi plan de entrenamiento');
   const [days, setDays] = useState<DayDraft[]>([emptyDay(1), emptyDay(2), emptyDay(3)]);
   const [submitting, setSubmitting] = useState(false);
@@ -40,7 +42,7 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
     try {
       await onCreate(label, days);
       await Promise.all(
-        days.flatMap((day) => day.exercises.map((exercise) => registerExerciseName(exercise.name))),
+        days.flatMap((day) => day.exercises.map((exercise) => registerExerciseName(exercise.name, token))),
       );
     } catch {
       setFeedback('No se pudo crear el plan.');
@@ -241,6 +243,7 @@ function ExerciseLogRow({
 }
 
 export default function TrainingPlanView({ clientId }: { clientId: number }) {
+  const { token } = useAuth();
   const { plan, loading, error, createPlan, addDay, deleteDay, addExercise, deleteExercise, logSets } = useTrainingPlan(clientId);
   const [selectedDayId, setSelectedDayId] = useState<number | null>(null);
   const [editing, setEditing] = useState(false);
@@ -281,7 +284,7 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
       targetReps: Number(newExercise.targetReps),
       targetWeightKg: newExercise.targetWeightKg ? Number(newExercise.targetWeightKg) : null,
     });
-    await registerExerciseName(newExercise.name);
+    await registerExerciseName(newExercise.name, token);
     setNewExercise(emptyExercise());
   };
 
