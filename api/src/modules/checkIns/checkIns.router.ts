@@ -13,61 +13,61 @@ const checkInsService = createCheckInsService();
  */
 
 function handleError(res: Response, error: unknown, fallbackMessage: string): void {
-  if (error instanceof ForbiddenError) {
-    res.status(403).json({ error: { code: 'FORBIDDEN', message: error.message } });
-    return;
-  }
-  if (error instanceof NotFoundError) {
-    res.status(404).json({ error: { code: 'NOT_FOUND', message: error.message } });
-    return;
-  }
-  if (error instanceof ValidationError) {
-    res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: error.message } });
-    return;
-  }
-  const message = error instanceof Error ? error.message : fallbackMessage;
-  res.status(500).json({ error: { code: 'INTERNAL_ERROR', message } });
+    if (error instanceof ForbiddenError) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: error.message } });
+        return;
+    }
+    if (error instanceof NotFoundError) {
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: error.message } });
+        return;
+    }
+    if (error instanceof ValidationError) {
+        res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: error.message } });
+        return;
+    }
+    const message = error instanceof Error ? error.message : fallbackMessage;
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message } });
 }
 
 checkInsRouter.post('/', authenticate, async (req: Request, res: Response): Promise<void> => {
-  try {
-    const checkIn = await checkInsService.submitWeeklyCheckIn(req.authenticatedUser!, {
-      weightKg: req.body.weightKg,
-      measurements: req.body.measurements,
-      adherencePercent: req.body.adherencePercent,
-      notes: req.body.notes,
-    });
-    res.status(201).json({ checkIn });
-  } catch (error) {
-    handleError(res, error, 'No se pudo enviar el check-in.');
-  }
+    try {
+        const checkIn = await checkInsService.submitWeeklyCheckIn(req.authenticatedUser!, {
+            weightKg: req.body.weightKg,
+            measurements: req.body.measurements,
+            adherencePercent: req.body.adherencePercent,
+            notes: req.body.notes,
+        });
+        res.status(201).json({ checkIn });
+    } catch (error) {
+        handleError(res, error, 'No se pudo enviar el check-in.');
+    }
 });
 
 checkInsRouter.get('/clients/:clientId', authenticate, async (req: Request, res: Response): Promise<void> => {
-  try {
-    const checkIns = await checkInsService.listForClient(req.authenticatedUser!, Number(req.params.clientId));
-    res.status(200).json({ data: checkIns, meta: { total: checkIns.length } });
-  } catch (error) {
-    handleError(res, error, 'No se pudieron cargar los check-ins.');
-  }
+    try {
+        const checkIns = await checkInsService.listForClient(req.authenticatedUser!, Number(req.params.clientId));
+        res.status(200).json({ data: checkIns, meta: { total: checkIns.length } });
+    } catch (error) {
+        handleError(res, error, 'No se pudieron cargar los check-ins.');
+    }
 });
 
 checkInsRouter.get('/coaches/:coachId/pending', authenticate, async (req: Request, res: Response): Promise<void> => {
-  try {
-    const checkIns = await checkInsService.listPendingForCoach(req.authenticatedUser!, Number(req.params.coachId));
-    res.status(200).json({ data: checkIns, meta: { total: checkIns.length } });
-  } catch (error) {
-    handleError(res, error, 'No se pudo cargar la cola de revisión.');
-  }
+    try {
+        const checkIns = await checkInsService.listPendingForCoach(req.authenticatedUser!, Number(req.params.coachId));
+        res.status(200).json({ data: checkIns, meta: { total: checkIns.length } });
+    } catch (error) {
+        handleError(res, error, 'No se pudo cargar la cola de revisión.');
+    }
 });
 
 checkInsRouter.patch('/:id/review', authenticate, async (req: Request, res: Response): Promise<void> => {
-  try {
-    const checkIn = await checkInsService.review(req.authenticatedUser!, Number(req.params.id), req.body.feedback);
-    res.status(200).json({ checkIn });
-  } catch (error) {
-    handleError(res, error, 'No se pudo revisar el check-in.');
-  }
+    try {
+        const checkIn = await checkInsService.review(req.authenticatedUser!, Number(req.params.id), req.body.feedback);
+        res.status(200).json({ checkIn });
+    } catch (error) {
+        handleError(res, error, 'No se pudo revisar el check-in.');
+    }
 });
 
 export default checkInsRouter;

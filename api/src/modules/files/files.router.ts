@@ -15,67 +15,67 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
  */
 
 function handleError(res: Response, error: unknown, fallbackMessage: string): void {
-  if (error instanceof ForbiddenError) {
-    res.status(403).json({ error: { code: 'FORBIDDEN', message: error.message } });
-    return;
-  }
-  if (error instanceof NotFoundError) {
-    res.status(404).json({ error: { code: 'NOT_FOUND', message: error.message } });
-    return;
-  }
-  if (error instanceof ValidationError) {
-    res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: error.message } });
-    return;
-  }
-  const message = error instanceof Error ? error.message : fallbackMessage;
-  res.status(500).json({ error: { code: 'INTERNAL_ERROR', message } });
+    if (error instanceof ForbiddenError) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: error.message } });
+        return;
+    }
+    if (error instanceof NotFoundError) {
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: error.message } });
+        return;
+    }
+    if (error instanceof ValidationError) {
+        res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: error.message } });
+        return;
+    }
+    const message = error instanceof Error ? error.message : fallbackMessage;
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message } });
 }
 
 filesRouter.post(
-  '/check-ins/:checkInId/photos',
-  authenticate,
-  upload.single('photo'),
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      if (!req.file) {
-        res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Se requiere un archivo de foto.' } });
-        return;
-      }
-      const file = await filesService.uploadCheckInPhoto(req.authenticatedUser!, Number(req.params.checkInId), req.file);
-      res.status(201).json({ file });
-    } catch (error) {
-      handleError(res, error, 'No se pudo subir la foto.');
-    }
-  },
+    '/check-ins/:checkInId/photos',
+    authenticate,
+    upload.single('photo'),
+    async (req: Request, res: Response): Promise<void> => {
+        try {
+            if (!req.file) {
+                res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Se requiere un archivo de foto.' } });
+                return;
+            }
+            const file = await filesService.uploadCheckInPhoto(req.authenticatedUser!, Number(req.params.checkInId), req.file);
+            res.status(201).json({ file });
+        } catch (error) {
+            handleError(res, error, 'No se pudo subir la foto.');
+        }
+    },
 );
 
 filesRouter.get('/check-ins/:checkInId/photos', authenticate, async (req: Request, res: Response): Promise<void> => {
-  try {
-    const files = await filesService.listCheckInPhotos(req.authenticatedUser!, Number(req.params.checkInId));
-    res.status(200).json({ data: files, meta: { total: files.length } });
-  } catch (error) {
-    handleError(res, error, 'No se pudieron cargar las fotos.');
-  }
+    try {
+        const files = await filesService.listCheckInPhotos(req.authenticatedUser!, Number(req.params.checkInId));
+        res.status(200).json({ data: files, meta: { total: files.length } });
+    } catch (error) {
+        handleError(res, error, 'No se pudieron cargar las fotos.');
+    }
 });
 
 filesRouter.get('/:id', authenticate, async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { meta, buffer } = await filesService.getFileForDownload(req.authenticatedUser!, Number(req.params.id));
-    res.setHeader('Content-Type', meta.mimeType);
-    res.setHeader('Cache-Control', 'private, max-age=0, no-store');
-    res.send(buffer);
-  } catch (error) {
-    handleError(res, error, 'No se pudo cargar el archivo.');
-  }
+    try {
+        const { meta, buffer } = await filesService.getFileForDownload(req.authenticatedUser!, Number(req.params.id));
+        res.setHeader('Content-Type', meta.mimeType);
+        res.setHeader('Cache-Control', 'private, max-age=0, no-store');
+        res.send(buffer);
+    } catch (error) {
+        handleError(res, error, 'No se pudo cargar el archivo.');
+    }
 });
 
 filesRouter.delete('/:id', authenticate, async (req: Request, res: Response): Promise<void> => {
-  try {
-    await filesService.deleteFile(req.authenticatedUser!, Number(req.params.id));
-    res.status(204).send();
-  } catch (error) {
-    handleError(res, error, 'No se pudo eliminar el archivo.');
-  }
+    try {
+        await filesService.deleteFile(req.authenticatedUser!, Number(req.params.id));
+        res.status(204).send();
+    } catch (error) {
+        handleError(res, error, 'No se pudo eliminar el archivo.');
+    }
 });
 
 export default filesRouter;

@@ -13,17 +13,17 @@ const progressService = createProgressService();
  */
 
 progressRouter.get('/clients/:clientId', authenticate, async (req: Request, res: Response): Promise<void> => {
-  try {
-    const progress = await progressService.getClientProgress(req.authenticatedUser!, Number(req.params.clientId));
-    res.status(200).json({ progress });
-  } catch (error) {
-    if (error instanceof ForbiddenError) {
-      res.status(403).json({ error: { code: 'FORBIDDEN', message: error.message } });
-      return;
+    try {
+        const progress = await progressService.getClientProgress(req.authenticatedUser!, Number(req.params.clientId));
+        res.status(200).json({ progress });
+    } catch (error) {
+        if (error instanceof ForbiddenError) {
+            res.status(403).json({ error: { code: 'FORBIDDEN', message: error.message } });
+            return;
+        }
+        const message = error instanceof Error ? error.message : 'No se pudo cargar el progreso.';
+        res.status(500).json({ error: { code: 'INTERNAL_ERROR', message } });
     }
-    const message = error instanceof Error ? error.message : 'No se pudo cargar el progreso.';
-    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message } });
-  }
 });
 
 export default progressRouter;

@@ -112,11 +112,10 @@ export default function Login() {
                       setMode(tab as 'login' | 'register');
                       setError('');
                     }}
-                    className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                      mode === tab
+                    className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-medium transition ${mode === tab
                         ? 'bg-amber-500 text-white shadow-[0_10px_30px_rgba(217,158,45,0.35)]'
                         : 'text-slate-400 hover:text-white'
-                    }`}
+                      }`}
                   >
                     {tab === 'login' ? 'Iniciar sesión' : 'Registrarme'}
                   </button>

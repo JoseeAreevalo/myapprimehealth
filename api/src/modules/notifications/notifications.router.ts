@@ -13,57 +13,57 @@ const notificationsService = createNotificationsService();
  */
 
 function handleError(res: Response, error: unknown, fallbackMessage: string): void {
-  const message = error instanceof Error ? error.message : fallbackMessage;
-  res.status(500).json({ error: { code: 'INTERNAL_ERROR', message } });
+    const message = error instanceof Error ? error.message : fallbackMessage;
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message } });
 }
 
 notificationsRouter.get('/', authenticate, async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { notifications, unreadCount } = await notificationsService.list(req.authenticatedUser!);
-    res.status(200).json({ data: notifications, meta: { total: notifications.length, unreadCount } });
-  } catch (error) {
-    handleError(res, error, 'No se pudieron cargar las notificaciones.');
-  }
+    try {
+        const { notifications, unreadCount } = await notificationsService.list(req.authenticatedUser!);
+        res.status(200).json({ data: notifications, meta: { total: notifications.length, unreadCount } });
+    } catch (error) {
+        handleError(res, error, 'No se pudieron cargar las notificaciones.');
+    }
 });
 
 notificationsRouter.patch('/:id/read', authenticate, async (req: Request, res: Response): Promise<void> => {
-  try {
-    await notificationsService.markRead(req.authenticatedUser!, Number(req.params.id));
-    res.status(204).send();
-  } catch (error) {
-    handleError(res, error, 'No se pudo actualizar la notificación.');
-  }
+    try {
+        await notificationsService.markRead(req.authenticatedUser!, Number(req.params.id));
+        res.status(204).send();
+    } catch (error) {
+        handleError(res, error, 'No se pudo actualizar la notificación.');
+    }
 });
 
 notificationsRouter.patch('/read-all', authenticate, async (req: Request, res: Response): Promise<void> => {
-  try {
-    await notificationsService.markAllRead(req.authenticatedUser!);
-    res.status(204).send();
-  } catch (error) {
-    handleError(res, error, 'No se pudieron actualizar las notificaciones.');
-  }
+    try {
+        await notificationsService.markAllRead(req.authenticatedUser!);
+        res.status(204).send();
+    } catch (error) {
+        handleError(res, error, 'No se pudieron actualizar las notificaciones.');
+    }
 });
 
 notificationsRouter.get('/preferences', authenticate, async (req: Request, res: Response): Promise<void> => {
-  try {
-    const preferences = await notificationsService.getPreferences(req.authenticatedUser!);
-    res.status(200).json({ preferences });
-  } catch (error) {
-    handleError(res, error, 'No se pudieron cargar las preferencias.');
-  }
+    try {
+        const preferences = await notificationsService.getPreferences(req.authenticatedUser!);
+        res.status(200).json({ preferences });
+    } catch (error) {
+        handleError(res, error, 'No se pudieron cargar las preferencias.');
+    }
 });
 
 notificationsRouter.put('/preferences', authenticate, async (req: Request, res: Response): Promise<void> => {
-  try {
-    const preferences = await notificationsService.updatePreferences(req.authenticatedUser!, {
-      emailEnabled: req.body.emailEnabled,
-      checkinReminders: req.body.checkinReminders,
-      coachMessages: req.body.coachMessages,
-    });
-    res.status(200).json({ preferences });
-  } catch (error) {
-    handleError(res, error, 'No se pudieron actualizar las preferencias.');
-  }
+    try {
+        const preferences = await notificationsService.updatePreferences(req.authenticatedUser!, {
+            emailEnabled: req.body.emailEnabled,
+            checkinReminders: req.body.checkinReminders,
+            coachMessages: req.body.coachMessages,
+        });
+        res.status(200).json({ preferences });
+    } catch (error) {
+        handleError(res, error, 'No se pudieron actualizar las preferencias.');
+    }
 });
 
 export default notificationsRouter;

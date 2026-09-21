@@ -13,7 +13,7 @@ const getBaseUrl = () => {
         console.log('Using runtime config API_URL:', window.RUNTIME_CONFIG.API_URL);
         return window.RUNTIME_CONFIG.API_URL;
     }
-    
+
     // Check if we're in a Codespace
     const codespaceName = process.env.CODESPACE_NAME;
     if (codespaceName) {
@@ -23,7 +23,7 @@ const getBaseUrl = () => {
         console.log(`Using Codespace URL with ${protocolToUse} protocol`);
         return `${protocolToUse}://${codespaceName}-3000.app.github.dev`;
     }
-    
+
     // Auto-detect protocol for local development
     const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
     const protocolToUse = protocol.includes('https') ? 'https' : 'http';
@@ -66,13 +66,18 @@ export const api = {
         notificationPreferences: '/api/v1/notifications/preferences',
         checkInPhotos: (checkInId: number) => `/api/v1/files/check-ins/${checkInId}/photos`,
         fileDownload: (id: number) => `/api/v1/files/${id}`,
-        workoutToday: '/api/v1/workouts/today',
-        workoutComplete: (id: number) => `/api/v1/workouts/${id}/complete`,
-        workoutSets: (workoutId: number) => `/api/v1/workouts/${workoutId}/sets`,
-        workoutSetDelete: (setId: number) => `/api/v1/workouts/sets/${setId}`,
         foodsSearch: '/api/v1/foods',
         foodsCreate: '/api/v1/foods',
         foodsBarcode: (code: string) => `/api/v1/foods/barcode/${encodeURIComponent(code)}`,
         hydrationToday: '/api/v1/hydration/today',
+        trainingPlan: (clientId: number) => `/api/v1/training/clients/${clientId}/plan`,
+        trainingPlanCreate: '/api/v1/training/plans',
+        trainingPlanUpdate: (planId: number) => `/api/v1/training/plans/${planId}`,
+        trainingPlanAddDay: (planId: number) => `/api/v1/training/plans/${planId}/days`,
+        trainingDayDelete: (dayId: number) => `/api/v1/training/days/${dayId}`,
+        trainingDayAddExercise: (dayId: number) => `/api/v1/training/days/${dayId}/exercises`,
+        trainingExerciseUpdate: (exerciseId: number) => `/api/v1/training/exercises/${exerciseId}`,
+        trainingExerciseDelete: (exerciseId: number) => `/api/v1/training/exercises/${exerciseId}`,
+        trainingExerciseLogs: (exerciseId: number) => `/api/v1/training/exercises/${exerciseId}/logs`,
     }
 };

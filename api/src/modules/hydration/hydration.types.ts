@@ -1,5 +1,5 @@
 export interface WaterLog {
-  userId: number;
-  logDate: string;
-  consumedMl: number;
+    userId: number;
+    logDate: string;
+    consumedMl: number;
 }
