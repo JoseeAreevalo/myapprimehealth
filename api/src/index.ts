@@ -8,6 +8,7 @@ import identityRouter from './modules/identity/identity.router';
 import peopleRouter from './modules/people/people.router';
 import nutritionRouter from './modules/nutrition/nutrition.router';
 import checkInsRouter from './modules/checkIns/checkIns.router';
+import progressRouter from './modules/progress/progress.router';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -67,6 +68,7 @@ app.use('/api/v1/identity', identityRouter);
 app.use('/api/v1/people', peopleRouter);
 app.use('/api/v1/nutrition', nutritionRouter);
 app.use('/api/v1/check-ins', checkInsRouter);
+app.use('/api/v1/progress', progressRouter);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApi));
 app.get('/api-docs.json', (_req, res): void => {
   res.json(openApi);

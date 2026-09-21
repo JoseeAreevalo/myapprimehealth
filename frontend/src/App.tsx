@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import CoachingPanel from './components/CoachingPanel';
 import WeeklyCheckInCard from './components/WeeklyCheckInCard';
+import ProgressPanel from './components/ProgressPanel';
 import { useNutritionToday } from './hooks/useNutritionToday';
 
 const navigation = [
@@ -269,6 +270,7 @@ function App() {
             </section>
 
             <WeeklyCheckInCard />
+            <ProgressPanel />
           </aside>
         </section>
       </main>

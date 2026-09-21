@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { ClipboardCheck, HeartHandshake, Users } from 'lucide-react';
+import { ClipboardCheck, HeartHandshake, TrendingUp, Users } from 'lucide-react';
 import { api } from '../api/config';
 import { useAuth } from '../context/AuthContext';
+import { useClientProgress } from '../hooks/useClientProgress';
 
 interface PersonSummary {
   id: number;
@@ -223,6 +224,41 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
   );
 }
 
+function ClientRosterItem({ client }: { client: PersonSummary }) {
+  const [expanded, setExpanded] = useState(false);
+  const { progress, loading } = useClientProgress(expanded ? client.id : null);
+
+  return (
+    <li className="rounded-xl border border-white/7 bg-white/[0.03] px-4 py-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-sm font-medium text-slate-100">{client.fullName ?? client.email}</span>
+          <span className="block text-xs text-slate-500">{client.email}</span>
+        </div>
+        <button
+          className="flex items-center gap-1 rounded-lg border border-white/8 px-2 py-1 text-xs text-slate-300 hover:bg-white/8"
+          onClick={() => setExpanded((current) => !current)}
+          type="button"
+        >
+          <TrendingUp size={14} /> Progress
+        </button>
+      </div>
+      {expanded && (
+        <div className="mt-3 border-t border-white/7 pt-3 text-xs text-slate-400">
+          {loading && <p>Loading…</p>}
+          {!loading && progress && progress.summary.totalCheckIns === 0 && <p>No check-ins yet.</p>}
+          {!loading && progress && progress.summary.totalCheckIns > 0 && (
+            <div className="grid grid-cols-2 gap-2">
+              <p>Weight change: <span className="text-slate-200">{progress.summary.weightChangeKg != null ? `${progress.summary.weightChangeKg} kg` : '—'}</span></p>
+              <p>Avg. adherence: <span className="text-slate-200">{progress.summary.averageAdherencePercent != null ? `${progress.summary.averageAdherencePercent}%` : '—'}</span></p>
+            </div>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
 function CoachDashboard() {
   const { user, token } = useAuth();
   const [clients, setClients] = useState<PersonSummary[]>([]);
@@ -257,10 +293,7 @@ function CoachDashboard() {
         {!loading && clients.length > 0 && (
           <ul className="mt-5 space-y-3">
             {clients.map((client) => (
-              <li className="flex items-center justify-between rounded-xl border border-white/7 bg-white/[0.03] px-4 py-3" key={client.id}>
-                <span className="text-sm font-medium text-slate-100">{client.fullName ?? client.email}</span>
-                <span className="text-xs text-slate-500">{client.email}</span>
-              </li>
+              <ClientRosterItem client={client} key={client.id} />
             ))}
           </ul>
         )}
