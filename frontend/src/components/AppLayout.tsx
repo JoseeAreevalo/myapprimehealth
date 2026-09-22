@@ -1,4 +1,4 @@
-import { Activity, ChevronDown, Dumbbell, LogOut, Menu, Search, Sparkles, User, Users, Utensils, X } from 'lucide-react';
+import { Activity, ChevronDown, Dumbbell, LogOut, Menu, Search, ShieldCheck, Sparkles, User, Users, Utensils, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,10 @@ const coachNavigation = [
     { label: 'Nutrición de clientes', icon: Utensils, to: '/clients/nutrition' },
     { label: 'Entrenamiento de clientes', icon: Users, to: '/clients/training' },
     { label: 'Seguimiento', icon: Search, to: '/clients/review' },
+];
+
+const superAdminNavigation = [
+    { label: 'Configuración de perfiles', icon: ShieldCheck, to: '/admin/profiles' },
 ];
 
 export interface LayoutContext {
@@ -44,7 +48,8 @@ export default function AppLayout() {
     const firstName = displayName.split(' ')[0] || 'Hola';
     const todayLabel = new Date().toLocaleDateString('es-MX', { weekday: 'long', month: 'long', day: 'numeric' });
     const isCoach = user?.role === 'coach';
-    const allNavigation = isCoach ? [...navigation, ...coachNavigation] : navigation;
+    const isSuperAdmin = user?.role === 'super_admin';
+    const allNavigation = [...navigation, ...(isCoach ? coachNavigation : []), ...(isSuperAdmin ? superAdminNavigation : [])];
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {

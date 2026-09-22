@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import CoachingPanel from '../components/CoachingPanel';
 import WeeklyCheckInCard from '../components/WeeklyCheckInCard';
 import ProgressPanel from '../components/ProgressPanel';
-import AdministrationPanel from '../components/AdministrationPanel';
 import FoodCalculator from '../components/FoodCalculator';
 import TrainingSummaryCard from '../components/TrainingSummaryCard';
 import { useNutritionToday } from '../hooks/useNutritionToday';
@@ -182,7 +181,6 @@ export default function OverviewPage() {
 
             <aside className="space-y-5">
                 <CoachingPanel />
-                <AdministrationPanel />
                 <TrainingSummaryCard />
                 <WeeklyCheckInCard />
                 <ProgressPanel />

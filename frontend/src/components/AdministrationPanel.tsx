@@ -23,29 +23,35 @@ const roleLabels: Record<AdminUser['role'], string> = {
 };
 
 
-function CreateUserForm({ onCreated }: { onCreated: () => void }) {
+function CreateUserForm({ coaches, onCreated }: { coaches: AdminUser[]; onCreated: () => void }) {
     const { token } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
-    const [role, setRole] = useState<'coach' | 'client'>('coach');
+    const [role, setRole] = useState<'super_admin' | 'coach' | 'client'>('coach');
+    const [coachId, setCoachId] = useState<number | ''>('');
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+        if (role === 'client' && !coachId) {
+            setFeedback({ type: 'error', message: 'Selecciona a qué coach quedará asignado este cliente.' });
+            return;
+        }
         setSubmitting(true);
         setFeedback(null);
         try {
             await axios.post(
                 `${api.baseURL}${api.endpoints.adminUsers}`,
-                { email, password, fullName: fullName || undefined, role },
+                { email, password, fullName: fullName || undefined, role, coachId: role === 'client' ? coachId : undefined },
                 { headers: authHeaders(token) },
             );
             setFeedback({ type: 'success', message: 'Usuario creado.' });
             setEmail('');
             setPassword('');
             setFullName('');
+            setCoachId('');
             onCreated();
         } catch (error) {
             const message = axios.isAxiosError(error) ? error.response?.data?.error?.message : undefined;
@@ -57,7 +63,7 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
 
     return (
         <form className="mt-6 space-y-3 border-t border-white/7 pt-6" onSubmit={handleSubmit}>
-            <p className="eyebrow">Nuevo coach o cliente</p>
+            <p className="eyebrow">Nuevo perfil (super admin, coach o cliente)</p>
             <input
                 className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
                 onChange={(event) => setEmail(event.target.value)}
@@ -80,14 +86,35 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
                     value={password}
                 />
                 <select
-                    className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
-                    onChange={(event) => setRole(event.target.value as 'coach' | 'client')}
+                    className="rounded-xl border border-white/8 bg-slate-900 px-3 py-2 text-sm text-slate-100"
+                    onChange={(event) => {
+                        setRole(event.target.value as 'super_admin' | 'coach' | 'client');
+                        setCoachId('');
+                    }}
                     value={role}
                 >
-                    <option value="coach">Coach</option>
-                    <option value="client">Cliente</option>
+                    <option className="bg-slate-900 text-slate-100" value="super_admin">Super admin</option>
+                    <option className="bg-slate-900 text-slate-100" value="coach">Coach</option>
+                    <option className="bg-slate-900 text-slate-100" value="client">Cliente</option>
                 </select>
             </div>
+            {role === 'client' && (
+                <div>
+                    <label className="mb-1.5 block text-xs font-medium text-slate-400">Coach asignado</label>
+                    <select
+                        className="w-full rounded-xl border border-white/8 bg-slate-900 px-3 py-2 text-sm text-slate-100"
+                        onChange={(event) => setCoachId(event.target.value ? Number(event.target.value) : '')}
+                        value={coachId}
+                    >
+                        <option className="bg-slate-900 text-slate-100" value="">Selecciona un coach…</option>
+                        {coaches.map((coach) => (
+                            <option className="bg-slate-900 text-slate-100" key={coach.id} value={coach.id}>
+                                {coach.fullName ?? coach.email}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
             {feedback && (
                 <p className={`text-xs ${feedback.type === 'success' ? 'text-emerald-300' : 'text-rose-300'}`}>{feedback.message}</p>
             )}
@@ -207,7 +234,7 @@ export default function AdministrationPanel() {
                 </ul>
             )}
 
-            <CreateUserForm onCreated={load} />
+            <CreateUserForm coaches={users.filter((item) => item.role === 'coach')} onCreated={load} />
 
             {confirmingDeleteId !== null && (
                 <div

@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { usersRepository } from '../identity/identity.repository';
+import { coachClientsRepository } from '../people/people.repository';
 import { UserRole, userRoles } from '../identity/identity.types';
 
 class ValidationError extends Error { }
@@ -33,7 +34,7 @@ export function createAdministrationService() {
             return users.map(toAdminUserView);
         },
 
-        async createUser(input: { email: string; password: string; fullName?: string | null; role: string }): Promise<AdminUserView> {
+        async createUser(input: { email: string; password: string; fullName?: string | null; role: string; coachId?: number | null }): Promise<AdminUserView> {
             const email = input.email?.trim().toLowerCase();
             const password = String(input.password ?? '');
 
@@ -49,9 +50,18 @@ export function createAdministrationService() {
             if (await usersRepository.findByEmail(email)) {
                 throw new ValidationError('Ese correo ya está en uso.');
             }
+            if (input.role === 'client' && input.coachId) {
+                const coach = await usersRepository.findById(input.coachId);
+                if (!coach || coach.role !== 'coach') {
+                    throw new ValidationError('El coach seleccionado no existe.');
+                }
+            }
 
             const passwordHash = await bcrypt.hash(password, 12);
             const user = await usersRepository.create(email, passwordHash, input.fullName ?? null, input.role as UserRole);
+            if (input.role === 'client' && input.coachId) {
+                await coachClientsRepository.assign(input.coachId, user.id);
+            }
             return toAdminUserView(user);
         },
 

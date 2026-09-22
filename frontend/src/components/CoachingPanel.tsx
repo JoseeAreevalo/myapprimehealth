@@ -200,13 +200,13 @@ export function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
         <form className="mt-6 space-y-4 border-t border-white/7 pt-6" onSubmit={handleSubmit}>
             <p className="eyebrow">Nuevo plan de comidas</p>
             <select
-                className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                className="w-full rounded-xl border border-white/8 bg-slate-900 px-3 py-2 text-sm text-slate-100"
                 value={clientId}
                 onChange={(event) => setClientId(event.target.value ? Number(event.target.value) : '')}
             >
-                <option value="">Selecciona un cliente…</option>
+                <option className="bg-slate-900 text-slate-100" value="">Selecciona un cliente…</option>
                 {clients.map((client) => (
-                    <option key={client.id} value={client.id}>
+                    <option className="bg-slate-900 text-slate-100" key={client.id} value={client.id}>
                         {client.fullName ?? client.email}
                     </option>
                 ))}
@@ -480,6 +480,7 @@ export function ClientReviewSearch({ clients }: { clients: PersonSummary[] }) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [selectedClient, setSelectedClient] = useState<PersonSummary | null>(null);
+    const [highlightedIndex, setHighlightedIndex] = useState(0);
 
     const filtered = useMemo(() => {
         const normalized = query.trim().toLowerCase();
@@ -488,6 +489,29 @@ export function ClientReviewSearch({ clients }: { clients: PersonSummary[] }) {
             (client.fullName ?? '').toLowerCase().includes(normalized) || client.email.toLowerCase().includes(normalized),
         );
     }, [clients, query]);
+
+    const selectClient = (client: PersonSummary) => {
+        setSelectedClient(client);
+        setOpen(false);
+        setQuery('');
+        setHighlightedIndex(0);
+    };
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            setHighlightedIndex((current) => Math.min(current + 1, filtered.length - 1));
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            setHighlightedIndex((current) => Math.max(current - 1, 0));
+        } else if (event.key === 'Enter') {
+            event.preventDefault();
+            const client = filtered[highlightedIndex];
+            if (client) selectClient(client);
+        } else if (event.key === 'Escape') {
+            setOpen(false);
+        }
+    };
 
     return (
         <section className="rounded-3xl border border-white/8 bg-panel/70 p-6 shadow-panel">
@@ -500,7 +524,10 @@ export function ClientReviewSearch({ clients }: { clients: PersonSummary[] }) {
             </div>
             <button
                 className="mt-4 flex w-full items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-300 hover:bg-white/8"
-                onClick={() => setOpen((current) => !current)}
+                onClick={() => {
+                    setOpen((current) => !current);
+                    setHighlightedIndex(0);
+                }}
                 type="button"
             >
                 <span>{selectedClient ? (selectedClient.fullName ?? selectedClient.email) : 'Buscar y seleccionar un cliente…'}</span>
@@ -511,21 +538,25 @@ export function ClientReviewSearch({ clients }: { clients: PersonSummary[] }) {
                     <input
                         autoFocus
                         className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
-                        onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Escribe un nombre o correo…"
+                        onChange={(event) => {
+                            setQuery(event.target.value);
+                            setHighlightedIndex(0);
+                        }}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Escribe un nombre o correo… (↑/↓ para navegar, Enter para elegir)"
                         value={query}
                     />
                     <ul className="mt-2 max-h-56 space-y-1 overflow-y-auto">
                         {filtered.length === 0 && <li className="px-2 py-2 text-xs text-slate-500">Sin resultados.</li>}
-                        {filtered.map((client) => (
+                        {filtered.map((client, index) => (
                             <li key={client.id}>
                                 <button
-                                    className="w-full rounded-lg px-2 py-1.5 text-left text-xs text-slate-200 hover:bg-white/8"
-                                    onClick={() => {
-                                        setSelectedClient(client);
-                                        setOpen(false);
-                                        setQuery('');
-                                    }}
+                                    className={`w-full rounded-lg px-2 py-1.5 text-left text-xs transition ${index === highlightedIndex
+                                        ? 'bg-amber-500/20 text-amber-100 ring-1 ring-amber-400/40'
+                                        : 'text-slate-200 hover:bg-white/8'
+                                        }`}
+                                    onClick={() => selectClient(client)}
+                                    onMouseEnter={() => setHighlightedIndex(index)}
                                     type="button"
                                 >
                                     <span className="font-medium">{client.fullName ?? client.email}</span>

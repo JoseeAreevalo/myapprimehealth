@@ -39,6 +39,7 @@ administrationRouter.post('/users', async (req: Request, res: Response): Promise
             password: req.body.password,
             fullName: req.body.fullName,
             role: req.body.role,
+            coachId: req.body.coachId ? Number(req.body.coachId) : null,
         });
         res.status(201).json({ user });
     } catch (error) {
