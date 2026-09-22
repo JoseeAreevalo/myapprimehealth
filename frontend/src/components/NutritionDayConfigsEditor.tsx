@@ -11,6 +11,12 @@ function authHeaders(token: string | null) {
 }
 
 const WEEKDAY_LABELS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+type DayType = 'entrenamiento' | 'descanso';
+const DAY_TYPE_LABELS: Record<DayType, string> = { entrenamiento: 'Día de entrenamiento', descanso: 'Día de descanso' };
+
+function dayTypeOf(label: string): DayType {
+    return label.toLowerCase().includes('entrenamiento') ? 'entrenamiento' : 'descanso';
+}
 
 interface MealDraft {
     name: string;
@@ -30,11 +36,12 @@ function effectiveCalories(meal: MealDraft): number {
 export default function NutritionDayConfigsEditor({ plan, onUpdated }: { plan: NutritionPlanWithMeals; onUpdated: () => void }) {
     const { token } = useAuth();
     const [creating, setCreating] = useState(false);
-    const [label, setLabel] = useState('');
+    const [dayType, setDayType] = useState<DayType | null>(null);
     const [weekdays, setWeekdays] = useState<number[]>([]);
     const [meals, setMeals] = useState<MealDraft[]>([emptyMeal(0)]);
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState('');
+    const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(null);
 
     const usedWeekdays = new Set(plan.dayConfigs.flatMap((config) => config.weekdays));
 
@@ -52,21 +59,21 @@ export default function NutritionDayConfigsEditor({ plan, onUpdated }: { plan: N
     const removeMealRow = (index: number) => setMeals((current) => current.filter((_, i) => i !== index));
 
     const resetForm = () => {
-        setLabel('');
+        setDayType(null);
         setWeekdays([]);
         setMeals([emptyMeal(0)]);
         setCreating(false);
     };
 
     const handleCreate = async () => {
-        if (!label.trim() || weekdays.length === 0) return;
+        if (!dayType || weekdays.length === 0) return;
         setSubmitting(true);
         setFeedback('');
         try {
             await axios.post(
                 `${api.baseURL}${api.endpoints.nutritionDayConfigAdd(plan.id)}`,
                 {
-                    label: label.trim(),
+                    label: DAY_TYPE_LABELS[dayType],
                     weekdays,
                     meals: meals.map((meal) => ({
                         name: meal.name,
@@ -89,42 +96,66 @@ export default function NutritionDayConfigsEditor({ plan, onUpdated }: { plan: N
 
     const handleDelete = async (dayConfigId: number) => {
         await axios.delete(`${api.baseURL}${api.endpoints.nutritionDayConfigDelete(dayConfigId)}`, { headers: authHeaders(token) });
+        setConfirmingDeleteId(null);
         onUpdated();
     };
 
     return (
         <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Dietas por día (ej. entrenamiento vs. descanso)
+                Dietas por día (entrenamiento vs. descanso)
             </p>
 
             {plan.dayConfigs.length === 0 && !creating && (
                 <p className="text-xs text-slate-500">Aún no hay configuraciones de días distintas para este plan.</p>
             )}
 
-            {plan.dayConfigs.map((config: NutritionDayConfig) => (
-                <div className="space-y-2 rounded-xl border border-white/7 bg-white/[0.02] p-3" key={config.id}>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-slate-100">{config.label}</p>
-                            <p className="mt-0.5 text-[11px] text-slate-500">
-                                {config.weekdays.map((w) => WEEKDAY_LABELS[w - 1]).join(', ')}
-                            </p>
+            {plan.dayConfigs.map((config: NutritionDayConfig) => {
+                const type = dayTypeOf(config.label);
+                return (
+                    <div className="space-y-2 rounded-xl border border-white/7 bg-white/[0.02] p-3" key={config.id}>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span
+                                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${type === 'entrenamiento' ? 'bg-amber-500/15 text-amber-300' : 'bg-teal-500/15 text-teal-300'
+                                            }`}
+                                    >
+                                        {type === 'entrenamiento' ? 'Entrenamiento' : 'Descanso'}
+                                    </span>
+                                    <p className="text-sm font-medium text-slate-100">{config.label}</p>
+                                </div>
+                                <p className="mt-0.5 text-[11px] text-slate-500">
+                                    {config.weekdays.map((w) => WEEKDAY_LABELS[w - 1]).join(', ')}
+                                </p>
+                            </div>
+                            {confirmingDeleteId === config.id ? (
+                                <div className="flex items-center gap-1.5 text-[11px]">
+                                    <span className="text-slate-400">¿Eliminar esta dieta?</span>
+                                    <button className="font-semibold text-rose-300 hover:text-rose-200" onClick={() => handleDelete(config.id)} type="button">
+                                        Sí
+                                    </button>
+                                    <button className="text-slate-400 hover:text-slate-200" onClick={() => setConfirmingDeleteId(null)} type="button">
+                                        No
+                                    </button>
+                                </div>
+                            ) : (
+                                <button className="text-rose-300 hover:text-rose-200" onClick={() => setConfirmingDeleteId(config.id)} type="button">
+                                    <Trash2 size={14} />
+                                </button>
+                            )}
                         </div>
-                        <button className="text-rose-300 hover:text-rose-200" onClick={() => handleDelete(config.id)} type="button">
-                            <Trash2 size={14} />
-                        </button>
+                        <div className="space-y-1">
+                            {config.meals.map((meal) => (
+                                <p className="text-xs text-slate-400" key={meal.id}>
+                                    {meal.name}
+                                    {meal.mealTime ? ` · ${meal.mealTime}` : ''} — {Math.round(meal.calories)} kcal
+                                </p>
+                            ))}
+                        </div>
                     </div>
-                    <div className="space-y-1">
-                        {config.meals.map((meal) => (
-                            <p className="text-xs text-slate-400" key={meal.id}>
-                                {meal.name}
-                                {meal.mealTime ? ` · ${meal.mealTime}` : ''} — {Math.round(meal.calories)} kcal
-                            </p>
-                        ))}
-                    </div>
-                </div>
-            ))}
+                );
+            })}
 
             {!creating && (
                 <button
@@ -139,12 +170,24 @@ export default function NutritionDayConfigsEditor({ plan, onUpdated }: { plan: N
             {creating && (
                 <div className="space-y-3 rounded-xl border border-white/7 bg-white/[0.02] p-3">
                     <div>
-                        <label className="mb-1 block text-[10px] text-slate-500">Nombre (ej. "Día de entrenamiento")</label>
-                        <input
-                            className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
-                            onChange={(event) => setLabel(event.target.value)}
-                            value={label}
-                        />
+                        <label className="mb-1 block text-[10px] text-slate-500">Tipo de día (obligatorio)</label>
+                        <div className="flex gap-2">
+                            {(['entrenamiento', 'descanso'] as DayType[]).map((type) => (
+                                <button
+                                    className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition ${dayType === type
+                                        ? type === 'entrenamiento'
+                                            ? 'border-amber-400 bg-amber-500 text-white'
+                                            : 'border-teal-400 bg-teal-500 text-white'
+                                        : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/8'
+                                        }`}
+                                    key={type}
+                                    onClick={() => setDayType(type)}
+                                    type="button"
+                                >
+                                    {DAY_TYPE_LABELS[type]}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                     <div>
                         <label className="mb-1 block text-[10px] text-slate-500">Días de la semana en que aplica</label>
@@ -224,7 +267,7 @@ export default function NutritionDayConfigsEditor({ plan, onUpdated }: { plan: N
                     <div className="flex gap-2">
                         <button
                             className="flex-1 rounded-lg bg-amber-500 py-2 text-xs font-semibold text-white hover:bg-amber-400 disabled:opacity-50"
-                            disabled={submitting || !label.trim() || weekdays.length === 0}
+                            disabled={submitting || !dayType || weekdays.length === 0}
                             onClick={handleCreate}
                             type="button"
                         >

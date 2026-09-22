@@ -145,6 +145,18 @@ export default function OverviewPage() {
                                             {meal.mealTime && <span className="text-xs text-slate-400">{meal.mealTime}</span>}
                                         </div>
                                         {meal.detail && <p className="mt-1 truncate text-sm text-slate-500">{meal.detail}</p>}
+                                        {meal.items.length > 0 && (
+                                            <p className="mt-1 truncate text-xs text-slate-500">
+                                                {meal.items.map((item) => `${item.foodName} (${item.grams}g)`).join(', ')}
+                                            </p>
+                                        )}
+                                        {meal.items.length > 0 && (
+                                            <p className="mt-1 text-xs text-slate-400">
+                                                P {meal.items.reduce((sum, item) => sum + item.proteinG, 0).toFixed(1)}g · C{' '}
+                                                {meal.items.reduce((sum, item) => sum + item.carbsG, 0).toFixed(1)}g · G{' '}
+                                                {meal.items.reduce((sum, item) => sum + item.fatG, 0).toFixed(1)}g
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="text-right">
                                         <p className="text-sm font-medium text-slate-300">{meal.calories} kcal</p>

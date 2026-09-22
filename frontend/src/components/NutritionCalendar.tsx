@@ -15,6 +15,14 @@ const CONFIG_COLORS = [
     { bg: 'bg-rose-500', text: 'text-white', badge: 'border-rose-400/30 bg-rose-400/10' },
 ];
 
+// Trains/rest labels are colored consistently (amber/teal); anything else falls back to cycling colors.
+function colorIndexFor(label: string, fallbackIndex: number): number {
+    const normalized = label.toLowerCase();
+    if (normalized.includes('entrenamiento')) return 0;
+    if (normalized.includes('descanso')) return 1;
+    return (fallbackIndex % 2) + 2;
+}
+
 function toIsoDate(year: number, month: number, day: number): string {
     return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
@@ -38,7 +46,7 @@ export default function NutritionCalendar({ dayConfigs }: { dayConfigs: Nutritio
 
     const configByWeekday = new Map<number, { config: NutritionDayConfig; colorIndex: number }>();
     dayConfigs.forEach((config, index) => {
-        config.weekdays.forEach((weekday) => configByWeekday.set(weekday, { config, colorIndex: index % CONFIG_COLORS.length }));
+        config.weekdays.forEach((weekday) => configByWeekday.set(weekday, { config, colorIndex: colorIndexFor(config.label, index) }));
     });
 
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -86,7 +94,7 @@ export default function NutritionCalendar({ dayConfigs }: { dayConfigs: Nutritio
                 <div className="mt-3 flex flex-wrap gap-2">
                     {dayConfigs.map((config, index) => (
                         <span
-                            className={`rounded-full border px-2 py-0.5 text-[10px] font-medium text-slate-200 ${CONFIG_COLORS[index % CONFIG_COLORS.length].badge}`}
+                            className={`rounded-full border px-2 py-0.5 text-[10px] font-medium text-slate-200 ${CONFIG_COLORS[colorIndexFor(config.label, index)].badge}`}
                             key={config.id}
                         >
                             {config.label}

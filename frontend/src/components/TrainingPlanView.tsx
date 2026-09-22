@@ -47,16 +47,16 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
         );
 
     const handleSubmit = async () => {
+        if (days.some((day) => !day.label.trim())) {
+            setFeedback('Indica qué músculo se trabajará en cada día antes de guardar.');
+            return;
+        }
         setSubmitting(true);
         setFeedback('');
         try {
-            const finalDays = days.map((day) => ({
-                ...day,
-                label: day.label.trim() || (day.weekday ? WEEKDAY_LABELS[day.weekday - 1] : 'Día de entrenamiento'),
-            }));
-            await onCreate(label, finalDays, durationWeeks ? Number(durationWeeks) : undefined);
+            await onCreate(label, days, durationWeeks ? Number(durationWeeks) : undefined);
             await Promise.all(
-                finalDays.flatMap((day) => day.exercises.map((exercise) => registerExerciseName(exercise.name, token))),
+                days.flatMap((day) => day.exercises.map((exercise) => registerExerciseName(exercise.name, token))),
             );
         } catch {
             setFeedback('No se pudo crear el plan.');
@@ -116,11 +116,11 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
                             </div>
                             <div className="flex items-end gap-2">
                                 <div className="flex-1">
-                                    <label className="mb-1 block text-[10px] text-slate-500">Nota (ej. "Pecho y tríceps")</label>
+                                    <label className="mb-1 block text-[10px] text-slate-500">Músculo a trabajar (obligatorio)</label>
                                     <input
                                         className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-sm text-slate-100"
                                         onChange={(event) => updateDayLabel(dayIndex, event.target.value)}
-                                        placeholder="Opcional"
+                                        placeholder="Ej: Pecho y tríceps"
                                         value={day.label}
                                     />
                                 </div>
@@ -316,9 +316,10 @@ function DayWeekdayEditor({
     const [saving, setSaving] = useState(false);
 
     const handleSave = async () => {
+        if (!note.trim()) return;
         setSaving(true);
         try {
-            await onSave({ label: note.trim() || undefined, weekday });
+            await onSave({ label: note.trim(), weekday });
         } finally {
             setSaving(false);
         }
@@ -347,10 +348,11 @@ function DayWeekdayEditor({
                 </select>
             </div>
             <div className="flex-1">
-                <label className="mb-1 block text-[10px] text-slate-500">Nota</label>
+                <label className="mb-1 block text-[10px] text-slate-500">Músculo a trabajar (obligatorio)</label>
                 <input
                     className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
                     onChange={(event) => setNote(event.target.value)}
+                    placeholder="Ej: Pecho y tríceps"
                     value={note}
                 />
             </div>
@@ -429,8 +431,8 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
     };
 
     const handleAddDay = async () => {
-        if (!newDayLabel.trim() && newDayWeekday == null) return;
-        await addDay(newDayLabel.trim() || (newDayWeekday ? WEEKDAY_LABELS[newDayWeekday - 1] : 'Día de entrenamiento'), newDayWeekday);
+        if (!newDayLabel.trim() || plan.days.length >= 7) return;
+        await addDay(newDayLabel.trim(), newDayWeekday);
         setNewDayLabel('');
         setNewDayWeekday(null);
     };
@@ -585,12 +587,12 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                     <input
                         className="flex-1 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
                         onChange={(event) => setNewDayLabel(event.target.value)}
-                        placeholder="Nota (opcional)"
+                        placeholder="Músculo a trabajar (obligatorio)"
                         value={newDayLabel}
                     />
                     <button
                         className="rounded-lg bg-white/8 px-3 text-xs text-slate-100 hover:bg-white/15 disabled:opacity-30"
-                        disabled={plan.days.length >= 7}
+                        disabled={plan.days.length >= 7 || !newDayLabel.trim()}
                         onClick={handleAddDay}
                         type="button"
                     >
