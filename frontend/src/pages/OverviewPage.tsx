@@ -98,10 +98,10 @@ export default function OverviewPage() {
                         </div>
                         <button
                             type="button"
-                            onClick={() => logWater(250)}
+                            onClick={() => logWater(100)}
                             className="mt-8 w-full rounded-xl bg-white/7 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/12"
                         >
-                            {consumedMl >= waterGoalMl ? 'Meta alcanzada' : 'Registrar 250 ml'}
+                            {consumedMl >= waterGoalMl ? 'Meta alcanzada' : '+ 100 ml'}
                         </button>
                     </article>
                 </section>

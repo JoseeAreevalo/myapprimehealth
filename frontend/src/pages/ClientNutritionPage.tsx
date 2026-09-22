@@ -1,6 +1,6 @@
 import { Utensils } from 'lucide-react';
 import { useCoachClients } from '../hooks/useCoachClients';
-import { CreateMealPlanForm, ClientNutritionItem } from '../components/CoachingPanel';
+import { ClientNutritionItem } from '../components/CoachingPanel';
 
 export default function ClientNutritionPage() {
     const { clients, loading, error } = useCoachClients();
@@ -28,7 +28,6 @@ export default function ClientNutritionPage() {
                     ))}
                 </ul>
             )}
-            {!loading && clients.length > 0 && <CreateMealPlanForm clients={clients} />}
         </section>
     );
 }

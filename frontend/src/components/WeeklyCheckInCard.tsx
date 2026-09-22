@@ -6,7 +6,7 @@ import CheckInPhotos from './CheckInPhotos';
 export default function WeeklyCheckInCard() {
     const { latest, loading, error, submit, isClient } = useCheckIns();
     const [weightKg, setWeightKg] = useState('');
-    const [adherencePercent, setAdherencePercent] = useState('80');
+    const [adherencePercent, setAdherencePercent] = useState('');
     const [notes, setNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState('');
@@ -60,29 +60,36 @@ export default function WeeklyCheckInCard() {
                     )}
 
                     <form className="mt-5 space-y-3" onSubmit={handleSubmit}>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="mb-1.5 block text-xs font-medium text-slate-400">Peso (kg)</label>
                             <input
-                                className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                                className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
                                 onChange={(event) => setWeightKg(event.target.value)}
-                                placeholder="Peso (kg)"
+                                placeholder="Ej: 78.5"
                                 type="number"
                                 value={weightKg}
                             />
+                        </div>
+                        <div>
+                            <label className="mb-1.5 block text-xs font-medium text-slate-400">% de adherencia (opcional)</label>
                             <input
-                                className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                                className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
                                 onChange={(event) => setAdherencePercent(event.target.value)}
-                                placeholder="% de adherencia"
+                                placeholder="Ej: 80"
                                 type="number"
                                 value={adherencePercent}
                             />
                         </div>
-                        <textarea
-                            className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
-                            onChange={(event) => setNotes(event.target.value)}
-                            placeholder="¿Cómo estuvo tu semana?"
-                            rows={2}
-                            value={notes}
-                        />
+                        <div>
+                            <label className="mb-1.5 block text-xs font-medium text-slate-400">¿Cómo estuvo tu semana?</label>
+                            <textarea
+                                className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                                onChange={(event) => setNotes(event.target.value)}
+                                placeholder="Sensaciones, energía, dificultades…"
+                                rows={2}
+                                value={notes}
+                            />
+                        </div>
                         {feedback && <p className="text-xs text-amber-300">{feedback}</p>}
                         <button
                             className="w-full rounded-xl bg-white/7 py-2.5 text-sm font-medium text-slate-100 transition hover:bg-white/12 disabled:opacity-50"

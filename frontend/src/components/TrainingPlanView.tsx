@@ -231,6 +231,36 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
     );
 }
 
+// Plain view of an exercise's target and whatever the client already logged today — no inputs.
+function ExerciseReadOnlyRow({ exercise }: { exercise: TrainingExercise }) {
+    return (
+        <div className="rounded-xl border border-white/7 bg-white/[0.03] p-3">
+            <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-slate-100">{exercise.name}</p>
+                <p className="text-xs text-slate-500">
+                    Meta: {exercise.targetSets}x{exercise.targetReps}{exercise.targetWeightKg != null ? ` @ ${exercise.targetWeightKg}kg` : ''}
+                    {exercise.targetRir != null ? ` · RIR ${exercise.targetRir}` : ''}
+                </p>
+            </div>
+            <div className="mt-2 space-y-1">
+                {Array.from({ length: exercise.targetSets }, (_, index) => {
+                    const log = exercise.logs.find((entry) => entry.setNumber === index + 1);
+                    return (
+                        <div className="flex items-center justify-between text-xs text-slate-300" key={index}>
+                            <span className="text-slate-500">Serie {index + 1}</span>
+                            <span>
+                                {log?.actualReps != null || log?.actualWeightKg != null || log?.actualRir != null
+                                    ? `${log.actualReps ?? '—'} reps · ${log.actualWeightKg ?? '—'} kg · RIR ${log.actualRir ?? '—'}`
+                                    : 'Sin registrar'}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
 function ExerciseLogRow({
     exercise,
     onLog,
@@ -395,7 +425,7 @@ function DayWeekdayEditor({
     );
 }
 
-export default function TrainingPlanView({ clientId, canManage = true }: { clientId: number; canManage?: boolean }) {
+export default function TrainingPlanView({ clientId, canManage = true, readOnly = false }: { clientId: number; canManage?: boolean; readOnly?: boolean }) {
     const { token } = useAuth();
     const { plan, loading, error, createPlan, updatePlan, deletePlan, addDay, updateDay, deleteDay, addExercise, deleteExercise, logSets } = useTrainingPlan(clientId);
     const [selectedDayId, setSelectedDayId] = useState<number | null>(null);
@@ -666,6 +696,8 @@ export default function TrainingPlanView({ clientId, canManage = true }: { clien
                                     <Trash2 size={14} />
                                 </button>
                             </div>
+                        ) : readOnly ? (
+                            <ExerciseReadOnlyRow exercise={exercise} key={exercise.id} />
                         ) : (
                             <ExerciseLogRow exercise={exercise} key={exercise.id} onLog={logSets} />
                         ),

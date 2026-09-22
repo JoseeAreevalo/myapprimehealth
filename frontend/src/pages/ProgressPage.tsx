@@ -1,6 +1,5 @@
 import { Activity } from 'lucide-react';
 import ProgressPanel from '../components/ProgressPanel';
-import WeeklyCheckInCard from '../components/WeeklyCheckInCard';
 
 export default function ProgressPage() {
     return (
@@ -10,8 +9,9 @@ export default function ProgressPage() {
                 <h1 className="font-display text-4xl font-semibold tracking-[-0.04em] text-slate-50">Tu progreso</h1>
                 <p className="mt-3 max-w-xl text-base leading-7 text-slate-300">Peso, adherencia y check-ins semanales a lo largo del tiempo.</p>
             </div>
-            <WeeklyCheckInCard />
-            <ProgressPanel />
+            <div className="sm:col-span-2">
+                <ProgressPanel />
+            </div>
         </section>
     );
 }

@@ -124,9 +124,9 @@ export function PendingCheckIns({ clients }: { clients: PersonSummary[] }) {
     );
 }
 
-export function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
+export function CreateMealPlanForm({ clients, fixedClientId, onCreated }: { clients?: PersonSummary[]; fixedClientId?: number; onCreated?: () => void }) {
     const { token } = useAuth();
-    const [clientId, setClientId] = useState<number | ''>('');
+    const [clientId, setClientId] = useState<number | ''>(fixedClientId ?? '');
     const [label, setLabel] = useState('Balanced');
     const [goalCalories, setGoalCalories] = useState('2200');
     const [proteinG, setProteinG] = useState('150');
@@ -157,7 +157,8 @@ export function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
-        if (!clientId) {
+        const targetClientId = fixedClientId ?? clientId;
+        if (!targetClientId) {
             setFeedback({ type: 'error', message: 'Selecciona un cliente primero.' });
             return;
         }
@@ -168,7 +169,7 @@ export function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
             await axios.post(
                 `${api.baseURL}${api.endpoints.nutritionPlanCreate}`,
                 {
-                    clientId,
+                    clientId: targetClientId,
                     planKey: label.toLowerCase().replace(/\s+/g, '-'),
                     label,
                     goalCalories: Number(goalCalories),
@@ -188,6 +189,7 @@ export function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
                 { headers: authHeaders(token) },
             );
             setFeedback({ type: 'success', message: 'Plan creado para el cliente.' });
+            onCreated?.();
         } catch (error) {
             const message = axios.isAxiosError(error) ? error.response?.data?.error?.message : undefined;
             setFeedback({ type: 'error', message: message ?? 'No se pudo crear el plan.' });
@@ -199,18 +201,20 @@ export function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
     return (
         <form className="mt-6 space-y-4 border-t border-white/7 pt-6" onSubmit={handleSubmit}>
             <p className="eyebrow">Nuevo plan de comidas</p>
-            <select
-                className="w-full rounded-xl border border-white/8 bg-slate-900 px-3 py-2 text-sm text-slate-100"
-                value={clientId}
-                onChange={(event) => setClientId(event.target.value ? Number(event.target.value) : '')}
-            >
-                <option className="bg-slate-900 text-slate-100" value="">Selecciona un cliente…</option>
-                {clients.map((client) => (
-                    <option className="bg-slate-900 text-slate-100" key={client.id} value={client.id}>
-                        {client.fullName ?? client.email}
-                    </option>
-                ))}
-            </select>
+            {!fixedClientId && (
+                <select
+                    className="w-full rounded-xl border border-white/8 bg-slate-900 px-3 py-2 text-sm text-slate-100"
+                    value={clientId}
+                    onChange={(event) => setClientId(event.target.value ? Number(event.target.value) : '')}
+                >
+                    <option className="bg-slate-900 text-slate-100" value="">Selecciona un cliente…</option>
+                    {(clients ?? []).map((client) => (
+                        <option className="bg-slate-900 text-slate-100" key={client.id} value={client.id}>
+                            {client.fullName ?? client.email}
+                        </option>
+                    ))}
+                </select>
+            )}
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Datos generales del plan</p>
             <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -463,14 +467,28 @@ function ClientReviewDetail({ client }: { client: PersonSummary }) {
                 )}
             </div>
             <div>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Nutrición</p>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Nutrición (solo lectura)</p>
                 {planLoading && <p className="text-xs text-slate-400">Cargando…</p>}
                 {!planLoading && !clientPlan && <p className="text-xs text-slate-400">Este cliente no tiene un plan activo todavía.</p>}
-                {!planLoading && clientPlan && <EditNutritionPlan onUpdated={() => undefined} plan={clientPlan} />}
+                {!planLoading && clientPlan && (
+                    <div className="rounded-xl border border-white/7 bg-white/[0.03] p-3">
+                        <p className="text-xs text-slate-300">
+                            {clientPlan.goalCalories} kcal meta · P {clientPlan.proteinGTarget ?? '—'}g · C {clientPlan.carbsGTarget ?? '—'}g · G {clientPlan.fatGTarget ?? '—'}g · Agua {(clientPlan.waterGoalMl / 1000).toFixed(1)}L
+                        </p>
+                        <ul className="mt-2 space-y-1 text-xs text-slate-400">
+                            {clientPlan.meals.map((meal) => (
+                                <li className="flex justify-between" key={meal.id}>
+                                    <span>{meal.name}{meal.mealTime ? ` · ${meal.mealTime}` : ''}</span>
+                                    <span>{meal.status === 'completed' && meal.loggedCalories != null ? Math.round(meal.loggedCalories) : meal.calories} kcal{meal.status === 'completed' ? ' ✓' : ''}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
             <div>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Entrenamiento</p>
-                <TrainingPlanView clientId={client.id} />
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Entrenamiento (solo lectura)</p>
+                <TrainingPlanView clientId={client.id} canManage={false} readOnly />
             </div>
         </div>
     );
@@ -607,9 +625,7 @@ export function ClientNutritionItem({ client }: { client: PersonSummary }) {
             {open && (
                 <div className="mt-3 border-t border-white/7 pt-3">
                     {planLoading && <p className="text-xs text-slate-400">Cargando…</p>}
-                    {!planLoading && !clientPlan && (
-                        <p className="text-xs text-slate-400">Este cliente no tiene un plan activo todavía. Créalo abajo en "Nuevo plan de comidas".</p>
-                    )}
+                    {!planLoading && !clientPlan && <CreateMealPlanForm fixedClientId={client.id} onCreated={loadPlan} />}
                     {!planLoading && clientPlan && <EditNutritionPlan onUpdated={loadPlan} plan={clientPlan} />}
                 </div>
             )}
