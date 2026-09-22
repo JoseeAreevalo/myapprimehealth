@@ -67,9 +67,9 @@ export default function AppLayout() {
             <div className="ambient-orb ambient-orb-top" />
             <div className="ambient-orb ambient-orb-bottom" />
 
-            <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 border-r border-white/7 bg-panel/75 px-6 py-8 backdrop-blur-xl lg:block">
+            <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-white/7 bg-panel/75 px-6 py-8 backdrop-blur-xl lg:flex">
                 <BrandMark />
-                <div className="mt-14">
+                <div className="mt-14 min-h-0 flex-1 overflow-y-auto">
                     <p className="px-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Mi espacio</p>
                     <nav className="mt-4 space-y-2">
                         {allNavigation.map(({ label, icon: Icon, to }) => (
@@ -88,7 +88,7 @@ export default function AppLayout() {
                         ))}
                     </nav>
                 </div>
-                <div className="absolute inset-x-6 bottom-8 rounded-2xl border border-white/8 bg-white/[0.035] p-4">
+                <div className="mt-4 shrink-0 rounded-2xl border border-white/8 bg-white/[0.035] p-4">
                     <div className="flex items-center gap-3">
                         <div className="grid size-10 place-items-center rounded-xl bg-amber-500/15 text-amber-300">
                             <Sparkles size={19} />
