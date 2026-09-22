@@ -156,7 +156,7 @@ export function createNutritionService() {
         async listPlans(requester: AuthenticatedUser, clientId: number): Promise<NutritionPlan[]> {
             if (requester.role === 'client') {
                 assertCanActAsClient(requester, clientId);
-            } else if (requester.role === 'coach') {
+            } else if (requester.role === 'coach' && requester.id !== clientId) {
                 await assertCoachOwnsClient(requester.id, clientId);
             }
             return nutritionPlansRepository.listByClientId(clientId);
@@ -165,7 +165,7 @@ export function createNutritionService() {
         async getTodayPlan(requester: AuthenticatedUser, clientId: number): Promise<NutritionPlanWithMeals | null> {
             if (requester.role === 'client') {
                 assertCanActAsClient(requester, clientId);
-            } else if (requester.role === 'coach') {
+            } else if (requester.role === 'coach' && requester.id !== clientId) {
                 await assertCoachOwnsClient(requester.id, clientId);
             }
 

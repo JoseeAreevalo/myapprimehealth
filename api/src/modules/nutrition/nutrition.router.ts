@@ -146,6 +146,7 @@ nutritionRouter.post('/plans/:planId/meals', authenticate, async (req: Request, 
             calories: Number(req.body.calories),
             alternativeGroup: req.body.alternativeGroup,
             alternativeLabel: req.body.alternativeLabel,
+            dayConfigId: req.body.dayConfigId != null ? Number(req.body.dayConfigId) : undefined,
             items: Array.isArray(req.body.items) ? req.body.items : undefined,
         });
         res.status(201).json({ meal });

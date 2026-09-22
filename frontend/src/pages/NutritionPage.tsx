@@ -1,15 +1,18 @@
-import { Utensils } from 'lucide-react';
+import { useState } from 'react';
+import { CalendarDays, Utensils } from 'lucide-react';
 import { useNutritionToday } from '../hooks/useNutritionToday';
 import { useMyCoach } from '../hooks/useMyCoach';
 import SelfNutritionSetup from '../components/SelfNutritionSetup';
 import EditNutritionPlan from '../components/EditNutritionPlan';
 import MealLogger from '../components/MealLogger';
+import NutritionCalendar from '../components/NutritionCalendar';
 import { findActiveDayConfig } from '../utils/weekday';
 
 export default function NutritionPage() {
     const { plans, todayPlan, loading, error, activatePlan, refresh, isClient, logMeal } = useNutritionToday();
     const { hasCoach, loading: coachLoading } = useMyCoach();
     const canManageOwnPlan = isClient && !coachLoading && !hasCoach;
+    const [showCalendar, setShowCalendar] = useState(false);
 
     return (
         <section className="mx-auto max-w-3xl">
@@ -90,6 +93,18 @@ export default function NutritionPage() {
                             </li>
                         ))}
                     </ul>
+                    <button
+                        className="mt-4 flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-slate-100"
+                        onClick={() => setShowCalendar((current) => !current)}
+                        type="button"
+                    >
+                        <CalendarDays size={13} /> {showCalendar ? 'Ocultar calendario' : 'Ver calendario de alimentación'}
+                    </button>
+                    {showCalendar && (
+                        <div className="mt-3">
+                            <NutritionCalendar dayConfigs={todayPlan.dayConfigs} />
+                        </div>
+                    )}
                     {canManageOwnPlan && <EditNutritionPlan onUpdated={refresh} plan={todayPlan} />}
                 </div>
             )}

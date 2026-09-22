@@ -47,6 +47,12 @@ export function createAdministrationService() {
             if (!userRoles.includes(input.role as UserRole)) {
                 throw new ValidationError(`El rol debe ser uno de: ${userRoles.join(', ')}.`);
             }
+            if (input.role === 'super_admin') {
+                const users = await usersRepository.listAll();
+                if (users.some((existing) => existing.role === 'super_admin')) {
+                    throw new ValidationError('Ya existe un super admin; no se puede crear otro.');
+                }
+            }
             if (await usersRepository.findByEmail(email)) {
                 throw new ValidationError('Ese correo ya está en uso.');
             }
@@ -68,6 +74,12 @@ export function createAdministrationService() {
         async updateUser(id: number, updates: { role?: string; isActive?: boolean }): Promise<AdminUserView> {
             if (updates.role !== undefined && !userRoles.includes(updates.role as UserRole)) {
                 throw new ValidationError(`El rol debe ser uno de: ${userRoles.join(', ')}.`);
+            }
+            if (updates.role === 'super_admin') {
+                const users = await usersRepository.listAll();
+                if (users.some((existing) => existing.role === 'super_admin' && existing.id !== id)) {
+                    throw new ValidationError('Ya existe un super admin; no se puede asignar el rol a otro perfil.');
+                }
             }
 
             const user = await usersRepository.updateRoleAndStatus(id, {

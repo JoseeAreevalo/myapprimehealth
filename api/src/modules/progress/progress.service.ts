@@ -8,8 +8,8 @@ class ForbiddenError extends Error { }
 export { ForbiddenError };
 
 async function assertCanViewClient(requester: AuthenticatedUser, clientId: number): Promise<void> {
+    if (requester.id === clientId) return;
     if (requester.role === 'super_admin') return;
-    if (requester.role === 'client' && requester.id === clientId) return;
     if (requester.role === 'coach') {
         const link = await coachClientsRepository.findActiveByClientId(clientId);
         if (link && link.coachId === requester.id) return;

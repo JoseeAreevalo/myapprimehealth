@@ -23,7 +23,7 @@ const roleLabels: Record<AdminUser['role'], string> = {
 };
 
 
-function CreateUserForm({ coaches, onCreated }: { coaches: AdminUser[]; onCreated: () => void }) {
+function CreateUserForm({ coaches, hasSuperAdmin, onCreated }: { coaches: AdminUser[]; hasSuperAdmin: boolean; onCreated: () => void }) {
     const { token } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -93,7 +93,9 @@ function CreateUserForm({ coaches, onCreated }: { coaches: AdminUser[]; onCreate
                     }}
                     value={role}
                 >
-                    <option className="bg-slate-900 text-slate-100" value="super_admin">Super admin</option>
+                    <option className="bg-slate-900 text-slate-100" disabled={hasSuperAdmin} value="super_admin">
+                        Super admin{hasSuperAdmin ? ' (ya existe uno)' : ''}
+                    </option>
                     <option className="bg-slate-900 text-slate-100" value="coach">Coach</option>
                     <option className="bg-slate-900 text-slate-100" value="client">Cliente</option>
                 </select>
@@ -136,6 +138,8 @@ export default function AdministrationPanel() {
     const [error, setError] = useState('');
     const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [pendingRoleChange, setPendingRoleChange] = useState<{ user: AdminUser; role: AdminUser['role'] } | null>(null);
+    const [changingRole, setChangingRole] = useState(false);
 
     const load = () => {
         setLoading(true);
@@ -157,13 +161,23 @@ export default function AdministrationPanel() {
         load();
     };
 
-    const changeRole = async (target: AdminUser, role: AdminUser['role']) => {
-        await axios.patch(
-            `${api.baseURL}${api.endpoints.adminUserUpdate(target.id)}`,
-            { role },
-            { headers: authHeaders(token) },
-        );
-        load();
+    const confirmRoleChange = async () => {
+        if (!pendingRoleChange) return;
+        setChangingRole(true);
+        try {
+            await axios.patch(
+                `${api.baseURL}${api.endpoints.adminUserUpdate(pendingRoleChange.user.id)}`,
+                { role: pendingRoleChange.role },
+                { headers: authHeaders(token) },
+            );
+            setPendingRoleChange(null);
+            load();
+        } catch (err) {
+            const message = axios.isAxiosError(err) ? err.response?.data?.error?.message : undefined;
+            setError(message ?? 'No se pudo cambiar el rol.');
+        } finally {
+            setChangingRole(false);
+        }
     };
 
     const handleDelete = async (target: AdminUser) => {
@@ -206,10 +220,15 @@ export default function AdministrationPanel() {
                                 <div className="flex items-center gap-2">
                                     <select
                                         className="rounded-lg border border-white/8 bg-slate-900 px-2 py-1 text-[11px] text-slate-100"
-                                        onChange={(event) => changeRole(item, event.target.value as AdminUser['role'])}
+                                        onChange={(event) => {
+                                            const role = event.target.value as AdminUser['role'];
+                                            if (role !== item.role) setPendingRoleChange({ user: item, role });
+                                        }}
                                         value={item.role}
                                     >
-                                        <option className="bg-slate-900 text-slate-100" value="super_admin">Super admin</option>
+                                        <option className="bg-slate-900 text-slate-100" disabled={item.role !== 'super_admin' && users.some((u) => u.role === 'super_admin')} value="super_admin">
+                                            Super admin
+                                        </option>
                                         <option className="bg-slate-900 text-slate-100" value="coach">Coach</option>
                                         <option className="bg-slate-900 text-slate-100" value="client">Cliente</option>
                                     </select>
@@ -234,7 +253,41 @@ export default function AdministrationPanel() {
                 </ul>
             )}
 
-            <CreateUserForm coaches={users.filter((item) => item.role === 'coach')} onCreated={load} />
+            <CreateUserForm coaches={users.filter((item) => item.role === 'coach')} hasSuperAdmin={users.some((item) => item.role === 'super_admin')} onCreated={load} />
+
+            {pendingRoleChange && (
+                <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4"
+                    onClick={() => !changingRole && setPendingRoleChange(null)}
+                >
+                    <div
+                        className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-950 p-5 shadow-panel"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <p className="text-sm text-slate-200">
+                            ¿Cambiar el rol de <span className="font-semibold text-slate-100">{pendingRoleChange.user.fullName ?? pendingRoleChange.user.email}</span> a <span className="font-semibold text-amber-300">{roleLabels[pendingRoleChange.role]}</span>?
+                        </p>
+                        <div className="mt-4 flex justify-end gap-2">
+                            <button
+                                className="rounded-lg bg-white/8 px-3 py-1.5 text-xs text-slate-200 hover:bg-white/15"
+                                disabled={changingRole}
+                                onClick={() => setPendingRoleChange(null)}
+                                type="button"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400 disabled:opacity-50"
+                                disabled={changingRole}
+                                onClick={confirmRoleChange}
+                                type="button"
+                            >
+                                {changingRole ? 'Guardando…' : 'Confirmar cambio'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {confirmingDeleteId !== null && (
                 <div

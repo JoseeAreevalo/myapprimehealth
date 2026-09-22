@@ -44,6 +44,9 @@ export function createCheckInsService() {
         },
 
         async listForClient(requester: AuthenticatedUser, clientId: number): Promise<CheckIn[]> {
+            if (requester.id === clientId || requester.role === 'super_admin') {
+                return checkInsRepository.listByClientId(clientId);
+            }
             if (requester.role === 'client') {
                 assertCanActAsClient(requester, clientId);
             } else if (requester.role === 'coach') {
