@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTrainingHistory } from '../hooks/useTrainingHistory';
+import { TrainingDay } from '../hooks/useTrainingPlan';
 
 const MONTH_NAMES = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
@@ -17,7 +18,14 @@ function firstWeekdayIndex(year: number, month: number): number {
     return (jsDay + 6) % 7;
 }
 
-export default function TrainingCalendar({ clientId }: { clientId: number }) {
+// Monday=1 .. Sunday=7, matching training_plan_days.weekday, for an "YYYY-MM-DD" date string.
+function weekdayOfIsoDate(iso: string): number {
+    const [y, m, d] = iso.split('-').map(Number);
+    const jsDay = new Date(y, m - 1, d).getDay(); // 0 = Sunday
+    return jsDay === 0 ? 7 : jsDay;
+}
+
+export default function TrainingCalendar({ clientId, planDays = [] }: { clientId: number; planDays?: TrainingDay[] }) {
     const { year, month, days, loading, error, goToPreviousMonth, goToNextMonth } = useTrainingHistory(clientId);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -26,7 +34,9 @@ export default function TrainingCalendar({ clientId }: { clientId: number }) {
     const cells: (number | null)[] = [...Array(leadingBlanks).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
 
     const historyByDate = new Map(days.map((day) => [day.date, day]));
+    const planByWeekday = new Map(planDays.filter((day) => day.weekday != null).map((day) => [day.weekday as number, day]));
     const selectedDay = selectedDate ? historyByDate.get(selectedDate) : undefined;
+    const scheduledDay = selectedDate ? planByWeekday.get(weekdayOfIsoDate(selectedDate)) : undefined;
     const todayIso = new Date().toISOString().slice(0, 10);
 
     return (
@@ -61,17 +71,21 @@ export default function TrainingCalendar({ clientId }: { clientId: number }) {
                             if (day === null) return <div key={`blank-${index}`} />;
                             const iso = toIsoDate(year, month, day);
                             const hasHistory = historyByDate.has(iso);
+                            const isScheduled = planByWeekday.has(weekdayOfIsoDate(iso));
                             const isToday = iso === todayIso;
                             const isSelected = iso === selectedDate;
                             return (
                                 <button
-                                    className={`aspect-square rounded-lg text-xs transition ${isSelected ? 'bg-amber-500 text-white' : hasHistory ? 'bg-amber-500/20 text-amber-200 hover:bg-amber-500/30' : 'text-slate-400 hover:bg-white/8'
+                                    className={`relative aspect-square rounded-lg text-xs transition ${isSelected ? 'bg-amber-500 text-white' : hasHistory ? 'bg-amber-500/20 text-amber-200 hover:bg-amber-500/30' : 'text-slate-400 hover:bg-white/8'
                                         } ${isToday && !isSelected ? 'ring-1 ring-amber-400/60' : ''}`}
                                     key={iso}
                                     onClick={() => setSelectedDate((current) => (current === iso ? null : iso))}
                                     type="button"
                                 >
                                     {day}
+                                    {isScheduled && !isSelected && (
+                                        <span className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-sky-400" />
+                                    )}
                                 </button>
                             );
                         })}
@@ -80,24 +94,42 @@ export default function TrainingCalendar({ clientId }: { clientId: number }) {
             )}
 
             {selectedDate && (
-                <div className="mt-4 space-y-2 border-t border-white/7 pt-3">
+                <div className="mt-4 space-y-3 border-t border-white/7 pt-3">
                     <p className="text-xs font-semibold text-slate-300">{selectedDate}</p>
-                    {!selectedDay && <p className="text-xs text-slate-500">No hay ejercicios registrados este día.</p>}
-                    {selectedDay?.exercises.map((exercise) => (
-                        <div className="rounded-lg border border-white/7 bg-white/[0.03] p-2.5" key={exercise.exerciseId}>
-                            <p className="text-xs font-medium text-slate-100">
-                                {exercise.exerciseName} <span className="text-slate-500">· {exercise.dayLabel}</span>
-                            </p>
-                            <ul className="mt-1 space-y-0.5">
-                                {exercise.sets.map((set) => (
-                                    <li className="text-[11px] text-slate-400" key={set.setNumber}>
-                                        Serie {set.setNumber}: {set.actualReps ?? '—'} reps
-                                        {set.actualWeightKg != null ? ` @ ${set.actualWeightKg}kg` : ''}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
+
+                    <div className="space-y-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Rutina programada</p>
+                        {!scheduledDay && <p className="text-xs text-slate-500">No hay ningún día del plan asignado a esta fecha.</p>}
+                        {scheduledDay?.exercises.map((exercise) => (
+                            <div className="rounded-lg border border-sky-400/20 bg-sky-400/5 p-2.5" key={exercise.id}>
+                                <p className="text-xs font-medium text-slate-100">{exercise.name}</p>
+                                <p className="mt-0.5 text-[11px] text-slate-400">
+                                    Meta: {exercise.targetSets}x{exercise.targetReps}
+                                    {exercise.targetWeightKg != null ? ` @ ${exercise.targetWeightKg}kg` : ''}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="space-y-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Registrado ese día</p>
+                        {!selectedDay && <p className="text-xs text-slate-500">No hay ejercicios registrados este día.</p>}
+                        {selectedDay?.exercises.map((exercise) => (
+                            <div className="rounded-lg border border-white/7 bg-white/[0.03] p-2.5" key={exercise.exerciseId}>
+                                <p className="text-xs font-medium text-slate-100">
+                                    {exercise.exerciseName} <span className="text-slate-500">· {exercise.dayLabel}</span>
+                                </p>
+                                <ul className="mt-1 space-y-0.5">
+                                    {exercise.sets.map((set) => (
+                                        <li className="text-[11px] text-slate-400" key={set.setNumber}>
+                                            Serie {set.setNumber}: {set.actualReps ?? '—'} reps
+                                            {set.actualWeightKg != null ? ` @ ${set.actualWeightKg}kg` : ''}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
         </section>
