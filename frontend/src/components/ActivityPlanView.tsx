@@ -10,6 +10,10 @@ type AssignmentMap = Record<number, Assignment>;
 
 const emptyAssignment = (): AssignmentMap => ({ 1: 'none', 2: 'none', 3: 'none', 4: 'none', 5: 'none', 6: 'none', 7: 'none' });
 
+// Default for a brand-new (not yet saved) plan: every weekday starts on value A, so pressing
+// "Guardar" works immediately without first having to manually assign each day.
+const allAssignedToA = (): AssignmentMap => ({ 1: 'A', 2: 'A', 3: 'A', 4: 'A', 5: 'A', 6: 'A', 7: 'A' });
+
 // Given each weekday's raw target value, figures out up to two distinct values ("A"/"B") and
 // which weekdays use which — so the editor can show "set 2 values, pick which days use each"
 // instead of one input per day.
@@ -86,15 +90,16 @@ export default function ActivityPlanView({
 
     const [cardioValueA, setCardioValueA] = useState('30');
     const [cardioValueB, setCardioValueB] = useState('15');
-    const [cardioAssignment, setCardioAssignment] = useState<AssignmentMap>(emptyAssignment());
+    const [cardioAssignment, setCardioAssignment] = useState<AssignmentMap>(allAssignedToA());
     const [stepsValueA, setStepsValueA] = useState('10');
     const [stepsValueB, setStepsValueB] = useState('6');
-    const [stepsAssignment, setStepsAssignment] = useState<AssignmentMap>(emptyAssignment());
+    const [stepsAssignment, setStepsAssignment] = useState<AssignmentMap>(allAssignedToA());
     const [confirmingReset, setConfirmingReset] = useState(false);
     const [logCardio, setLogCardio] = useState('');
     const [logSteps, setLogSteps] = useState('');
     const [savingLog, setSavingLog] = useState(false);
     const [savingTargets, setSavingTargets] = useState(false);
+    const [creating, setCreating] = useState(false);
     const [saveError, setSaveError] = useState('');
 
     // Pre-fill the editor from whatever is already configured, once the plan loads.
@@ -129,12 +134,18 @@ export default function ActivityPlanView({
             .filter(([, assignment]) => assignment !== 'none')
             .map(([weekday, assignment]) => ({ weekday: Number(weekday), stepsTarget: Math.round(Number(assignment === 'A' ? stepsValueA : stepsValueB) * 1000) }))
             .filter((target) => target.stepsTarget > 0);
-        if (cardioTargets.length === 0 && stepsTargets.length === 0) return;
+        if (cardioTargets.length === 0 && stepsTargets.length === 0) {
+            setSaveError('Ingresa un valor mayor a 0 y selecciona al menos un día para cardio o para pasos.');
+            return;
+        }
         setSaveError('');
+        setCreating(true);
         try {
             await createPlan(cardioTargets, stepsTargets);
         } catch (err) {
             setSaveError((axios.isAxiosError(err) ? err.response?.data?.error?.message : undefined) || 'No se pudo guardar la configuración.');
+        } finally {
+            setCreating(false);
         }
     };
 
@@ -252,11 +263,12 @@ export default function ActivityPlanView({
                             <WeekdayAssignmentGrid assignment={stepsAssignment} labelA={`A · ${stepsValueA || '—'}k`} labelB={`B · ${stepsValueB || '—'}k`} onToggle={toggleSteps} />
                         </div>
                         <button
-                            className="w-full rounded-xl bg-amber-500 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-400"
+                            className="w-full rounded-xl bg-amber-500 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-400 disabled:opacity-50"
+                            disabled={creating}
                             onClick={handleCreate}
                             type="button"
                         >
-                            Guardar configuración
+                            {creating ? 'Guardando…' : 'Guardar configuración'}
                         </button>
                     </div>
                 )}
