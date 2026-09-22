@@ -7,6 +7,7 @@ export interface SetLog {
     setNumber: number;
     actualReps: number | null;
     actualWeightKg: number | null;
+    actualRir: number | null;
 }
 
 export interface TrainingExercise {
@@ -16,6 +17,7 @@ export interface TrainingExercise {
     targetSets: number;
     targetReps: number;
     targetWeightKg: number | null;
+    targetRir: number | null;
     logs: SetLog[];
 }
 
@@ -43,6 +45,7 @@ export interface ExerciseDraft {
     targetSets: string;
     targetReps: string;
     targetWeightKg: string;
+    targetRir: string;
 }
 
 export interface DayDraft {
@@ -99,6 +102,7 @@ export function useTrainingPlan(clientId: number | null) {
                             targetSets: Number(exercise.targetSets),
                             targetReps: Number(exercise.targetReps),
                             targetWeightKg: exercise.targetWeightKg ? Number(exercise.targetWeightKg) : null,
+                            targetRir: exercise.targetRir !== '' ? Number(exercise.targetRir) : null,
                         })),
                     })),
                 },
@@ -154,7 +158,7 @@ export function useTrainingPlan(clientId: number | null) {
     );
 
     const addExercise = useCallback(
-        async (dayId: number, exercise: { name: string; targetSets: number; targetReps: number; targetWeightKg: number | null }) => {
+        async (dayId: number, exercise: { name: string; targetSets: number; targetReps: number; targetWeightKg: number | null; targetRir: number | null }) => {
             await axios.post(`${api.baseURL}${api.endpoints.trainingDayAddExercise(dayId)}`, exercise, { headers: authHeaders(token) });
             await load();
         },
@@ -162,7 +166,7 @@ export function useTrainingPlan(clientId: number | null) {
     );
 
     const updateExercise = useCallback(
-        async (exerciseId: number, updates: { name?: string; targetSets?: number; targetReps?: number; targetWeightKg?: number | null }) => {
+        async (exerciseId: number, updates: { name?: string; targetSets?: number; targetReps?: number; targetWeightKg?: number | null; targetRir?: number | null }) => {
             await axios.patch(`${api.baseURL}${api.endpoints.trainingExerciseUpdate(exerciseId)}`, updates, { headers: authHeaders(token) });
             await load();
         },

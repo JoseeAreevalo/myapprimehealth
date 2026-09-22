@@ -25,6 +25,7 @@ interface ExerciseRow {
     target_sets: number;
     target_reps: number;
     target_weight_kg: string | null;
+    target_rir: number | null;
     sort_order: number;
 }
 
@@ -33,6 +34,7 @@ interface SetLogRow {
     set_number: number;
     actual_reps: number | null;
     actual_weight_kg: string | null;
+    actual_rir: number | null;
 }
 
 interface HistoryRow {
@@ -41,6 +43,7 @@ interface HistoryRow {
     set_number: number;
     actual_reps: number | null;
     actual_weight_kg: string | null;
+    actual_rir: number | null;
     exercise_name: string;
     day_label: string;
 }
@@ -68,6 +71,7 @@ function toExercise(row: ExerciseRow): TrainingExercise {
         targetSets: row.target_sets,
         targetReps: row.target_reps,
         targetWeightKg: row.target_weight_kg === null ? null : Number(row.target_weight_kg),
+        targetRir: row.target_rir,
         sortOrder: row.sort_order,
     };
 }
@@ -77,6 +81,7 @@ function toSetLog(row: SetLogRow): SetLog {
         setNumber: row.set_number,
         actualReps: row.actual_reps,
         actualWeightKg: row.actual_weight_kg === null ? null : Number(row.actual_weight_kg),
+        actualRir: row.actual_rir,
     };
 }
 
@@ -179,10 +184,10 @@ export const trainingExercisesRepository = {
 
     async create(dayId: number, input: TrainingExerciseInput, sortOrder: number): Promise<TrainingExercise> {
         const { rows } = await pool.query<ExerciseRow>(
-            `INSERT INTO training_plan_exercises (day_id, name, target_sets, target_reps, target_weight_kg, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6)
+            `INSERT INTO training_plan_exercises (day_id, name, target_sets, target_reps, target_weight_kg, target_rir, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-            [dayId, input.name, input.targetSets, input.targetReps, input.targetWeightKg ?? null, sortOrder],
+            [dayId, input.name, input.targetSets, input.targetReps, input.targetWeightKg ?? null, input.targetRir ?? null, sortOrder],
         );
         return toExercise(rows[0]);
     },
@@ -194,17 +199,18 @@ export const trainingExercisesRepository = {
 
     async update(
         id: number,
-        updates: { name?: string; targetSets?: number; targetReps?: number; targetWeightKg?: number | null },
+        updates: { name?: string; targetSets?: number; targetReps?: number; targetWeightKg?: number | null; targetRir?: number | null },
     ): Promise<TrainingExercise> {
         const { rows } = await pool.query<ExerciseRow>(
             `UPDATE training_plan_exercises
        SET name = COALESCE($2, name),
            target_sets = COALESCE($3, target_sets),
            target_reps = COALESCE($4, target_reps),
-           target_weight_kg = COALESCE($5, target_weight_kg)
+           target_weight_kg = COALESCE($5, target_weight_kg),
+           target_rir = COALESCE($6, target_rir)
        WHERE id = $1
        RETURNING *`,
-            [id, updates.name ?? null, updates.targetSets ?? null, updates.targetReps ?? null, updates.targetWeightKg ?? null],
+            [id, updates.name ?? null, updates.targetSets ?? null, updates.targetReps ?? null, updates.targetWeightKg ?? null, updates.targetRir ?? null],
         );
         return toExercise(rows[0]);
     },
@@ -238,21 +244,22 @@ export const trainingSetLogsRepository = {
         return map;
     },
 
-    async upsertSet(exerciseId: number, logDate: string, setNumber: number, actualReps: number | null, actualWeightKg: number | null): Promise<void> {
+    async upsertSet(exerciseId: number, logDate: string, setNumber: number, actualReps: number | null, actualWeightKg: number | null, actualRir: number | null): Promise<void> {
         await pool.query(
-            `INSERT INTO training_set_logs (exercise_id, log_date, set_number, actual_reps, actual_weight_kg)
-       VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO training_set_logs (exercise_id, log_date, set_number, actual_reps, actual_weight_kg, actual_rir)
+       VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (exercise_id, log_date, set_number) DO UPDATE SET
          actual_reps = EXCLUDED.actual_reps,
          actual_weight_kg = EXCLUDED.actual_weight_kg,
+         actual_rir = EXCLUDED.actual_rir,
          updated_at = now()`,
-            [exerciseId, logDate, setNumber, actualReps, actualWeightKg],
+            [exerciseId, logDate, setNumber, actualReps, actualWeightKg, actualRir],
         );
     },
 
     async listHistoryForClient(clientId: number, fromDate: string, toDate: string): Promise<HistoryRow[]> {
         const { rows } = await pool.query<HistoryRow>(
-            `SELECT tsl.exercise_id, tsl.log_date::text AS log_date, tsl.set_number, tsl.actual_reps, tsl.actual_weight_kg,
+            `SELECT tsl.exercise_id, tsl.log_date::text AS log_date, tsl.set_number, tsl.actual_reps, tsl.actual_weight_kg, tsl.actual_rir,
               tpe.name AS exercise_name, tpd.label AS day_label
        FROM training_set_logs tsl
        JOIN training_plan_exercises tpe ON tpe.id = tsl.exercise_id

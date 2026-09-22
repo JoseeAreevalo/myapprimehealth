@@ -28,8 +28,20 @@ export interface NutritionMealBase {
     dayConfigId: number | null;
 }
 
+export interface LoggedMealItem {
+    itemId: number;
+    foodName: string;
+    grams: number;
+    calories: number;
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
+}
+
 export interface NutritionMeal extends NutritionMealBase {
     status: MealStatus;
+    loggedItems?: LoggedMealItem[] | null;
+    loggedCalories?: number | null;
 }
 
 export interface NutritionPlan {
@@ -112,19 +124,15 @@ export function useNutritionToday() {
     );
 
     const logMeal = useCallback(
-        async (mealId: number, status: MealStatus) => {
+        async (mealId: number, status: MealStatus, items?: { itemId: number; grams: number }[]) => {
             await axios.patch(
                 `${api.baseURL}${api.endpoints.nutritionMealLog(mealId)}`,
-                { status },
+                { status, items },
                 { headers: authHeaders(token) },
             );
-            setTodayPlan((current) =>
-                current
-                    ? { ...current, meals: current.meals.map((meal) => (meal.id === mealId ? { ...meal, status } : meal)) }
-                    : current,
-            );
+            await load();
         },
-        [token],
+        [token, load],
     );
 
     return { plans, todayPlan, loading, error, activatePlan, logMeal, refresh: load, isClient: !!user };

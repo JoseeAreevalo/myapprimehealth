@@ -213,7 +213,12 @@ nutritionRouter.delete('/meals/:mealId', authenticate, async (req: Request, res:
 
 nutritionRouter.patch('/meals/:mealId/log', authenticate, async (req: Request, res: Response): Promise<void> => {
     try {
-        await nutritionService.logMeal(req.authenticatedUser!, Number(req.params.mealId), req.body.status);
+        await nutritionService.logMeal(
+            req.authenticatedUser!,
+            Number(req.params.mealId),
+            req.body.status,
+            Array.isArray(req.body.items) ? req.body.items : undefined,
+        );
         res.status(204).send();
     } catch (error) {
         handleError(res, error, 'No se pudo actualizar el registro de la comida.');

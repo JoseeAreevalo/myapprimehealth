@@ -71,6 +71,20 @@ export interface NutritionMeal {
 
 export interface NutritionMealWithStatus extends NutritionMeal {
     status: MealStatus;
+    loggedItems?: LoggedMealItem[] | null;
+    loggedCalories?: number | null;
+}
+
+// The grams actually served for a food item when a meal is logged, with macros recomputed
+// from that amount (rather than the plan's target grams).
+export interface LoggedMealItem {
+    itemId: number;
+    foodName: string;
+    grams: number;
+    calories: number;
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
 }
 
 // A diet variant covering a checked set of weekdays (1=Lunes..7=Domingo), e.g. "Día de

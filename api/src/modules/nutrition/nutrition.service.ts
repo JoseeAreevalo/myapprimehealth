@@ -10,6 +10,7 @@ import {
     nutritionPlansRepository,
 } from './nutrition.repository';
 import {
+    LoggedMealItem,
     MealStatus,
     NutritionDayConfig,
     NutritionDayConfigInput,
@@ -188,7 +189,15 @@ export function createNutritionService() {
 
             return {
                 ...plan,
-                meals: todaysMeals.map((meal) => ({ ...meal, status: logs.get(meal.id) ?? 'planned' })),
+                meals: todaysMeals.map((meal) => {
+                    const log = logs.get(meal.id);
+                    return {
+                        ...meal,
+                        status: log?.status ?? 'planned',
+                        loggedItems: log?.loggedItems ?? null,
+                        loggedCalories: log?.loggedCalories ?? null,
+                    };
+                }),
                 dayConfigs: dayConfigsWithMeals,
             };
         },
@@ -507,7 +516,12 @@ export function createNutritionService() {
             await nutritionPlansRepository.activate(clientId, planId);
         },
 
-        async logMeal(requester: AuthenticatedUser, mealId: number, status: MealStatus): Promise<void> {
+        async logMeal(
+            requester: AuthenticatedUser,
+            mealId: number,
+            status: MealStatus,
+            servedItems?: { itemId: number; grams: number }[],
+        ): Promise<void> {
             const meal = await nutritionMealsRepository.findById(mealId);
             if (!meal) {
                 throw new NotFoundError('Comida no encontrada.');
@@ -524,7 +538,35 @@ export function createNutritionService() {
                 throw new ValidationError('Estado de comida inválido.');
             }
 
-            await nutritionMealLogsRepository.upsert(mealId, plan.clientId, todayIsoDate(), status);
+            let loggedItems: LoggedMealItem[] | null = null;
+            let loggedCalories: number | null = null;
+
+            if (Array.isArray(servedItems) && servedItems.length > 0) {
+                const planItems = await nutritionMealItemsRepository.listByMealId(mealId);
+                loggedItems = servedItems
+                    .map((served) => {
+                        const planItem = planItems.find((item) => item.id === served.itemId);
+                        if (!planItem || planItem.grams <= 0) return null;
+                        const grams = Number(served.grams);
+                        if (!Number.isFinite(grams) || grams < 0) {
+                            throw new ValidationError('El gramaje servido debe ser un número válido.');
+                        }
+                        const ratio = grams / planItem.grams;
+                        return {
+                            itemId: planItem.id,
+                            foodName: planItem.foodName,
+                            grams,
+                            calories: Math.round(planItem.calories * ratio * 10) / 10,
+                            proteinG: Math.round(planItem.proteinG * ratio * 10) / 10,
+                            carbsG: Math.round(planItem.carbsG * ratio * 10) / 10,
+                            fatG: Math.round(planItem.fatG * ratio * 10) / 10,
+                        };
+                    })
+                    .filter((item): item is LoggedMealItem => item !== null);
+                loggedCalories = loggedItems.reduce((sum, item) => sum + item.calories, 0);
+            }
+
+            await nutritionMealLogsRepository.upsert(mealId, plan.clientId, todayIsoDate(), status, loggedItems, loggedCalories);
         },
     };
 }

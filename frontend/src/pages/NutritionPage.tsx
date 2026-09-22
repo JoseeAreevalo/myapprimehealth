@@ -1,11 +1,15 @@
 import { Utensils } from 'lucide-react';
 import { useNutritionToday } from '../hooks/useNutritionToday';
+import { useMyCoach } from '../hooks/useMyCoach';
 import SelfNutritionSetup from '../components/SelfNutritionSetup';
 import EditNutritionPlan from '../components/EditNutritionPlan';
+import MealLogger from '../components/MealLogger';
 import { findActiveDayConfig } from '../utils/weekday';
 
 export default function NutritionPage() {
-    const { plans, todayPlan, loading, error, activatePlan, refresh, isClient } = useNutritionToday();
+    const { plans, todayPlan, loading, error, activatePlan, refresh, isClient, logMeal } = useNutritionToday();
+    const { hasCoach, loading: coachLoading } = useMyCoach();
+    const canManageOwnPlan = isClient && !coachLoading && !hasCoach;
 
     return (
         <section className="mx-auto max-w-3xl">
@@ -61,7 +65,12 @@ export default function NutritionPage() {
                 </div>
             )}
 
-            {!loading && !error && isClient && !todayPlan && <SelfNutritionSetup hasPlan={false} onCreated={refresh} />}
+            {!loading && !error && isClient && !coachLoading && !todayPlan && canManageOwnPlan && (
+                <SelfNutritionSetup hasPlan={false} onCreated={refresh} />
+            )}
+            {!loading && !error && isClient && !coachLoading && !todayPlan && !canManageOwnPlan && (
+                <p className="text-sm text-slate-400">Tu coach aún no te ha asignado un plan de nutrición.</p>
+            )}
             {!loading && !error && isClient && todayPlan && (
                 <div className="rounded-3xl border border-white/8 bg-panel/70 p-6 shadow-panel">
                     <p className="eyebrow">Comidas del plan activo</p>
@@ -70,15 +79,18 @@ export default function NutritionPage() {
                             Hoy: {findActiveDayConfig(todayPlan.dayConfigs)?.label}
                         </span>
                     )}
-                    <ul className="mt-3 space-y-1 text-sm text-slate-300">
+                    <ul className="mt-3 space-y-2 text-sm text-slate-300">
                         {todayPlan.meals.map((meal) => (
-                            <li className="flex justify-between" key={meal.id}>
+                            <li className="flex items-center justify-between gap-3" key={meal.id}>
                                 <span>{meal.name} {meal.mealTime && <span className="text-slate-500">· {meal.mealTime}</span>}</span>
-                                <span>{meal.calories} kcal</span>
+                                <span className="flex items-center gap-3">
+                                    <span>{meal.status === 'completed' && meal.loggedCalories != null ? Math.round(meal.loggedCalories) : meal.calories} kcal</span>
+                                    <MealLogger meal={meal} onLog={logMeal} />
+                                </span>
                             </li>
                         ))}
                     </ul>
-                    <EditNutritionPlan onUpdated={refresh} plan={todayPlan} />
+                    {canManageOwnPlan && <EditNutritionPlan onUpdated={refresh} plan={todayPlan} />}
                 </div>
             )}
         </section>

@@ -115,6 +115,7 @@ trainingRouter.post('/days/:dayId/exercises', authenticate, async (req: Request,
             targetSets: Number(req.body.targetSets),
             targetReps: Number(req.body.targetReps),
             targetWeightKg: req.body.targetWeightKg != null ? Number(req.body.targetWeightKg) : null,
+            targetRir: req.body.targetRir != null ? Number(req.body.targetRir) : null,
         });
         res.status(201).json({ exercise });
     } catch (error) {
@@ -129,6 +130,7 @@ trainingRouter.patch('/exercises/:exerciseId', authenticate, async (req: Request
             targetSets: req.body.targetSets != null ? Number(req.body.targetSets) : undefined,
             targetReps: req.body.targetReps != null ? Number(req.body.targetReps) : undefined,
             targetWeightKg: req.body.targetWeightKg != null ? Number(req.body.targetWeightKg) : undefined,
+            targetRir: req.body.targetRir != null ? Number(req.body.targetRir) : undefined,
         });
         res.status(200).json({ exercise });
     } catch (error) {

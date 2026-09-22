@@ -12,6 +12,7 @@ export interface TrainingExerciseInput {
     targetSets: number;
     targetReps: number;
     targetWeightKg?: number | null;
+    targetRir?: number | null;
 }
 
 export interface TrainingDayInput {
@@ -27,6 +28,7 @@ export interface TrainingExercise {
     targetSets: number;
     targetReps: number;
     targetWeightKg: number | null;
+    targetRir: number | null;
     sortOrder: number;
 }
 
@@ -34,6 +36,7 @@ export interface SetLog {
     setNumber: number;
     actualReps: number | null;
     actualWeightKg: number | null;
+    actualRir: number | null;
 }
 
 export interface TrainingExerciseWithLogs extends TrainingExercise {

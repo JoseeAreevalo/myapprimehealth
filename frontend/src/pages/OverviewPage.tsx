@@ -6,6 +6,7 @@ import WeeklyCheckInCard from '../components/WeeklyCheckInCard';
 import ProgressPanel from '../components/ProgressPanel';
 import FoodCalculator from '../components/FoodCalculator';
 import TrainingSummaryCard from '../components/TrainingSummaryCard';
+import MealLogger from '../components/MealLogger';
 import { useNutritionToday } from '../hooks/useNutritionToday';
 import { useHydrationToday } from '../hooks/useHydrationToday';
 import { findActiveDayConfig } from '../utils/weekday';
@@ -21,16 +22,12 @@ export default function OverviewPage() {
 
     const completedCalories = (todayPlan?.meals ?? [])
         .filter((meal) => meal.status === 'completed')
-        .reduce((total, meal) => total + meal.calories, 0);
+        .reduce((total, meal) => total + (meal.loggedCalories ?? meal.calories), 0);
     const goalCalories = todayPlan?.goalCalories ?? 0;
     const leftCalories = Math.max(goalCalories - completedCalories, 0);
     const progressPercent = goalCalories > 0 ? Math.min((completedCalories / goalCalories) * 100, 100) : 0;
     const waterGoalMl = todayPlan?.waterGoalMl ?? 2000;
     const waterProgress = Math.min((consumedMl / waterGoalMl) * 100, 100);
-
-    const handleMealStatusChange = (mealId: number, currentStatus: string) => {
-        void logMeal(mealId, currentStatus === 'completed' ? 'next' : 'completed');
-    };
 
     return (
         <section className="grid gap-8 xl:grid-cols-[1fr_360px]">
@@ -158,14 +155,10 @@ export default function OverviewPage() {
                                         )}
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-sm font-medium text-slate-300">{meal.calories} kcal</p>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleMealStatusChange(meal.id, meal.status)}
-                                            className={`mt-1 text-xs font-medium ${meal.status === 'completed' ? 'text-emerald-300' : 'text-slate-500'} hover:text-amber-300`}
-                                        >
-                                            {meal.status === 'completed' ? 'Completado' : meal.status === 'next' ? 'Marcar hecho' : 'Comenzar'}
-                                        </button>
+                                        <p className="text-sm font-medium text-slate-300">
+                                            {meal.status === 'completed' && meal.loggedCalories != null ? Math.round(meal.loggedCalories) : meal.calories} kcal
+                                        </p>
+                                        <MealLogger meal={meal} onLog={logMeal} />
                                     </div>
                                 </article>
                             ))}

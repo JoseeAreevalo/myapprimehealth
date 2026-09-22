@@ -1,5 +1,5 @@
 import { pool } from '../../db/pool';
-import { MealStatus, NutritionDayConfig, NutritionMeal, NutritionMealInput, NutritionMealItem, NutritionPlan } from './nutrition.types';
+import { LoggedMealItem, MealStatus, NutritionDayConfig, NutritionMeal, NutritionMealInput, NutritionMealItem, NutritionPlan } from './nutrition.types';
 
 interface PlanRow {
     id: number;
@@ -56,6 +56,8 @@ interface MealItemRow {
 interface MealLogRow {
     meal_id: number;
     status: MealStatus;
+    logged_items: LoggedMealItem[] | null;
+    logged_calories: string | null;
 }
 
 function toPlan(row: PlanRow): NutritionPlan {
@@ -369,20 +371,40 @@ export const nutritionMealItemsRepository = {
 };
 
 export const nutritionMealLogsRepository = {
-    async listForDate(clientId: number, logDate: string): Promise<Map<number, MealStatus>> {
+    async listForDate(clientId: number, logDate: string): Promise<Map<number, { status: MealStatus; loggedItems: LoggedMealItem[] | null; loggedCalories: number | null }>> {
         const { rows } = await pool.query<MealLogRow>(
-            'SELECT meal_id, status FROM nutrition_meal_logs WHERE client_id = $1 AND log_date = $2',
+            'SELECT meal_id, status, logged_items, logged_calories FROM nutrition_meal_logs WHERE client_id = $1 AND log_date = $2',
             [clientId, logDate],
         );
-        return new Map(rows.map((row) => [row.meal_id, row.status]));
+        return new Map(
+            rows.map((row) => [
+                row.meal_id,
+                {
+                    status: row.status,
+                    loggedItems: row.logged_items,
+                    loggedCalories: row.logged_calories === null ? null : Number(row.logged_calories),
+                },
+            ]),
+        );
     },
 
-    async upsert(mealId: number, clientId: number, logDate: string, status: MealStatus): Promise<void> {
+    async upsert(
+        mealId: number,
+        clientId: number,
+        logDate: string,
+        status: MealStatus,
+        loggedItems?: LoggedMealItem[] | null,
+        loggedCalories?: number | null,
+    ): Promise<void> {
         await pool.query(
-            `INSERT INTO nutrition_meal_logs (meal_id, client_id, log_date, status)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (meal_id, log_date) DO UPDATE SET status = EXCLUDED.status, updated_at = now()`,
-            [mealId, clientId, logDate, status],
+            `INSERT INTO nutrition_meal_logs (meal_id, client_id, log_date, status, logged_items, logged_calories)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (meal_id, log_date) DO UPDATE SET
+         status = EXCLUDED.status,
+         logged_items = COALESCE(EXCLUDED.logged_items, nutrition_meal_logs.logged_items),
+         logged_calories = COALESCE(EXCLUDED.logged_calories, nutrition_meal_logs.logged_calories),
+         updated_at = now()`,
+            [mealId, clientId, logDate, status, loggedItems ? JSON.stringify(loggedItems) : null, loggedCalories ?? null],
         );
     },
 };

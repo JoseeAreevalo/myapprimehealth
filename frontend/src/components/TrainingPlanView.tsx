@@ -6,7 +6,7 @@ import ExerciseAutocomplete, { registerExerciseName } from './ExerciseAutocomple
 import TrainingCalendar from './TrainingCalendar';
 import { dayVolumeTotals, loggedVolume } from '../utils/trainingMath';
 
-const emptyExercise = (): ExerciseDraft => ({ name: '', targetSets: '3', targetReps: '10', targetWeightKg: '' });
+const emptyExercise = (): ExerciseDraft => ({ name: '', targetSets: '3', targetReps: '10', targetWeightKg: '', targetRir: '2' });
 const emptyDay = (weekday: number | null): DayDraft => ({ label: '', weekday, exercises: [emptyExercise()] });
 const WEEKDAY_LABELS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -135,15 +135,16 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
                             </div>
                         </div>
                         <div className="mt-3 space-y-2">
-                            <div className="grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5 px-0.5 text-[10px] text-slate-500">
+                            <div className="grid grid-cols-[1.2fr_0.5fr_0.5fr_0.6fr_0.5fr_auto] gap-1.5 px-0.5 text-[10px] text-slate-500">
                                 <span>Ejercicio</span>
                                 <span>Series</span>
                                 <span>Repeticiones</span>
                                 <span>Peso (kg)</span>
+                                <span>RIR</span>
                                 <span />
                             </div>
                             {day.exercises.map((exercise, exIndex) => (
-                                <div className="grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5" key={exIndex}>
+                                <div className="grid grid-cols-[1.2fr_0.5fr_0.5fr_0.6fr_0.5fr_auto] gap-1.5" key={exIndex}>
                                     <ExerciseAutocomplete
                                         className="w-full min-w-0 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
                                         onChange={(newValue) => updateExercise(dayIndex, exIndex, 'name', newValue)}
@@ -169,6 +170,13 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
                                         placeholder="kg"
                                         type="number"
                                         value={exercise.targetWeightKg}
+                                    />
+                                    <input
+                                        className="w-full min-w-0 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                                        onChange={(event) => updateExercise(dayIndex, exIndex, 'targetRir', event.target.value)}
+                                        placeholder="RIR"
+                                        type="number"
+                                        value={exercise.targetRir}
                                     />
                                     <button
                                         className="rounded-lg bg-rose-500/15 px-2 text-xs text-rose-300 hover:bg-rose-500/25 disabled:opacity-30"
@@ -228,16 +236,20 @@ function ExerciseLogRow({
     onLog,
 }: {
     exercise: TrainingExercise;
-    onLog: (exerciseId: number, sets: { setNumber: number; actualReps: number | null; actualWeightKg: number | null }[]) => Promise<void>;
+    onLog: (exerciseId: number, sets: { setNumber: number; actualReps: number | null; actualWeightKg: number | null; actualRir: number | null }[]) => Promise<void>;
 }) {
     const initial = Array.from({ length: exercise.targetSets }, (_, i) => {
         const existing = exercise.logs.find((log) => log.setNumber === i + 1);
-        return { reps: existing?.actualReps != null ? String(existing.actualReps) : '', weight: existing?.actualWeightKg != null ? String(existing.actualWeightKg) : '' };
+        return {
+            reps: existing?.actualReps != null ? String(existing.actualReps) : '',
+            weight: existing?.actualWeightKg != null ? String(existing.actualWeightKg) : '',
+            rir: existing?.actualRir != null ? String(existing.actualRir) : '',
+        };
     });
     const [rows, setRows] = useState(initial);
     const [saving, setSaving] = useState(false);
 
-    const updateRow = (index: number, field: 'reps' | 'weight', value: string) => {
+    const updateRow = (index: number, field: 'reps' | 'weight' | 'rir', value: string) => {
         setRows((current) => current.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
     };
 
@@ -250,6 +262,7 @@ function ExerciseLogRow({
                     setNumber: index + 1,
                     actualReps: row.reps ? Number(row.reps) : null,
                     actualWeightKg: row.weight ? Number(row.weight) : null,
+                    actualRir: row.rir ? Number(row.rir) : null,
                 })),
             );
         } finally {
@@ -263,11 +276,18 @@ function ExerciseLogRow({
                 <p className="text-sm font-medium text-slate-100">{exercise.name}</p>
                 <p className="text-xs text-slate-500">
                     Meta: {exercise.targetSets}x{exercise.targetReps}{exercise.targetWeightKg != null ? ` @ ${exercise.targetWeightKg}kg` : ''}
+                    {exercise.targetRir != null ? ` · RIR ${exercise.targetRir}` : ''}
                 </p>
             </div>
             <div className="mt-2 space-y-1.5">
+                <div className="grid grid-cols-[auto_1fr_1fr_1fr] gap-2 px-0.5 text-[10px] text-slate-500">
+                    <span className="w-12" />
+                    <span>Reps</span>
+                    <span>Peso (kg)</span>
+                    <span>RIR</span>
+                </div>
                 {rows.map((row, index) => (
-                    <div className="grid grid-cols-[auto_1fr_1fr] items-center gap-2" key={index}>
+                    <div className="grid grid-cols-[auto_1fr_1fr_1fr] items-center gap-2" key={index}>
                         <span className="w-12 text-xs text-slate-500">Serie {index + 1}</span>
                         <input
                             className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
@@ -282,6 +302,13 @@ function ExerciseLogRow({
                             placeholder="kg"
                             type="number"
                             value={row.weight}
+                        />
+                        <input
+                            className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                            onChange={(event) => updateRow(index, 'rir', event.target.value)}
+                            placeholder="RIR"
+                            type="number"
+                            value={row.rir}
                         />
                     </div>
                 ))}
@@ -368,7 +395,7 @@ function DayWeekdayEditor({
     );
 }
 
-export default function TrainingPlanView({ clientId }: { clientId: number }) {
+export default function TrainingPlanView({ clientId, canManage = true }: { clientId: number; canManage?: boolean }) {
     const { token } = useAuth();
     const { plan, loading, error, createPlan, updatePlan, deletePlan, addDay, updateDay, deleteDay, addExercise, deleteExercise, logSets } = useTrainingPlan(clientId);
     const [selectedDayId, setSelectedDayId] = useState<number | null>(null);
@@ -390,12 +417,14 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                 <div className="flex items-center justify-between">
                     <div>
                         <p className="eyebrow">Entrenamiento</p>
-                        <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Configura tu semana</h2>
+                        <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">{canManage ? 'Configura tu semana' : 'Sin plan asignado'}</h2>
                     </div>
                     <Dumbbell className="text-amber-300" size={20} />
                 </div>
                 <p className="mt-3 text-sm text-slate-400">
-                    Define cuántos días entrenas por semana y qué ejercicios corresponden a cada día.
+                    {canManage
+                        ? 'Define cuántos días entrenas por semana y qué ejercicios corresponden a cada día.'
+                        : 'Tu coach aún no te ha asignado un plan de entrenamiento.'}
                 </p>
                 <button
                     className="mt-3 flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-slate-100"
@@ -409,9 +438,11 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                         <TrainingCalendar clientId={clientId} />
                     </div>
                 )}
-                <div className="mt-5">
-                    <CreatePlanForm onCreate={createPlan} />
-                </div>
+                {canManage && (
+                    <div className="mt-5">
+                        <CreatePlanForm onCreate={createPlan} />
+                    </div>
+                )}
             </section>
         );
     }
@@ -419,12 +450,13 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
     const activeDay = plan.days.find((day) => day.id === selectedDayId) ?? plan.days[0] ?? null;
 
     const handleAddExercise = async () => {
-        if (!activeDay || !newExercise.name || !newExercise.targetSets || !newExercise.targetReps) return;
+        if (!activeDay || !newExercise.name || !newExercise.targetSets || !newExercise.targetReps || !newExercise.targetRir) return;
         await addExercise(activeDay.id, {
             name: newExercise.name,
             targetSets: Number(newExercise.targetSets),
             targetReps: Number(newExercise.targetReps),
             targetWeightKg: newExercise.targetWeightKg ? Number(newExercise.targetWeightKg) : null,
+            targetRir: Number(newExercise.targetRir),
         });
         await registerExerciseName(newExercise.name, token);
         setNewExercise(emptyExercise());
@@ -468,16 +500,18 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                     <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">{plan.label}</h2>
                     <p className="mt-1 text-xs text-slate-500">Duración: {plan.durationWeeks} semana{plan.durationWeeks === 1 ? '' : 's'}</p>
                 </div>
-                <button
-                    className="flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-amber-200"
-                    onClick={() => {
-                        setEditing((current) => !current);
-                        setDurationDraft(String(plan.durationWeeks));
-                    }}
-                    type="button"
-                >
-                    <Pencil size={13} /> {editing ? 'Listo' : 'Editar'}
-                </button>
+                {canManage && (
+                    <button
+                        className="flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-amber-200"
+                        onClick={() => {
+                            setEditing((current) => !current);
+                            setDurationDraft(String(plan.durationWeeks));
+                        }}
+                        type="button"
+                    >
+                        <Pencil size={13} /> {editing ? 'Listo' : 'Editar'}
+                    </button>
+                )}
             </div>
 
             {editing && (
@@ -551,7 +585,7 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                 </div>
             )}
 
-            <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-500">D\u00edas de la semana configurados</p>
+            <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Días de la semana configurados</p>
             <div className="mt-1.5 flex flex-wrap gap-2">
                 {plan.days.map((day) => (
                     <button
@@ -639,15 +673,16 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
 
                     {editing && (
                         <div className="border-t border-white/7 pt-3">
-                            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Agregar ejercicio a este d\u00eda</p>
-                            <div className="grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5 px-0.5 text-[10px] text-slate-500">
+                            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Agregar ejercicio a este día</p>
+                            <div className="grid grid-cols-[1.2fr_0.5fr_0.5fr_0.6fr_0.5fr_auto] gap-1.5 px-0.5 text-[10px] text-slate-500">
                                 <span>Ejercicio</span>
                                 <span>Series</span>
                                 <span>Repeticiones</span>
                                 <span>Peso (kg)</span>
+                                <span>RIR</span>
                                 <span />
                             </div>
-                            <div className="mt-1 grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5">
+                            <div className="mt-1 grid grid-cols-[1.2fr_0.5fr_0.5fr_0.6fr_0.5fr_auto] gap-1.5">
                                 <ExerciseAutocomplete
                                     className="w-full min-w-0 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
                                     onChange={(newValue) => setNewExercise((current) => ({ ...current, name: newValue }))}
@@ -673,6 +708,13 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                                     placeholder="kg"
                                     type="number"
                                     value={newExercise.targetWeightKg}
+                                />
+                                <input
+                                    className="w-full min-w-0 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                                    onChange={(event) => setNewExercise((current) => ({ ...current, targetRir: event.target.value }))}
+                                    placeholder="RIR"
+                                    type="number"
+                                    value={newExercise.targetRir}
                                 />
                                 <button className="rounded-lg bg-amber-500 px-2 text-xs font-semibold text-white hover:bg-amber-400" onClick={handleAddExercise} type="button">
                                     <Plus size={13} />

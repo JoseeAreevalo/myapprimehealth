@@ -45,6 +45,9 @@ function validateExerciseInput(exercise: TrainingExerciseInput): void {
     if (!Number.isFinite(exercise.targetReps) || exercise.targetReps <= 0) {
         throw new ValidationError('Las repeticiones objetivo deben ser un número positivo.');
     }
+    if (exercise.targetRir == null || !Number.isInteger(exercise.targetRir) || exercise.targetRir < 0 || exercise.targetRir > 10) {
+        throw new ValidationError('El RIR objetivo es obligatorio y debe estar entre 0 y 10.');
+    }
 }
 
 function validateWeekday(weekday: number | null | undefined): void {
@@ -239,7 +242,7 @@ export function createTrainingService() {
         async updateExercise(
             requester: AuthenticatedUser,
             exerciseId: number,
-            updates: { name?: string; targetSets?: number; targetReps?: number; targetWeightKg?: number | null },
+            updates: { name?: string; targetSets?: number; targetReps?: number; targetWeightKg?: number | null; targetRir?: number | null },
         ): Promise<TrainingExercise> {
             const exercise = await trainingExercisesRepository.findById(exerciseId);
             if (!exercise) {
@@ -272,7 +275,7 @@ export function createTrainingService() {
         async logSets(
             requester: AuthenticatedUser,
             exerciseId: number,
-            sets: { setNumber: number; actualReps: number | null; actualWeightKg: number | null }[],
+            sets: { setNumber: number; actualReps: number | null; actualWeightKg: number | null; actualRir: number | null }[],
         ): Promise<void> {
             const exercise = await trainingExercisesRepository.findById(exerciseId);
             if (!exercise) {
@@ -290,7 +293,7 @@ export function createTrainingService() {
 
             const logDate = todayIsoDate();
             for (const set of sets) {
-                await trainingSetLogsRepository.upsertSet(exerciseId, logDate, set.setNumber, set.actualReps, set.actualWeightKg);
+                await trainingSetLogsRepository.upsertSet(exerciseId, logDate, set.setNumber, set.actualReps, set.actualWeightKg, set.actualRir ?? null);
             }
         },
 
@@ -328,6 +331,7 @@ export function createTrainingService() {
                     setNumber: row.set_number,
                     actualReps: row.actual_reps,
                     actualWeightKg: row.actual_weight_kg === null ? null : Number(row.actual_weight_kg),
+                    actualRir: row.actual_rir,
                 });
             }
 
