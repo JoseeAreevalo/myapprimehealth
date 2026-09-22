@@ -1,4 +1,4 @@
-import { Activity, ChevronDown, Dumbbell, LogOut, Menu, Search, ShieldCheck, Sparkles, User, Users, Utensils, X } from 'lucide-react';
+import { Activity, ChevronDown, Dumbbell, Flame, LogOut, Menu, Search, ShieldCheck, Sparkles, User, Users, Utensils, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -10,12 +10,14 @@ const navigation = [
     { label: 'Resumen', icon: Sparkles, to: '/' },
     { label: 'Nutrición', icon: Utensils, to: '/nutrition' },
     { label: 'Entrenamiento', icon: Dumbbell, to: '/training' },
+    { label: 'Actividad', icon: Flame, to: '/activity' },
     { label: 'Progreso', icon: Activity, to: '/progress' },
 ];
 
 const coachNavigation = [
     { label: 'Nutrición de clientes', icon: Utensils, to: '/clients/nutrition' },
     { label: 'Entrenamiento de clientes', icon: Users, to: '/clients/training' },
+    { label: 'Actividad de clientes', icon: Flame, to: '/clients/activity' },
     { label: 'Seguimiento', icon: Search, to: '/clients/review' },
 ];
 

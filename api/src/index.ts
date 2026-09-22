@@ -16,6 +16,7 @@ import foodsRouter from './modules/foods/foods.router';
 import hydrationRouter from './modules/hydration/hydration.router';
 import trainingRouter from './modules/training/training.router';
 import exercisesRouter from './modules/exercises/exercises.router';
+import activityRouter from './modules/activity/activity.router';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -83,6 +84,7 @@ app.use('/api/v1/training', trainingRouter);
 app.use('/api/v1/exercises', exercisesRouter);
 app.use('/api/v1/foods', foodsRouter);
 app.use('/api/v1/hydration', hydrationRouter);
+app.use('/api/v1/activity', activityRouter);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApi));
 app.get('/api-docs.json', (_req, res): void => {
   res.json(openApi);

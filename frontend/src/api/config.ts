@@ -91,5 +91,13 @@ export const api = {
         trainingHistory: (clientId: number) => `/api/v1/training/clients/${clientId}/history`,
         exercisesSearch: '/api/v1/exercises',
         exercisesCreate: '/api/v1/exercises',
+        activityPlan: (clientId: number) => `/api/v1/activity/clients/${clientId}/plan`,
+        activityPlanDelete: (planId: number) => `/api/v1/activity/plans/${planId}`,
+        activityCardioUpdate: (planId: number) => `/api/v1/activity/plans/${planId}/cardio`,
+        activityCardioDelete: (planId: number, weekday: number) => `/api/v1/activity/plans/${planId}/cardio/${weekday}`,
+        activityStepsUpdate: (planId: number) => `/api/v1/activity/plans/${planId}/steps`,
+        activityStepsDelete: (planId: number, weekday: number) => `/api/v1/activity/plans/${planId}/steps/${weekday}`,
+        activityLog: (clientId: number) => `/api/v1/activity/clients/${clientId}/log`,
+        activityLogs: (clientId: number) => `/api/v1/activity/clients/${clientId}/logs`,
     }
 };

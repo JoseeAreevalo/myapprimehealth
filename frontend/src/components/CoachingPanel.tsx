@@ -7,6 +7,7 @@ import { useClientProgress } from '../hooks/useClientProgress';
 import { PersonSummary } from '../hooks/useCoachClients';
 import { NutritionPlanWithMeals } from '../hooks/useNutritionToday';
 import CheckInPhotos from './CheckInPhotos';
+import ActivityPlanView from './ActivityPlanView';
 import EditNutritionPlan from './EditNutritionPlan';
 import MealItemsEditor, { MealItemDraft, mealItemsTotals } from './MealItemsEditor';
 import NutritionLiveTotals from './NutritionLiveTotals';
@@ -574,6 +575,10 @@ function ClientReviewDetail({ client }: { client: PersonSummary }) {
             <div>
                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Entrenamiento (solo lectura)</p>
                 <TrainingPlanView clientId={client.id} canManage={false} readOnly />
+            </div>
+            <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Actividad (HEAT/NEAT, solo lectura)</p>
+                <ActivityPlanView canManage={false} clientId={client.id} />
             </div>
         </div>
     );
