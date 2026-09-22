@@ -92,6 +92,17 @@ export const usersRepository = {
         const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [id]);
         return (rowCount ?? 0) > 0;
     },
+
+    async updateAccount(id: number, updates: { fullName?: string | null; email?: string }): Promise<IdentityUser | undefined> {
+        const { rows } = await pool.query<UserRow>(
+            `UPDATE users
+       SET full_name = COALESCE($2, full_name), email = COALESCE($3, email), updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+            [id, updates.fullName ?? null, updates.email ?? null],
+        );
+        return rows[0] ? toUser(rows[0]) : undefined;
+    },
 };
 
 export const refreshSessionsRepository = {

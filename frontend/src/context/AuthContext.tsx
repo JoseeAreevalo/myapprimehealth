@@ -18,6 +18,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -64,6 +65,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
   }, [token]);
 
+  const refreshUser = async () => {
+    if (!token) return;
+    const res = await axios.get(`${api.baseURL}${api.endpoints.authMe}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const nextUser = normaliseUser(res.data?.user ?? res.data ?? null);
+    if (nextUser) {
+      setUser(nextUser);
+    }
+  };
+
   const persistSession = (payload: { accessToken?: string; token?: string; user?: Partial<User> | null }) => {
     const token = payload?.accessToken ?? payload?.token;
     const nextUser = normaliseUser(payload?.user ?? null);
@@ -109,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        refreshUser,
       }}
     >
       {children}

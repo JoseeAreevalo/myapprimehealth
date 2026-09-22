@@ -154,5 +154,32 @@ export function createIdentityService() {
 
       return toAuthenticatedUser(user);
     },
+
+    async updateOwnAccount(id: number, updates: { fullName?: string | null; email?: string }): Promise<AuthenticatedUser> {
+      const patch: { fullName?: string | null; email?: string } = {};
+
+      if (updates.fullName !== undefined) {
+        patch.fullName = updates.fullName?.trim() || null;
+      }
+
+      if (updates.email !== undefined) {
+        const email = normalizeEmail(updates.email);
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          throw new Error('El formato del correo no es válido.');
+        }
+        const existing = await usersRepository.findByEmail(email);
+        if (existing && existing.id !== id) {
+          throw new Error('Ese correo ya está en uso.');
+        }
+        patch.email = email;
+      }
+
+      const updated = await usersRepository.updateAccount(id, patch);
+      if (!updated) {
+        throw new Error('Usuario no encontrado.');
+      }
+
+      return toAuthenticatedUser(updated);
+    },
   };
 }

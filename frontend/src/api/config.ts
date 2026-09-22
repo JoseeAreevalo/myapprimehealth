@@ -39,6 +39,7 @@ export const api = {
         authRegister: '/api/v1/identity/register',
         authLogin: '/api/v1/identity/login',
         authMe: '/api/v1/identity/me',
+        accountUpdate: '/api/v1/identity/me',
         authRefresh: '/api/v1/identity/refresh',
         authLogout: '/api/v1/identity/logout',
         myProfile: '/api/v1/people/me/profile',

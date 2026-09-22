@@ -75,6 +75,19 @@ identityRouter.get('/me', authenticate, async (req: Request, res: Response): Pro
   }
 });
 
+identityRouter.patch('/me', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = await identityService.updateOwnAccount(req.authenticatedUser!.id, {
+      fullName: req.body.fullName,
+      email: req.body.email,
+    });
+    res.status(200).json({ user });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'No se pudo actualizar tu cuenta.';
+    res.status(400).json({ error: { code: 'ACCOUNT_UPDATE_FAILED', message } });
+  }
+});
+
 identityRouter.get('/admin-only', authenticate, authorizeRoles('super_admin'), (_req, res): void => {
   res.status(200).json({ message: 'Acceso concedido.' });
 });
