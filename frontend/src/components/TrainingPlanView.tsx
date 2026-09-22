@@ -3,6 +3,7 @@ import { CalendarDays, Dumbbell, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTrainingPlan, DayDraft, ExerciseDraft, TrainingDay, TrainingExercise } from '../hooks/useTrainingPlan';
 import ExerciseAutocomplete, { registerExerciseName } from './ExerciseAutocomplete';
+import ExerciseGlyph from './ExerciseGlyph';
 import TrainingCalendar from './TrainingCalendar';
 import { dayVolumeTotals, loggedVolume } from '../utils/trainingMath';
 
@@ -258,7 +259,10 @@ function ExerciseReadOnlyRow({ exercise }: { exercise: TrainingExercise }) {
     return (
         <div className="rounded-xl border border-white/7 bg-white/[0.03] p-3">
             <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-slate-100">{exercise.name}</p>
+                <div className="flex items-center gap-2">
+                    <ExerciseGlyph name={exercise.name} />
+                    <p className="text-sm font-medium text-slate-100">{exercise.name}</p>
+                </div>
                 <p className="text-xs text-slate-500">
                     Meta: {exercise.targetSets}x{exercise.targetReps}{exercise.targetWeightKg != null ? ` @ ${exercise.targetWeightKg}kg` : ''}
                     {exercise.targetRir != null ? ` · RIR ${exercise.targetRir}` : ''}
@@ -325,7 +329,10 @@ function ExerciseLogRow({
     return (
         <div className="rounded-xl border border-white/7 bg-white/[0.03] p-3">
             <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-slate-100">{exercise.name}</p>
+                <div className="flex items-center gap-2">
+                    <ExerciseGlyph name={exercise.name} />
+                    <p className="text-sm font-medium text-slate-100">{exercise.name}</p>
+                </div>
                 <p className="text-xs text-slate-500">
                     Meta: {exercise.targetSets}x{exercise.targetReps}{exercise.targetWeightKg != null ? ` @ ${exercise.targetWeightKg}kg` : ''}
                     {exercise.targetRir != null ? ` · RIR ${exercise.targetRir}` : ''}
@@ -670,7 +677,7 @@ export default function TrainingPlanView({ clientId, canManage = true, readOnly 
             </button>
             {showCalendar && (
                 <div className="mt-3">
-                    <TrainingCalendar clientId={clientId} onViewWeeklyPlan={() => setShowCalendar(false)} planDays={plan.days} />
+                    <TrainingCalendar clientId={clientId} endDate={plan.endDate} onViewWeeklyPlan={() => setShowCalendar(false)} planDays={plan.days} startDate={plan.startDate} />
                 </div>
             )}
 
@@ -747,7 +754,8 @@ export default function TrainingPlanView({ clientId, canManage = true, readOnly 
                     {activeDay.exercises.map((exercise) =>
                         editing ? (
                             <div className="flex items-center justify-between rounded-xl border border-white/7 bg-white/[0.03] px-3 py-2 text-xs text-slate-200" key={exercise.id}>
-                                <span>
+                                <span className="flex items-center gap-2">
+                                    <ExerciseGlyph name={exercise.name} size={22} />
                                     {exercise.name} · {exercise.targetSets}x{exercise.targetReps}
                                     {exercise.targetWeightKg != null ? ` @ ${exercise.targetWeightKg}kg` : ''}
                                 </span>

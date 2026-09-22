@@ -82,14 +82,31 @@ export default function NutritionPage() {
                             Hoy: {findActiveDayConfig(todayPlan.dayConfigs)?.label}
                         </span>
                     )}
-                    <ul className="mt-3 space-y-2 text-sm text-slate-300">
+                    <ul className="mt-3 divide-y divide-white/7">
                         {todayPlan.meals.map((meal) => (
-                            <li className="flex items-center justify-between gap-3" key={meal.id}>
-                                <span>{meal.name} {meal.mealTime && <span className="text-slate-500">· {meal.mealTime}</span>}</span>
-                                <span className="flex items-center gap-3">
-                                    <span>{meal.status === 'completed' && meal.loggedCalories != null ? Math.round(meal.loggedCalories) : meal.calories} kcal</span>
+                            <li className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0" key={meal.id}>
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-medium text-slate-100">{meal.name} {meal.mealTime && <span className="text-xs font-normal text-slate-500">· {meal.mealTime}</span>}</p>
+                                    {meal.detail && <p className="mt-1 text-xs text-slate-500">{meal.detail}</p>}
+                                    {meal.items.length > 0 && (
+                                        <p className="mt-1 text-xs text-slate-500">
+                                            {meal.items.map((item) => `${item.foodName} (${item.grams}g)`).join(', ')}
+                                        </p>
+                                    )}
+                                    {meal.items.length > 0 && (
+                                        <p className="mt-1 text-xs text-slate-400">
+                                            P {meal.items.reduce((sum, item) => sum + item.proteinG, 0).toFixed(1)}g · C{' '}
+                                            {meal.items.reduce((sum, item) => sum + item.carbsG, 0).toFixed(1)}g · G{' '}
+                                            {meal.items.reduce((sum, item) => sum + item.fatG, 0).toFixed(1)}g
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="shrink-0 text-right">
+                                    <p className="text-sm font-medium text-slate-300">
+                                        {meal.status === 'completed' && meal.loggedCalories != null ? Math.round(meal.loggedCalories) : meal.calories} kcal
+                                    </p>
                                     <MealLogger meal={meal} onLog={logMeal} />
-                                </span>
+                                </div>
                             </li>
                         ))}
                     </ul>
@@ -102,7 +119,7 @@ export default function NutritionPage() {
                     </button>
                     {showCalendar && (
                         <div className="mt-3">
-                            <NutritionCalendar dayConfigs={todayPlan.dayConfigs} />
+                            <NutritionCalendar dayConfigs={todayPlan.dayConfigs} endDate={todayPlan.endDate} startDate={todayPlan.startDate} />
                         </div>
                     )}
                     {canManageOwnPlan && <EditNutritionPlan onUpdated={refresh} plan={todayPlan} />}

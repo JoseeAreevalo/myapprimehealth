@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTrainingHistory } from '../hooks/useTrainingHistory';
 import { TrainingDay } from '../hooks/useTrainingPlan';
+import ExerciseGlyph from './ExerciseGlyph';
 
 const MONTH_NAMES = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
@@ -28,10 +29,14 @@ function weekdayOfIsoDate(iso: string): number {
 export default function TrainingCalendar({
     clientId,
     planDays = [],
+    startDate,
+    endDate,
     onViewWeeklyPlan,
 }: {
     clientId: number;
     planDays?: TrainingDay[];
+    startDate?: string | null;
+    endDate?: string | null;
     onViewWeeklyPlan?: () => void;
 }) {
     const { year, month, days, loading, error, goToPreviousMonth, goToNextMonth } = useTrainingHistory(clientId);
@@ -44,7 +49,8 @@ export default function TrainingCalendar({
     const historyByDate = new Map(days.map((day) => [day.date, day]));
     const planByWeekday = new Map(planDays.filter((day) => day.weekday != null).map((day) => [day.weekday as number, day]));
     const selectedDay = selectedDate ? historyByDate.get(selectedDate) : undefined;
-    const scheduledDay = selectedDate ? planByWeekday.get(weekdayOfIsoDate(selectedDate)) : undefined;
+    const selectedWithinRange = selectedDate ? (!startDate || selectedDate >= startDate) && (!endDate || selectedDate <= endDate) : false;
+    const scheduledDay = selectedDate && selectedWithinRange ? planByWeekday.get(weekdayOfIsoDate(selectedDate)) : undefined;
     const todayIso = new Date().toISOString().slice(0, 10);
 
     return (
@@ -79,7 +85,8 @@ export default function TrainingCalendar({
                             if (day === null) return <div key={`blank-${index}`} />;
                             const iso = toIsoDate(year, month, day);
                             const hasHistory = historyByDate.has(iso);
-                            const isScheduled = planByWeekday.has(weekdayOfIsoDate(iso));
+                            const withinRange = (!startDate || iso >= startDate) && (!endDate || iso <= endDate);
+                            const isScheduled = withinRange && planByWeekday.has(weekdayOfIsoDate(iso));
                             const isToday = iso === todayIso;
                             const isSelected = iso === selectedDate;
                             return (
@@ -121,7 +128,9 @@ export default function TrainingCalendar({
                         {!scheduledDay && <p className="text-xs text-slate-500">Día de descanso.</p>}
                         {scheduledDay?.exercises.map((exercise) => (
                             <div className="rounded-lg border border-amber-400/20 bg-amber-400/5 p-2.5" key={exercise.id}>
-                                <p className="text-xs font-medium text-slate-100">{exercise.name}</p>
+                                <p className="flex items-center gap-1.5 text-xs font-medium text-slate-100">
+                                    <ExerciseGlyph name={exercise.name} size={18} /> {exercise.name}
+                                </p>
                                 <p className="mt-0.5 text-[11px] text-slate-400">
                                     Meta: {exercise.targetSets}x{exercise.targetReps}
                                     {exercise.targetWeightKg != null ? ` @ ${exercise.targetWeightKg}kg` : ''}
@@ -135,8 +144,8 @@ export default function TrainingCalendar({
                         {!selectedDay && <p className="text-xs text-slate-500">No hay ejercicios registrados este día.</p>}
                         {selectedDay?.exercises.map((exercise) => (
                             <div className="rounded-lg border border-white/7 bg-white/[0.03] p-2.5" key={exercise.exerciseId}>
-                                <p className="text-xs font-medium text-slate-100">
-                                    {exercise.exerciseName} <span className="text-slate-500">· {exercise.dayLabel}</span>
+                                <p className="flex items-center gap-1.5 text-xs font-medium text-slate-100">
+                                    <ExerciseGlyph name={exercise.exerciseName} size={18} /> {exercise.exerciseName} <span className="text-slate-500">· {exercise.dayLabel}</span>
                                 </p>
                                 <ul className="mt-1 space-y-0.5">
                                     {exercise.sets.map((set) => (

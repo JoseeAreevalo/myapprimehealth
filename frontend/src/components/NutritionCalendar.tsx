@@ -38,7 +38,7 @@ function weekdayOfIsoDate(iso: string): number {
     return jsDay === 0 ? 7 : jsDay;
 }
 
-export default function NutritionCalendar({ dayConfigs }: { dayConfigs: NutritionDayConfig[] }) {
+export default function NutritionCalendar({ dayConfigs, startDate, endDate }: { dayConfigs: NutritionDayConfig[]; startDate?: string | null; endDate?: string | null }) {
     const now = new Date();
     const [year, setYear] = useState(now.getFullYear());
     const [month, setMonth] = useState(now.getMonth() + 1);
@@ -71,7 +71,8 @@ export default function NutritionCalendar({ dayConfigs }: { dayConfigs: Nutritio
         }
     };
 
-    const selectedEntry = selectedDate ? configByWeekday.get(weekdayOfIsoDate(selectedDate)) : undefined;
+    const selectedWithinRange = selectedDate ? (!startDate || selectedDate >= startDate) && (!endDate || selectedDate <= endDate) : false;
+    const selectedEntry = selectedDate && selectedWithinRange ? configByWeekday.get(weekdayOfIsoDate(selectedDate)) : undefined;
 
     return (
         <section className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
@@ -112,7 +113,8 @@ export default function NutritionCalendar({ dayConfigs }: { dayConfigs: Nutritio
                 {cells.map((day, index) => {
                     if (day === null) return <div key={`blank-${index}`} />;
                     const iso = toIsoDate(year, month, day);
-                    const entry = configByWeekday.get(weekdayOfIsoDate(iso));
+                    const withinRange = (!startDate || iso >= startDate) && (!endDate || iso <= endDate);
+                    const entry = withinRange ? configByWeekday.get(weekdayOfIsoDate(iso)) : undefined;
                     const isToday = iso === todayIso;
                     const isSelected = iso === selectedDate;
                     const palette = entry ? CONFIG_COLORS[entry.colorIndex] : null;

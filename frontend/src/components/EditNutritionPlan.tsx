@@ -355,7 +355,7 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
             >
                 <CalendarDays size={13} /> {showCalendar ? 'Ocultar calendario' : 'Ver calendario de alimentación'}
             </button>
-            {showCalendar && <NutritionCalendar dayConfigs={plan.dayConfigs} />}
+            {showCalendar && <NutritionCalendar dayConfigs={plan.dayConfigs} endDate={plan.endDate} startDate={plan.startDate} />}
 
             <NutritionDayConfigsEditor onUpdated={onUpdated} plan={plan} />
 
