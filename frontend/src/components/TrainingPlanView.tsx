@@ -97,16 +97,21 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
                             <div>
                                 <label className="mb-1 block text-[10px] text-slate-500">Día de la semana</label>
                                 <select
-                                    className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-sm text-slate-100"
+                                    className="w-full rounded-lg border border-white/8 bg-slate-900 px-2 py-1.5 text-sm text-slate-100"
                                     onChange={(event) => updateDayWeekday(dayIndex, event.target.value ? Number(event.target.value) : null)}
                                     value={day.weekday ?? ''}
                                 >
-                                    <option value="">Sin asignar</option>
+                                    <option className="bg-slate-900 text-slate-100" value="">Sin asignar</option>
                                     {WEEKDAY_LABELS.map((weekdayLabel, weekdayIndex) => {
                                         const weekdayValue = weekdayIndex + 1;
                                         const usedElsewhere = days.some((other, otherIndex) => otherIndex !== dayIndex && other.weekday === weekdayValue);
                                         return (
-                                            <option disabled={usedElsewhere} key={weekdayValue} value={weekdayValue}>
+                                            <option
+                                                className="bg-slate-900 text-slate-100 disabled:text-slate-600"
+                                                disabled={usedElsewhere}
+                                                key={weekdayValue}
+                                                value={weekdayValue}
+                                            >
                                                 {weekdayLabel}
                                             </option>
                                         );
@@ -328,16 +333,21 @@ function DayWeekdayEditor({
             <div>
                 <label className="mb-1 block text-[10px] text-slate-500">Día de la semana de este día</label>
                 <select
-                    className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                    className="rounded-lg border border-white/8 bg-slate-900 px-2 py-1.5 text-xs text-slate-100"
                     onChange={(event) => setWeekday(event.target.value ? Number(event.target.value) : null)}
                     value={weekday ?? ''}
                 >
-                    <option value="">Sin asignar</option>
+                    <option className="bg-slate-900 text-slate-100" value="">Sin asignar</option>
                     {WEEKDAY_LABELS.map((weekdayLabel, weekdayIndex) => {
                         const weekdayValue = weekdayIndex + 1;
                         const usedElsewhere = weekdayValue !== day.weekday && usedWeekdays.has(weekdayValue);
                         return (
-                            <option disabled={usedElsewhere} key={weekdayValue} value={weekdayValue}>
+                            <option
+                                className="bg-slate-900 text-slate-100 disabled:text-slate-600"
+                                disabled={usedElsewhere}
+                                key={weekdayValue}
+                                value={weekdayValue}
+                            >
                                 {weekdayLabel}
                             </option>
                         );
@@ -514,15 +524,20 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
             {editing && (
                 <div className="mt-3 flex gap-2">
                     <select
-                        className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                        className="rounded-lg border border-white/8 bg-slate-900 px-2 py-1.5 text-xs text-slate-100"
                         onChange={(event) => setNewDayWeekday(event.target.value ? Number(event.target.value) : null)}
                         value={newDayWeekday ?? ''}
                     >
-                        <option value="">Día de la semana</option>
+                        <option className="bg-slate-900 text-slate-100" value="">Día de la semana</option>
                         {WEEKDAY_LABELS.map((weekdayLabel, weekdayIndex) => {
                             const weekdayValue = weekdayIndex + 1;
                             return (
-                                <option disabled={usedWeekdays.has(weekdayValue)} key={weekdayValue} value={weekdayValue}>
+                                <option
+                                    className="bg-slate-900 text-slate-100 disabled:text-slate-600"
+                                    disabled={usedWeekdays.has(weekdayValue)}
+                                    key={weekdayValue}
+                                    value={weekdayValue}
+                                >
                                     {weekdayLabel}
                                 </option>
                             );
