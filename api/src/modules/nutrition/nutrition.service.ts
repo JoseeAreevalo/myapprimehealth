@@ -289,6 +289,15 @@ export function createNutritionService() {
             return nutritionPlansRepository.update(planId, updates);
         },
 
+        async deletePlan(requester: AuthenticatedUser, planId: number): Promise<void> {
+            const plan = await nutritionPlansRepository.findById(planId);
+            if (!plan) {
+                throw new NotFoundError('Plan de nutrición no encontrado.');
+            }
+            await assertCanManagePlan(requester, plan.clientId);
+            await nutritionPlansRepository.delete(planId);
+        },
+
         async addDayConfig(requester: AuthenticatedUser, planId: number, input: NutritionDayConfigInput): Promise<NutritionDayConfigWithMeals> {
             const plan = await nutritionPlansRepository.findById(planId);
             if (!plan) {

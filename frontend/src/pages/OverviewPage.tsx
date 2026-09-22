@@ -9,6 +9,7 @@ import FoodCalculator from '../components/FoodCalculator';
 import TrainingSummaryCard from '../components/TrainingSummaryCard';
 import { useNutritionToday } from '../hooks/useNutritionToday';
 import { useHydrationToday } from '../hooks/useHydrationToday';
+import { findActiveDayConfig } from '../utils/weekday';
 import type { LayoutContext } from '../components/AppLayout';
 
 export default function OverviewPage() {
@@ -114,6 +115,11 @@ export default function OverviewPage() {
                         <div>
                             <p className="eyebrow">Comidas de hoy</p>
                             <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.03em] text-slate-50">Nutre con intención</h2>
+                            {todayPlan && findActiveDayConfig(todayPlan.dayConfigs) && (
+                                <span className="mt-2 inline-block rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-200">
+                                    Hoy: {findActiveDayConfig(todayPlan.dayConfigs)?.label}
+                                </span>
+                            )}
                         </div>
                     </div>
                     {isClient && nutritionLoading && <p className="mt-7 text-sm text-slate-500">Cargando tu plan…</p>}

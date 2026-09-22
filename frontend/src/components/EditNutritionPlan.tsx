@@ -33,6 +33,8 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
     const [newMeal, setNewMeal] = useState({ name: '', mealTime: '', calories: '' });
     const [saving, setSaving] = useState(false);
     const [feedback, setFeedback] = useState('');
+    const [confirmingReset, setConfirmingReset] = useState(false);
+    const [resetting, setResetting] = useState(false);
 
     if (!open) {
         return (
@@ -78,6 +80,17 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
             setFeedback('No se pudo actualizar el plan.');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleResetPlan = async () => {
+        setResetting(true);
+        try {
+            await axios.delete(`${api.baseURL}${api.endpoints.nutritionPlanUpdate(plan.id)}`, { headers: authHeaders(token) });
+            onUpdated();
+        } finally {
+            setResetting(false);
+            setConfirmingReset(false);
         }
     };
 
@@ -285,14 +298,55 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
                 macroTotalCalories={macroCalories(proteinG, carbsG, fatG)}
                 mealsTotalCalories={sumMealCalories(topLevelMeals)}
             />
-            <button
-                className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400 disabled:opacity-50"
-                disabled={saving}
-                onClick={savePlanDetails}
-                type="button"
-            >
-                Guardar nombre/meta
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+                <button
+                    className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400 disabled:opacity-50"
+                    disabled={saving}
+                    onClick={savePlanDetails}
+                    type="button"
+                >
+                    Guardar nombre/meta
+                </button>
+                <button
+                    className="ml-auto rounded-lg bg-rose-500/15 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/25"
+                    onClick={() => setConfirmingReset(true)}
+                    type="button"
+                >
+                    Reiniciar configuración
+                </button>
+            </div>
+
+            {confirmingReset && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4" onClick={() => setConfirmingReset(false)}>
+                    <div
+                        className="w-full max-w-sm rounded-2xl border border-white/10 bg-panel p-6 shadow-2xl"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <h3 className="font-display text-lg font-semibold text-slate-50">¿Reiniciar configuración?</h3>
+                        <p className="mt-2 text-sm text-slate-400">
+                            Esto borrará por completo tu plan de nutrición actual: todas las comidas, configuraciones de días y metas configuradas. Esta acción no se puede deshacer.
+                        </p>
+                        <div className="mt-5 flex justify-end gap-2">
+                            <button
+                                className="rounded-lg bg-white/8 px-4 py-2 text-sm text-slate-100 hover:bg-white/15"
+                                disabled={resetting}
+                                onClick={() => setConfirmingReset(false)}
+                                type="button"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="rounded-lg bg-rose-500 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-400 disabled:opacity-50"
+                                disabled={resetting}
+                                onClick={handleResetPlan}
+                                type="button"
+                            >
+                                {resetting ? 'Reiniciando…' : 'Sí, reiniciar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <button
                 className="flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-slate-100"

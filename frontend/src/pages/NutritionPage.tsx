@@ -2,6 +2,7 @@ import { Utensils } from 'lucide-react';
 import { useNutritionToday } from '../hooks/useNutritionToday';
 import SelfNutritionSetup from '../components/SelfNutritionSetup';
 import EditNutritionPlan from '../components/EditNutritionPlan';
+import { findActiveDayConfig } from '../utils/weekday';
 
 export default function NutritionPage() {
     const { plans, todayPlan, loading, error, activatePlan, refresh, isClient } = useNutritionToday();
@@ -64,6 +65,11 @@ export default function NutritionPage() {
             {!loading && !error && isClient && todayPlan && (
                 <div className="rounded-3xl border border-white/8 bg-panel/70 p-6 shadow-panel">
                     <p className="eyebrow">Comidas del plan activo</p>
+                    {findActiveDayConfig(todayPlan.dayConfigs) && (
+                        <span className="mt-2 inline-block rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-200">
+                            Hoy: {findActiveDayConfig(todayPlan.dayConfigs)?.label}
+                        </span>
+                    )}
                     <ul className="mt-3 space-y-1 text-sm text-slate-300">
                         {todayPlan.meals.map((meal) => (
                             <li className="flex justify-between" key={meal.id}>

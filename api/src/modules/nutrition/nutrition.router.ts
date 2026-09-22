@@ -95,6 +95,15 @@ nutritionRouter.patch('/plans/:planId', authenticate, async (req: Request, res: 
     }
 });
 
+nutritionRouter.delete('/plans/:planId', authenticate, async (req: Request, res: Response): Promise<void> => {
+    try {
+        await nutritionService.deletePlan(req.authenticatedUser!, Number(req.params.planId));
+        res.status(204).send();
+    } catch (error) {
+        handleError(res, error, 'No se pudo reiniciar la configuración de nutrición.');
+    }
+});
+
 nutritionRouter.post('/plans/:planId/day-configs', authenticate, async (req: Request, res: Response): Promise<void> => {
     try {
         const dayConfig = await nutritionService.addDayConfig(req.authenticatedUser!, Number(req.params.planId), {
