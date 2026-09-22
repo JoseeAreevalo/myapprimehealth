@@ -545,7 +545,7 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
             </button>
             {showCalendar && (
                 <div className="mt-3">
-                    <TrainingCalendar clientId={clientId} planDays={plan.days} />
+                    <TrainingCalendar clientId={clientId} onViewWeeklyPlan={() => setShowCalendar(false)} planDays={plan.days} />
                 </div>
             )}
 

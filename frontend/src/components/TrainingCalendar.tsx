@@ -25,7 +25,15 @@ function weekdayOfIsoDate(iso: string): number {
     return jsDay === 0 ? 7 : jsDay;
 }
 
-export default function TrainingCalendar({ clientId, planDays = [] }: { clientId: number; planDays?: TrainingDay[] }) {
+export default function TrainingCalendar({
+    clientId,
+    planDays = [],
+    onViewWeeklyPlan,
+}: {
+    clientId: number;
+    planDays?: TrainingDay[];
+    onViewWeeklyPlan?: () => void;
+}) {
     const { year, month, days, loading, error, goToPreviousMonth, goToNextMonth } = useTrainingHistory(clientId);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -84,7 +92,7 @@ export default function TrainingCalendar({ clientId, planDays = [] }: { clientId
                                 >
                                     {day}
                                     {isScheduled && !isSelected && (
-                                        <span className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-sky-400" />
+                                        <span className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-amber-400" />
                                     )}
                                 </button>
                             );
@@ -95,13 +103,24 @@ export default function TrainingCalendar({ clientId, planDays = [] }: { clientId
 
             {selectedDate && (
                 <div className="mt-4 space-y-3 border-t border-white/7 pt-3">
-                    <p className="text-xs font-semibold text-slate-300">{selectedDate}</p>
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-slate-300">{selectedDate}</p>
+                        {onViewWeeklyPlan && (
+                            <button
+                                className="rounded-lg bg-white/8 px-2.5 py-1 text-[11px] font-medium text-slate-200 hover:bg-white/15"
+                                onClick={onViewWeeklyPlan}
+                                type="button"
+                            >
+                                Ver entrenamiento semanal
+                            </button>
+                        )}
+                    </div>
 
                     <div className="space-y-2">
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Rutina programada</p>
-                        {!scheduledDay && <p className="text-xs text-slate-500">No hay ningún día del plan asignado a esta fecha.</p>}
+                        {!scheduledDay && <p className="text-xs text-slate-500">Día de descanso.</p>}
                         {scheduledDay?.exercises.map((exercise) => (
-                            <div className="rounded-lg border border-sky-400/20 bg-sky-400/5 p-2.5" key={exercise.id}>
+                            <div className="rounded-lg border border-amber-400/20 bg-amber-400/5 p-2.5" key={exercise.id}>
                                 <p className="text-xs font-medium text-slate-100">{exercise.name}</p>
                                 <p className="mt-0.5 text-[11px] text-slate-400">
                                     Meta: {exercise.targetSets}x{exercise.targetReps}
