@@ -73,6 +73,14 @@ export default function TrainingCalendar({
             {loading && <p className="mt-3 text-xs text-slate-500">Cargando…</p>}
             {error && <p className="mt-3 text-xs text-rose-300">{error}</p>}
 
+            {!loading && endDate && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-fuchsia-400/30 bg-fuchsia-400/10 px-2 py-0.5 text-[10px] font-medium text-fuchsia-200">
+                        Revisión / check-in
+                    </span>
+                </div>
+            )}
+
             {!loading && (
                 <>
                     <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[10px] text-slate-500">
@@ -89,10 +97,12 @@ export default function TrainingCalendar({
                             const isScheduled = withinRange && planByWeekday.has(weekdayOfIsoDate(iso));
                             const isToday = iso === todayIso;
                             const isSelected = iso === selectedDate;
+                            const isCheckpoint = !!endDate && iso === endDate;
                             return (
                                 <button
                                     className={`relative aspect-square rounded-lg text-xs transition ${isSelected ? 'bg-amber-500 text-white' : hasHistory ? 'bg-amber-500/20 text-amber-200 hover:bg-amber-500/30' : 'text-slate-400 hover:bg-white/8'
-                                        } ${isToday && !isSelected ? 'ring-1 ring-amber-400/60' : ''}`}
+                                        } ${isToday && !isSelected ? 'ring-1 ring-amber-400/60' : ''} ${isCheckpoint && !isSelected ? 'ring-2 ring-fuchsia-400' : ''
+                                        }`}
                                     key={iso}
                                     onClick={() => setSelectedDate((current) => (current === iso ? null : iso))}
                                     type="button"

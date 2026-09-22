@@ -91,7 +91,7 @@ export default function NutritionCalendar({ dayConfigs, startDate, endDate }: { 
                 </div>
             </div>
 
-            {dayConfigs.length > 0 && (
+            {(dayConfigs.length > 0 || endDate) && (
                 <div className="mt-3 flex flex-wrap gap-2">
                     {dayConfigs.map((config, index) => (
                         <span
@@ -101,6 +101,11 @@ export default function NutritionCalendar({ dayConfigs, startDate, endDate }: { 
                             {config.label}
                         </span>
                     ))}
+                    {endDate && (
+                        <span className="rounded-full border border-fuchsia-400/30 bg-fuchsia-400/10 px-2 py-0.5 text-[10px] font-medium text-fuchsia-200">
+                            Revisión / check-in
+                        </span>
+                    )}
                 </div>
             )}
 
@@ -117,6 +122,7 @@ export default function NutritionCalendar({ dayConfigs, startDate, endDate }: { 
                     const entry = withinRange ? configByWeekday.get(weekdayOfIsoDate(iso)) : undefined;
                     const isToday = iso === todayIso;
                     const isSelected = iso === selectedDate;
+                    const isCheckpoint = !!endDate && iso === endDate;
                     const palette = entry ? CONFIG_COLORS[entry.colorIndex] : null;
                     return (
                         <button
@@ -125,7 +131,8 @@ export default function NutritionCalendar({ dayConfigs, startDate, endDate }: { 
                                 : palette
                                     ? `${palette.bg} ${palette.text} hover:opacity-90`
                                     : 'bg-white/5 text-slate-500 hover:bg-white/8'
-                                } ${isToday && !isSelected ? 'ring-2 ring-white/60' : ''}`}
+                                } ${isToday && !isSelected ? 'ring-2 ring-white/60' : ''} ${isCheckpoint && !isSelected ? 'ring-2 ring-fuchsia-400' : ''
+                                }`}
                             key={iso}
                             onClick={() => setSelectedDate((current) => (current === iso ? null : iso))}
                             type="button"
