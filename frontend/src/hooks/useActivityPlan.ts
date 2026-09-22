@@ -139,3 +139,32 @@ export function useActivityPlan(clientId: number | null) {
 
     return { plan, loading, error, refresh: load, createPlan, deletePlan, setCardioTarget, removeCardioTarget, setStepsTarget, removeStepsTarget, logToday };
 }
+
+// Recent daily log history (for the "seguimiento día a día" list).
+export function useActivityLogs(clientId: number | null) {
+    const { token } = useAuth();
+    const [logs, setLogs] = useState<ActivityLog[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const load = useCallback(async () => {
+        if (!clientId) {
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+        try {
+            const res = await axios.get(`${api.baseURL}${api.endpoints.activityLogs(clientId)}`, { headers: authHeaders(token) });
+            setLogs(res.data?.data ?? []);
+        } catch {
+            setLogs([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [clientId, token]);
+
+    useEffect(() => {
+        load();
+    }, [load]);
+
+    return { logs, loading, refresh: load };
+}
