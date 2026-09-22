@@ -9,6 +9,9 @@ import OverviewPage from './pages/OverviewPage.tsx'
 import NutritionPage from './pages/NutritionPage.tsx'
 import TrainingPage from './pages/TrainingPage.tsx'
 import ProgressPage from './pages/ProgressPage.tsx'
+import ClientNutritionPage from './pages/ClientNutritionPage.tsx'
+import ClientTrainingPage from './pages/ClientTrainingPage.tsx'
+import ClientReviewPage from './pages/ClientReviewPage.tsx'
 import { AuthProvider, useAuth } from './context/AuthContext.tsx'
 import { ThemeProvider } from './context/ThemeContext.tsx'
 
@@ -26,6 +29,9 @@ function AppShell() {
         <Route element={<NutritionPage />} path="nutrition" />
         <Route element={<TrainingPage />} path="training" />
         <Route element={<ProgressPage />} path="progress" />
+        <Route element={<ClientNutritionPage />} path="clients/nutrition" />
+        <Route element={<ClientTrainingPage />} path="clients/training" />
+        <Route element={<ClientReviewPage />} path="clients/review" />
         <Route element={<OverviewPage />} path="*" />
       </Route>
     </Routes>

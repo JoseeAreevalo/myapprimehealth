@@ -1,4 +1,4 @@
-import { Activity, ChevronDown, Dumbbell, LogOut, Menu, Sparkles, User, Utensils, X } from 'lucide-react';
+import { Activity, ChevronDown, Dumbbell, LogOut, Menu, Search, Sparkles, User, Users, Utensils, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,12 @@ const navigation = [
     { label: 'Nutrición', icon: Utensils, to: '/nutrition' },
     { label: 'Entrenamiento', icon: Dumbbell, to: '/training' },
     { label: 'Progreso', icon: Activity, to: '/progress' },
+];
+
+const coachNavigation = [
+    { label: 'Nutrición de clientes', icon: Utensils, to: '/clients/nutrition' },
+    { label: 'Entrenamiento de clientes', icon: Users, to: '/clients/training' },
+    { label: 'Seguimiento', icon: Search, to: '/clients/review' },
 ];
 
 export interface LayoutContext {
@@ -37,6 +43,8 @@ export default function AppLayout() {
     const displayName = user?.fullName || user?.name || 'ahí';
     const firstName = displayName.split(' ')[0] || 'Hola';
     const todayLabel = new Date().toLocaleDateString('es-MX', { weekday: 'long', month: 'long', day: 'numeric' });
+    const isCoach = user?.role === 'coach';
+    const allNavigation = isCoach ? [...navigation, ...coachNavigation] : navigation;
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -58,7 +66,7 @@ export default function AppLayout() {
                 <div className="mt-14">
                     <p className="px-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Mi espacio</p>
                     <nav className="mt-4 space-y-2">
-                        {navigation.map(({ label, icon: Icon, to }) => (
+                        {allNavigation.map(({ label, icon: Icon, to }) => (
                             <NavLink
                                 className={({ isActive }) =>
                                     `flex h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium transition ${isActive ? 'bg-amber-500/15 text-amber-200 ring-1 ring-amber-400/20' : 'text-slate-400 hover:bg-white/5 hover:text-white'
@@ -151,7 +159,7 @@ export default function AppLayout() {
 
             {menuOpen && (
                 <nav className="fixed inset-x-4 top-20 z-40 rounded-2xl border border-white/10 bg-panel p-3 shadow-2xl lg:hidden">
-                    {navigation.map(({ label, icon: Icon, to }) => (
+                    {allNavigation.map(({ label, icon: Icon, to }) => (
                         <NavLink
                             className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-slate-300 hover:bg-white/5"
                             key={label}

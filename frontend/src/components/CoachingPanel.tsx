@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { useEffect, useMemo, useState } from 'react';
-import { ClipboardCheck, Dumbbell, HeartHandshake, Plus, Search, Trash2, TrendingUp, UserPlus, Users, Utensils } from 'lucide-react';
+import { ChevronDown, ClipboardCheck, HeartHandshake, Plus, Search, Trash2, UserPlus } from 'lucide-react';
 import { api } from '../api/config';
 import { useAuth } from '../context/AuthContext';
 import { useClientProgress } from '../hooks/useClientProgress';
+import { PersonSummary } from '../hooks/useCoachClients';
 import { NutritionPlanWithMeals } from '../hooks/useNutritionToday';
 import CheckInPhotos from './CheckInPhotos';
 import EditNutritionPlan from './EditNutritionPlan';
@@ -12,12 +13,7 @@ import NutritionLiveTotals from './NutritionLiveTotals';
 import TrainingPlanView from './TrainingPlanView';
 import { macroCalories } from '../utils/nutritionMath';
 
-interface PersonSummary {
-    id: number;
-    email: string;
-    fullName: string | null;
-    role: string;
-}
+export type { PersonSummary };
 
 interface PendingCheckIn {
     id: number;
@@ -49,7 +45,7 @@ function authHeaders(token: string | null) {
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-function PendingCheckIns({ clients }: { clients: PersonSummary[] }) {
+export function PendingCheckIns({ clients }: { clients: PersonSummary[] }) {
     const { user, token } = useAuth();
     const [pending, setPending] = useState<PendingCheckIn[]>([]);
     const [loading, setLoading] = useState(true);
@@ -128,7 +124,7 @@ function PendingCheckIns({ clients }: { clients: PersonSummary[] }) {
     );
 }
 
-function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
+export function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
     const { token } = useAuth();
     const [clientId, setClientId] = useState<number | ''>('');
     const [label, setLabel] = useState('Balanced');
@@ -366,7 +362,7 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
     );
 }
 
-function CreateClientForm({ onCreated }: { onCreated: () => void }) {
+export function CreateClientForm({ onCreated }: { onCreated: () => void }) {
     const { user, token } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -480,7 +476,7 @@ function ClientReviewDetail({ client }: { client: PersonSummary }) {
     );
 }
 
-function ClientReviewSearch({ clients }: { clients: PersonSummary[] }) {
+export function ClientReviewSearch({ clients }: { clients: PersonSummary[] }) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [selectedClient, setSelectedClient] = useState<PersonSummary | null>(null);
@@ -545,14 +541,11 @@ function ClientReviewSearch({ clients }: { clients: PersonSummary[] }) {
     );
 }
 
-function ClientRosterItem({ client }: { client: PersonSummary }) {
+export function ClientNutritionItem({ client }: { client: PersonSummary }) {
     const { token } = useAuth();
-    const [expanded, setExpanded] = useState(false);
-    const [nutritionOpen, setNutritionOpen] = useState(false);
-    const [trainingOpen, setTrainingOpen] = useState(false);
+    const [open, setOpen] = useState(false);
     const [clientPlan, setClientPlan] = useState<NutritionPlanWithMeals | null>(null);
     const [planLoading, setPlanLoading] = useState(false);
-    const { progress, loading } = useClientProgress(expanded ? client.id : null);
 
     const loadPlan = () => {
         setPlanLoading(true);
@@ -565,115 +558,56 @@ function ClientRosterItem({ client }: { client: PersonSummary }) {
 
     return (
         <li className="rounded-xl border border-white/7 bg-white/[0.03] px-4 py-3">
-            <div className="flex items-center justify-between">
-                <div>
+            <button
+                className="flex w-full items-center justify-between"
+                onClick={() => {
+                    const next = !open;
+                    setOpen(next);
+                    if (next) loadPlan();
+                }}
+                type="button"
+            >
+                <div className="text-left">
                     <span className="text-sm font-medium text-slate-100">{client.fullName ?? client.email}</span>
                     <span className="block text-xs text-slate-500">{client.email}</span>
                 </div>
-                <div className="flex gap-1.5">
-                    <button
-                        className="flex items-center gap-1 rounded-lg border border-white/8 px-2 py-1 text-xs text-slate-300 hover:bg-white/8"
-                        onClick={() => setExpanded((current) => !current)}
-                        type="button"
-                    >
-                        <TrendingUp size={14} /> Progreso
-                    </button>
-                    <button
-                        className="flex items-center gap-1 rounded-lg border border-white/8 px-2 py-1 text-xs text-slate-300 hover:bg-white/8"
-                        onClick={() => {
-                            const next = !nutritionOpen;
-                            setNutritionOpen(next);
-                            if (next) loadPlan();
-                        }}
-                        type="button"
-                    >
-                        <Utensils size={14} /> Nutrición
-                    </button>
-                    <button
-                        className="flex items-center gap-1 rounded-lg border border-white/8 px-2 py-1 text-xs text-slate-300 hover:bg-white/8"
-                        onClick={() => setTrainingOpen((current) => !current)}
-                        type="button"
-                    >
-                        <Dumbbell size={14} /> Entrenamiento
-                    </button>
-                </div>
-            </div>
-            {expanded && (
-                <div className="mt-3 border-t border-white/7 pt-3 text-xs text-slate-400">
-                    {loading && <p>Cargando…</p>}
-                    {!loading && progress && progress.summary.totalCheckIns === 0 && <p>Aún no hay check-ins.</p>}
-                    {!loading && progress && progress.summary.totalCheckIns > 0 && (
-                        <div className="grid grid-cols-2 gap-2">
-                            <p>Cambio de peso: <span className="text-slate-200">{progress.summary.weightChangeKg != null ? `${progress.summary.weightChangeKg} kg` : '—'}</span></p>
-                            <p>Adherencia prom.: <span className="text-slate-200">{progress.summary.averageAdherencePercent != null ? `${progress.summary.averageAdherencePercent}%` : '—'}</span></p>
-                        </div>
-                    )}
-                </div>
-            )}
-            {nutritionOpen && (
+                <ChevronDown className={`text-slate-400 transition ${open ? 'rotate-180' : ''}`} size={16} />
+            </button>
+            {open && (
                 <div className="mt-3 border-t border-white/7 pt-3">
                     {planLoading && <p className="text-xs text-slate-400">Cargando…</p>}
                     {!planLoading && !clientPlan && (
-                        <p className="text-xs text-slate-400">Este cliente no tiene un plan activo todav\u00eda. Cr\u00e9alo abajo en "Nuevo plan de comidas".</p>
+                        <p className="text-xs text-slate-400">Este cliente no tiene un plan activo todavía. Créalo abajo en "Nuevo plan de comidas".</p>
                     )}
                     {!planLoading && clientPlan && <EditNutritionPlan onUpdated={loadPlan} plan={clientPlan} />}
-                </div>
-            )}
-            {trainingOpen && (
-                <div className="mt-3 border-t border-white/7 pt-3">
-                    <TrainingPlanView clientId={client.id} />
                 </div>
             )}
         </li>
     );
 }
 
-function CoachDashboard() {
-    const { user, token } = useAuth();
-    const [clients, setClients] = useState<PersonSummary[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-
-    const load = () => {
-        if (!user) return;
-        setLoading(true);
-        axios
-            .get(`${api.baseURL}${api.endpoints.coachClients(user.id)}`, { headers: authHeaders(token) })
-            .then((res) => setClients(res.data?.data ?? []))
-            .catch(() => setError('No se pudo cargar tu lista de clientes.'))
-            .finally(() => setLoading(false));
-    };
-
-    useEffect(load, [user, token]);
+export function ClientTrainingItem({ client }: { client: PersonSummary }) {
+    const [open, setOpen] = useState(false);
 
     return (
-        <>
-            {!loading && clients.length > 0 && <ClientReviewSearch clients={clients} />}
-            <section className="rounded-3xl border border-white/8 bg-panel/70 p-6 shadow-panel">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="eyebrow">Coaching</p>
-                        <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Entrenamiento de clientes</h2>
-                    </div>
-                    <Users className="text-amber-300" size={20} />
+        <li className="rounded-xl border border-white/7 bg-white/[0.03] px-4 py-3">
+            <button
+                className="flex w-full items-center justify-between"
+                onClick={() => setOpen((current) => !current)}
+                type="button"
+            >
+                <div className="text-left">
+                    <span className="text-sm font-medium text-slate-100">{client.fullName ?? client.email}</span>
+                    <span className="block text-xs text-slate-500">{client.email}</span>
                 </div>
-                {loading && <p className="mt-5 text-sm text-slate-500">Cargando lista…</p>}
-                {error && <p className="mt-5 text-sm text-rose-300">{error}</p>}
-                {!loading && !error && clients.length === 0 && (
-                    <p className="mt-5 text-sm text-slate-400">Aún no tienes clientes asignados.</p>
-                )}
-                {!loading && clients.length > 0 && (
-                    <ul className="mt-5 space-y-3">
-                        {clients.map((client) => (
-                            <ClientRosterItem client={client} key={client.id} />
-                        ))}
-                    </ul>
-                )}
-                {!loading && clients.length > 0 && <CreateMealPlanForm clients={clients} />}
-                <CreateClientForm onCreated={load} />
-            </section>
-            {!loading && clients.length > 0 && <PendingCheckIns clients={clients} />}
-        </>
+                <ChevronDown className={`text-slate-400 transition ${open ? 'rotate-180' : ''}`} size={16} />
+            </button>
+            {open && (
+                <div className="mt-3 border-t border-white/7 pt-3">
+                    <TrainingPlanView clientId={client.id} />
+                </div>
+            )}
+        </li>
     );
 }
 
@@ -721,7 +655,6 @@ export default function CoachingPanel() {
     const { user } = useAuth();
     if (!user) return null;
 
-    if (user.role === 'coach') return <CoachDashboard />;
     if (user.role === 'client') return <ClientCoach />;
     return null;
 }
