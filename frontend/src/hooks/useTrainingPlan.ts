@@ -24,6 +24,7 @@ export interface TrainingDay {
     planId: number;
     dayOrder: number;
     label: string;
+    weekday: number | null;
     exercises: TrainingExercise[];
 }
 
@@ -32,6 +33,7 @@ export interface TrainingPlan {
     clientId: number;
     coachId: number;
     label: string;
+    durationWeeks: number;
     isActive: boolean;
     days: TrainingDay[];
 }
@@ -45,6 +47,7 @@ export interface ExerciseDraft {
 
 export interface DayDraft {
     label: string;
+    weekday: number | null;
     exercises: ExerciseDraft[];
 }
 
@@ -80,15 +83,17 @@ export function useTrainingPlan(clientId: number | null) {
     }, [load]);
 
     const createPlan = useCallback(
-        async (label: string, days: DayDraft[]) => {
+        async (label: string, days: DayDraft[], durationWeeks?: number) => {
             if (!clientId) return;
             await axios.post(
                 `${api.baseURL}${api.endpoints.trainingPlanCreate}`,
                 {
                     clientId,
                     label,
+                    durationWeeks,
                     days: days.map((day) => ({
                         label: day.label,
+                        weekday: day.weekday,
                         exercises: day.exercises.map((exercise) => ({
                             name: exercise.name,
                             targetSets: Number(exercise.targetSets),
@@ -105,9 +110,30 @@ export function useTrainingPlan(clientId: number | null) {
     );
 
     const addDay = useCallback(
-        async (label: string) => {
+        async (label: string, weekday?: number | null) => {
             if (!plan) return;
-            await axios.post(`${api.baseURL}${api.endpoints.trainingPlanAddDay(plan.id)}`, { label }, { headers: authHeaders(token) });
+            await axios.post(
+                `${api.baseURL}${api.endpoints.trainingPlanAddDay(plan.id)}`,
+                { label, weekday },
+                { headers: authHeaders(token) },
+            );
+            await load();
+        },
+        [plan, token, load],
+    );
+
+    const updateDay = useCallback(
+        async (dayId: number, updates: { label?: string; weekday?: number | null }) => {
+            await axios.patch(`${api.baseURL}${api.endpoints.trainingDayUpdate(dayId)}`, updates, { headers: authHeaders(token) });
+            await load();
+        },
+        [token, load],
+    );
+
+    const updatePlan = useCallback(
+        async (updates: { label?: string; durationWeeks?: number }) => {
+            if (!plan) return;
+            await axios.patch(`${api.baseURL}${api.endpoints.trainingPlanUpdate(plan.id)}`, updates, { headers: authHeaders(token) });
             await load();
         },
         [plan, token, load],
@@ -153,5 +179,5 @@ export function useTrainingPlan(clientId: number | null) {
         [token, load],
     );
 
-    return { plan, loading, error, refresh: load, createPlan, addDay, deleteDay, addExercise, updateExercise, deleteExercise, logSets };
+    return { plan, loading, error, refresh: load, createPlan, updatePlan, addDay, updateDay, deleteDay, addExercise, updateExercise, deleteExercise, logSets };
 }

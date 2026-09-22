@@ -6,7 +6,7 @@ import {
     trainingPlansRepository,
     trainingSetLogsRepository,
 } from './training.repository';
-import { TrainingDayInput, TrainingExercise, TrainingExerciseInput, TrainingHistoryDay, TrainingPlan, TrainingPlanWithDays } from './training.types';
+import { TrainingDay, TrainingDayInput, TrainingExercise, TrainingExerciseInput, TrainingHistoryDay, TrainingPlan, TrainingPlanWithDays } from './training.types';
 
 class ForbiddenError extends Error { }
 class NotFoundError extends Error { }
@@ -47,6 +47,20 @@ function validateExerciseInput(exercise: TrainingExerciseInput): void {
     }
 }
 
+function validateWeekday(weekday: number | null | undefined): void {
+    if (weekday == null) return;
+    if (!Number.isInteger(weekday) || weekday < 1 || weekday > 7) {
+        throw new ValidationError('El día de la semana debe estar entre 1 (lunes) y 7 (domingo).');
+    }
+}
+
+function validateDurationWeeks(durationWeeks: number | null | undefined): void {
+    if (durationWeeks == null) return;
+    if (!Number.isInteger(durationWeeks) || durationWeeks < 1 || durationWeeks > 52) {
+        throw new ValidationError('La duración del plan debe ser de 1 a 52 semanas.');
+    }
+}
+
 export function createTrainingService() {
     return {
         async getActivePlan(requester: AuthenticatedUser, clientId: number): Promise<TrainingPlanWithDays | null> {
@@ -82,22 +96,31 @@ export function createTrainingService() {
 
         async createPlan(
             requester: AuthenticatedUser,
-            input: { clientId: number; label: string; days: TrainingDayInput[] },
+            input: { clientId: number; label: string; durationWeeks?: number; days: TrainingDayInput[] },
         ): Promise<TrainingPlanWithDays> {
             await assertCanManagePlan(requester, input.clientId);
 
             if (!input.label || !input.label.trim()) {
                 throw new ValidationError('El plan requiere un nombre.');
             }
+            validateDurationWeeks(input.durationWeeks);
             if (!Array.isArray(input.days) || input.days.length === 0) {
                 throw new ValidationError('Se requiere al menos un día de entrenamiento.');
             }
             if (input.days.length > 7) {
                 throw new ValidationError('Una semana tiene máximo 7 días.');
             }
+            const usedWeekdays = new Set<number>();
             for (const day of input.days) {
                 if (!day.label || !day.label.trim()) {
                     throw new ValidationError('Cada día requiere un nombre.');
+                }
+                validateWeekday(day.weekday);
+                if (day.weekday != null) {
+                    if (usedWeekdays.has(day.weekday)) {
+                        throw new ValidationError('No puedes asignar el mismo día de la semana a dos días del plan.');
+                    }
+                    usedWeekdays.add(day.weekday);
                 }
                 if (!Array.isArray(day.exercises) || day.exercises.length === 0) {
                     throw new ValidationError('Cada día requiere al menos un ejercicio.');
@@ -109,11 +132,12 @@ export function createTrainingService() {
                 clientId: input.clientId,
                 coachId: requester.id === input.clientId ? input.clientId : requester.id,
                 label: input.label,
+                durationWeeks: input.durationWeeks,
             });
 
             const days = await Promise.all(
                 input.days.map(async (dayInput, index) => {
-                    const day = await trainingDaysRepository.create(plan.id, dayInput.label, index + 1);
+                    const day = await trainingDaysRepository.create(plan.id, dayInput.label, index + 1, dayInput.weekday);
                     const exercises = await Promise.all(
                         dayInput.exercises.map((exercise, exerciseIndex) => trainingExercisesRepository.create(day.id, exercise, exerciseIndex)),
                     );
@@ -124,16 +148,17 @@ export function createTrainingService() {
             return { ...plan, days };
         },
 
-        async updatePlan(requester: AuthenticatedUser, planId: number, updates: { label?: string }): Promise<TrainingPlan> {
+        async updatePlan(requester: AuthenticatedUser, planId: number, updates: { label?: string; durationWeeks?: number }): Promise<TrainingPlan> {
             const plan = await trainingPlansRepository.findById(planId);
             if (!plan) {
                 throw new NotFoundError('Plan de entrenamiento no encontrado.');
             }
             await assertCanManagePlan(requester, plan.clientId);
+            validateDurationWeeks(updates.durationWeeks);
             return trainingPlansRepository.update(planId, updates);
         },
 
-        async addDay(requester: AuthenticatedUser, planId: number, label: string): Promise<void> {
+        async addDay(requester: AuthenticatedUser, planId: number, label: string, weekday?: number | null): Promise<void> {
             const plan = await trainingPlansRepository.findById(planId);
             if (!plan) {
                 throw new NotFoundError('Plan de entrenamiento no encontrado.');
@@ -142,11 +167,39 @@ export function createTrainingService() {
             if (!label || !label.trim()) {
                 throw new ValidationError('El día requiere un nombre.');
             }
-            const dayOrder = await trainingDaysRepository.countByPlanId(planId);
-            if (dayOrder >= 7) {
+            validateWeekday(weekday);
+            const existingDays = await trainingDaysRepository.listByPlanId(planId);
+            if (existingDays.length >= 7) {
                 throw new ValidationError('Una semana tiene máximo 7 días.');
             }
-            await trainingDaysRepository.create(planId, label.trim(), dayOrder + 1);
+            if (weekday != null && existingDays.some((day) => day.weekday === weekday)) {
+                throw new ValidationError('Ya hay un día asignado a ese día de la semana.');
+            }
+            await trainingDaysRepository.create(planId, label.trim(), existingDays.length + 1, weekday);
+        },
+
+        async updateDay(
+            requester: AuthenticatedUser,
+            dayId: number,
+            updates: { label?: string; weekday?: number | null },
+        ): Promise<TrainingDay> {
+            const day = await trainingDaysRepository.findById(dayId);
+            if (!day) {
+                throw new NotFoundError('Día de entrenamiento no encontrado.');
+            }
+            const plan = await trainingPlansRepository.findById(day.planId);
+            if (!plan) {
+                throw new NotFoundError('Plan de entrenamiento no encontrado.');
+            }
+            await assertCanManagePlan(requester, plan.clientId);
+            validateWeekday(updates.weekday);
+            if (updates.weekday != null) {
+                const existingDays = await trainingDaysRepository.listByPlanId(day.planId);
+                if (existingDays.some((other) => other.id !== dayId && other.weekday === updates.weekday)) {
+                    throw new ValidationError('Ya hay un día asignado a ese día de la semana.');
+                }
+            }
+            return trainingDaysRepository.update(dayId, updates);
         },
 
         async deleteDay(requester: AuthenticatedUser, dayId: number): Promise<void> {

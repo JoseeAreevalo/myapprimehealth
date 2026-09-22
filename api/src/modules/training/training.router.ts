@@ -43,6 +43,7 @@ trainingRouter.post('/plans', authenticate, async (req: Request, res: Response):
         const plan = await trainingService.createPlan(req.authenticatedUser!, {
             clientId: Number(req.body.clientId),
             label: req.body.label,
+            durationWeeks: req.body.durationWeeks != null ? Number(req.body.durationWeeks) : undefined,
             days: Array.isArray(req.body.days) ? req.body.days : [],
         });
         res.status(201).json({ plan });
@@ -53,7 +54,10 @@ trainingRouter.post('/plans', authenticate, async (req: Request, res: Response):
 
 trainingRouter.patch('/plans/:planId', authenticate, async (req: Request, res: Response): Promise<void> => {
     try {
-        const plan = await trainingService.updatePlan(req.authenticatedUser!, Number(req.params.planId), { label: req.body.label });
+        const plan = await trainingService.updatePlan(req.authenticatedUser!, Number(req.params.planId), {
+            label: req.body.label,
+            durationWeeks: req.body.durationWeeks != null ? Number(req.body.durationWeeks) : undefined,
+        });
         res.status(200).json({ plan });
     } catch (error) {
         handleError(res, error, 'No se pudo actualizar el plan de entrenamiento.');
@@ -62,10 +66,27 @@ trainingRouter.patch('/plans/:planId', authenticate, async (req: Request, res: R
 
 trainingRouter.post('/plans/:planId/days', authenticate, async (req: Request, res: Response): Promise<void> => {
     try {
-        await trainingService.addDay(req.authenticatedUser!, Number(req.params.planId), req.body.label);
+        await trainingService.addDay(
+            req.authenticatedUser!,
+            Number(req.params.planId),
+            req.body.label,
+            req.body.weekday != null ? Number(req.body.weekday) : null,
+        );
         res.status(201).send();
     } catch (error) {
         handleError(res, error, 'No se pudo agregar el d\u00eda.');
+    }
+});
+
+trainingRouter.patch('/days/:dayId', authenticate, async (req: Request, res: Response): Promise<void> => {
+    try {
+        const day = await trainingService.updateDay(req.authenticatedUser!, Number(req.params.dayId), {
+            label: req.body.label,
+            weekday: req.body.weekday != null ? Number(req.body.weekday) : undefined,
+        });
+        res.status(200).json({ day });
+    } catch (error) {
+        handleError(res, error, 'No se pudo actualizar el d\u00eda.');
     }
 });
 

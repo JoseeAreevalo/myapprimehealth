@@ -3,6 +3,7 @@ export interface TrainingPlan {
     clientId: number;
     coachId: number;
     label: string;
+    durationWeeks: number;
     isActive: boolean;
 }
 
@@ -15,6 +16,7 @@ export interface TrainingExerciseInput {
 
 export interface TrainingDayInput {
     label: string;
+    weekday?: number | null;
     exercises: TrainingExerciseInput[];
 }
 
@@ -43,6 +45,7 @@ export interface TrainingDay {
     planId: number;
     dayOrder: number;
     label: string;
+    weekday: number | null;
 }
 
 export interface TrainingDayWithExercises extends TrainingDay {

@@ -78,6 +78,7 @@ export const api = {
         trainingPlanUpdate: (planId: number) => `/api/v1/training/plans/${planId}`,
         trainingPlanAddDay: (planId: number) => `/api/v1/training/plans/${planId}/days`,
         trainingDayDelete: (dayId: number) => `/api/v1/training/days/${dayId}`,
+        trainingDayUpdate: (dayId: number) => `/api/v1/training/days/${dayId}`,
         trainingDayAddExercise: (dayId: number) => `/api/v1/training/days/${dayId}/exercises`,
         trainingExerciseUpdate: (exerciseId: number) => `/api/v1/training/exercises/${exerciseId}`,
         trainingExerciseDelete: (exerciseId: number) => `/api/v1/training/exercises/${exerciseId}`,

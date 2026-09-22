@@ -1,25 +1,35 @@
 import { useState } from 'react';
 import { CalendarDays, Dumbbell, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useTrainingPlan, DayDraft, ExerciseDraft, TrainingExercise } from '../hooks/useTrainingPlan';
+import { useTrainingPlan, DayDraft, ExerciseDraft, TrainingDay, TrainingExercise } from '../hooks/useTrainingPlan';
 import ExerciseAutocomplete, { registerExerciseName } from './ExerciseAutocomplete';
 import TrainingCalendar from './TrainingCalendar';
 import { dayVolumeTotals, loggedVolume } from '../utils/trainingMath';
 
 const emptyExercise = (): ExerciseDraft => ({ name: '', targetSets: '3', targetReps: '10', targetWeightKg: '' });
-const emptyDay = (index: number): DayDraft => ({ label: `Día ${index}`, exercises: [emptyExercise()] });
+const emptyDay = (weekday: number | null): DayDraft => ({ label: '', weekday, exercises: [emptyExercise()] });
+const WEEKDAY_LABELS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft[]) => Promise<void> }) {
+function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft[], durationWeeks?: number) => Promise<void> }) {
     const { token } = useAuth();
     const [label, setLabel] = useState('Mi plan de entrenamiento');
-    const [days, setDays] = useState<DayDraft[]>([emptyDay(1), emptyDay(2), emptyDay(3)]);
+    const [durationWeeks, setDurationWeeks] = useState('4');
+    const [days, setDays] = useState<DayDraft[]>([emptyDay(1), emptyDay(3), emptyDay(5)]);
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState('');
 
-    const addDay = () => setDays((current) => (current.length >= 7 ? current : [...current, emptyDay(current.length + 1)]));
+    const addDay = () =>
+        setDays((current) => {
+            if (current.length >= 7) return current;
+            const used = new Set(current.map((day) => day.weekday));
+            const nextWeekday = [1, 2, 3, 4, 5, 6, 7].find((weekday) => !used.has(weekday)) ?? null;
+            return [...current, emptyDay(nextWeekday)];
+        });
     const removeDay = (index: number) => setDays((current) => current.filter((_, i) => i !== index));
     const updateDayLabel = (index: number, value: string) =>
         setDays((current) => current.map((day, i) => (i === index ? { ...day, label: value } : day)));
+    const updateDayWeekday = (index: number, weekday: number | null) =>
+        setDays((current) => current.map((day, i) => (i === index ? { ...day, weekday } : day)));
 
     const addExercise = (dayIndex: number) =>
         setDays((current) => current.map((day, i) => (i === dayIndex ? { ...day, exercises: [...day.exercises, emptyExercise()] } : day)));
@@ -40,9 +50,13 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
         setSubmitting(true);
         setFeedback('');
         try {
-            await onCreate(label, days);
+            const finalDays = days.map((day) => ({
+                ...day,
+                label: day.label.trim() || (day.weekday ? WEEKDAY_LABELS[day.weekday - 1] : 'Día de entrenamiento'),
+            }));
+            await onCreate(label, finalDays, durationWeeks ? Number(durationWeeks) : undefined);
             await Promise.all(
-                days.flatMap((day) => day.exercises.map((exercise) => registerExerciseName(exercise.name, token))),
+                finalDays.flatMap((day) => day.exercises.map((exercise) => registerExerciseName(exercise.name, token))),
             );
         } catch {
             setFeedback('No se pudo crear el plan.');
@@ -53,33 +67,71 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
 
     return (
         <div className="space-y-4">
-            <div>
-                <label className="mb-1 block text-[11px] text-slate-500">Nombre del plan de entrenamiento</label>
-                <input
-                    className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
-                    onChange={(event) => setLabel(event.target.value)}
-                    placeholder="Nombre del plan"
-                    value={label}
-                />
+            <div className="grid grid-cols-2 gap-3">
+                <div>
+                    <label className="mb-1 block text-[11px] text-slate-500">Nombre del plan de entrenamiento</label>
+                    <input
+                        className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                        onChange={(event) => setLabel(event.target.value)}
+                        placeholder="Nombre del plan"
+                        value={label}
+                    />
+                </div>
+                <div>
+                    <label className="mb-1 block text-[11px] text-slate-500">Duración del plan (semanas)</label>
+                    <input
+                        className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                        max={52}
+                        min={1}
+                        onChange={(event) => setDurationWeeks(event.target.value)}
+                        placeholder="4"
+                        type="number"
+                        value={durationWeeks}
+                    />
+                </div>
             </div>
             <div className="space-y-4">
                 {days.map((day, dayIndex) => (
                     <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-4" key={dayIndex}>
-                        <label className="mb-1 block text-[10px] text-slate-500">Nombre del día (ej. "Día 1", "Pecho y tríceps")</label>
-                        <div className="flex items-center gap-2">
-                            <input
-                                className="flex-1 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-sm text-slate-100"
-                                onChange={(event) => updateDayLabel(dayIndex, event.target.value)}
-                                value={day.label}
-                            />
-                            <button
-                                className="rounded-lg bg-rose-500/15 px-2 py-1.5 text-xs text-rose-300 hover:bg-rose-500/25 disabled:opacity-30"
-                                disabled={days.length <= 1}
-                                onClick={() => removeDay(dayIndex)}
-                                type="button"
-                            >
-                                <Trash2 size={13} />
-                            </button>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="mb-1 block text-[10px] text-slate-500">Día de la semana</label>
+                                <select
+                                    className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-sm text-slate-100"
+                                    onChange={(event) => updateDayWeekday(dayIndex, event.target.value ? Number(event.target.value) : null)}
+                                    value={day.weekday ?? ''}
+                                >
+                                    <option value="">Sin asignar</option>
+                                    {WEEKDAY_LABELS.map((weekdayLabel, weekdayIndex) => {
+                                        const weekdayValue = weekdayIndex + 1;
+                                        const usedElsewhere = days.some((other, otherIndex) => otherIndex !== dayIndex && other.weekday === weekdayValue);
+                                        return (
+                                            <option disabled={usedElsewhere} key={weekdayValue} value={weekdayValue}>
+                                                {weekdayLabel}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                            </div>
+                            <div className="flex items-end gap-2">
+                                <div className="flex-1">
+                                    <label className="mb-1 block text-[10px] text-slate-500">Nota (ej. "Pecho y tríceps")</label>
+                                    <input
+                                        className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-sm text-slate-100"
+                                        onChange={(event) => updateDayLabel(dayIndex, event.target.value)}
+                                        placeholder="Opcional"
+                                        value={day.label}
+                                    />
+                                </div>
+                                <button
+                                    className="rounded-lg bg-rose-500/15 px-2 py-1.5 text-xs text-rose-300 hover:bg-rose-500/25 disabled:opacity-30"
+                                    disabled={days.length <= 1}
+                                    onClick={() => removeDay(dayIndex)}
+                                    type="button"
+                                >
+                                    <Trash2 size={13} />
+                                </button>
+                            </div>
                         </div>
                         <div className="mt-3 space-y-2">
                             <div className="grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5 px-0.5 text-[10px] text-slate-500">
@@ -248,13 +300,79 @@ function ExerciseLogRow({
     );
 }
 
+// Lets a coach/client reassign an existing day to a different weekday or update its note.
+function DayWeekdayEditor({
+    day,
+    usedWeekdays,
+    onSave,
+}: {
+    day: TrainingDay;
+    usedWeekdays: Set<number | null>;
+    onSave: (updates: { label?: string; weekday?: number | null }) => Promise<void>;
+}) {
+    const [weekday, setWeekday] = useState<number | null>(day.weekday);
+    const [note, setNote] = useState(day.label);
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await onSave({ label: note.trim() || undefined, weekday });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="mt-3 flex items-end gap-2 rounded-xl border border-white/7 bg-white/[0.02] p-3">
+            <div>
+                <label className="mb-1 block text-[10px] text-slate-500">Día de la semana de este día</label>
+                <select
+                    className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                    onChange={(event) => setWeekday(event.target.value ? Number(event.target.value) : null)}
+                    value={weekday ?? ''}
+                >
+                    <option value="">Sin asignar</option>
+                    {WEEKDAY_LABELS.map((weekdayLabel, weekdayIndex) => {
+                        const weekdayValue = weekdayIndex + 1;
+                        const usedElsewhere = weekdayValue !== day.weekday && usedWeekdays.has(weekdayValue);
+                        return (
+                            <option disabled={usedElsewhere} key={weekdayValue} value={weekdayValue}>
+                                {weekdayLabel}
+                            </option>
+                        );
+                    })}
+                </select>
+            </div>
+            <div className="flex-1">
+                <label className="mb-1 block text-[10px] text-slate-500">Nota</label>
+                <input
+                    className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                    onChange={(event) => setNote(event.target.value)}
+                    value={note}
+                />
+            </div>
+            <button
+                className="rounded-lg bg-white/8 px-3 py-1.5 text-xs text-slate-100 hover:bg-white/15 disabled:opacity-50"
+                disabled={saving}
+                onClick={handleSave}
+                type="button"
+            >
+                {saving ? 'Guardando…' : 'Guardar día'}
+            </button>
+        </div>
+    );
+}
+
 export default function TrainingPlanView({ clientId }: { clientId: number }) {
     const { token } = useAuth();
-    const { plan, loading, error, createPlan, addDay, deleteDay, addExercise, deleteExercise, logSets } = useTrainingPlan(clientId);
+    const { plan, loading, error, createPlan, updatePlan, addDay, updateDay, deleteDay, addExercise, deleteExercise, logSets } = useTrainingPlan(clientId);
     const [selectedDayId, setSelectedDayId] = useState<number | null>(null);
     const [editing, setEditing] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
     const [newDayLabel, setNewDayLabel] = useState('');
+    const [newDayWeekday, setNewDayWeekday] = useState<number | null>(null);
+    const [durationDraft, setDurationDraft] = useState('');
     const [newExercise, setNewExercise] = useState<ExerciseDraft>(emptyExercise());
 
     if (loading) return <p className="text-sm text-slate-500">Cargando…</p>;
@@ -307,9 +425,23 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
     };
 
     const handleAddDay = async () => {
-        if (!newDayLabel.trim()) return;
-        await addDay(newDayLabel.trim());
+        if (!newDayLabel.trim() && newDayWeekday == null) return;
+        await addDay(newDayLabel.trim() || (newDayWeekday ? WEEKDAY_LABELS[newDayWeekday - 1] : 'Día de entrenamiento'), newDayWeekday);
         setNewDayLabel('');
+        setNewDayWeekday(null);
+    };
+
+    const handleSaveDuration = async () => {
+        const weeks = Number(durationDraft);
+        if (!Number.isFinite(weeks) || weeks < 1) return;
+        await updatePlan({ durationWeeks: weeks });
+    };
+
+    const usedWeekdays = new Set(plan.days.map((day) => day.weekday));
+    const dayDisplayLabel = (day: { weekday: number | null; label: string }) => {
+        if (day.weekday == null) return day.label;
+        const weekdayName = WEEKDAY_LABELS[day.weekday - 1];
+        return day.label && day.label !== weekdayName ? `${weekdayName} · ${day.label}` : weekdayName;
     };
 
     return (
@@ -318,15 +450,38 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                 <div>
                     <p className="eyebrow">Entrenamiento</p>
                     <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">{plan.label}</h2>
+                    <p className="mt-1 text-xs text-slate-500">Duración: {plan.durationWeeks} semana{plan.durationWeeks === 1 ? '' : 's'}</p>
                 </div>
                 <button
                     className="flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-amber-200"
-                    onClick={() => setEditing((current) => !current)}
+                    onClick={() => {
+                        setEditing((current) => !current);
+                        setDurationDraft(String(plan.durationWeeks));
+                    }}
                     type="button"
                 >
                     <Pencil size={13} /> {editing ? 'Listo' : 'Editar'}
                 </button>
             </div>
+
+            {editing && (
+                <div className="mt-3 flex items-end gap-2">
+                    <div>
+                        <label className="mb-1 block text-[10px] text-slate-500">Duración del plan (semanas)</label>
+                        <input
+                            className="w-24 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                            min={1}
+                            max={52}
+                            onChange={(event) => setDurationDraft(event.target.value)}
+                            type="number"
+                            value={durationDraft}
+                        />
+                    </div>
+                    <button className="rounded-lg bg-white/8 px-3 py-1.5 text-xs text-slate-100 hover:bg-white/15" onClick={handleSaveDuration} type="button">
+                        Guardar duración
+                    </button>
+                </div>
+            )}
 
             <button
                 className="mt-3 flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-slate-100"
@@ -351,17 +506,32 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                         onClick={() => setSelectedDayId(day.id)}
                         type="button"
                     >
-                        {day.label}
+                        {dayDisplayLabel(day)}
                     </button>
                 ))}
             </div>
 
             {editing && (
                 <div className="mt-3 flex gap-2">
+                    <select
+                        className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                        onChange={(event) => setNewDayWeekday(event.target.value ? Number(event.target.value) : null)}
+                        value={newDayWeekday ?? ''}
+                    >
+                        <option value="">Día de la semana</option>
+                        {WEEKDAY_LABELS.map((weekdayLabel, weekdayIndex) => {
+                            const weekdayValue = weekdayIndex + 1;
+                            return (
+                                <option disabled={usedWeekdays.has(weekdayValue)} key={weekdayValue} value={weekdayValue}>
+                                    {weekdayLabel}
+                                </option>
+                            );
+                        })}
+                    </select>
                     <input
                         className="flex-1 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
                         onChange={(event) => setNewDayLabel(event.target.value)}
-                        placeholder="Nombre del nuevo día"
+                        placeholder="Nota (opcional)"
                         value={newDayLabel}
                     />
                     <button
@@ -382,6 +552,15 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                         </button>
                     )}
                 </div>
+            )}
+
+            {editing && activeDay && (
+                <DayWeekdayEditor
+                    day={activeDay}
+                    key={activeDay.id}
+                    onSave={(updates) => updateDay(activeDay.id, updates)}
+                    usedWeekdays={usedWeekdays}
+                />
             )}
 
             {activeDay && (
