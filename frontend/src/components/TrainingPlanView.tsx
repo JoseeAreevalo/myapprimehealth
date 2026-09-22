@@ -10,10 +10,12 @@ const emptyExercise = (): ExerciseDraft => ({ name: '', targetSets: '3', targetR
 const emptyDay = (weekday: number | null): DayDraft => ({ label: '', weekday, exercises: [emptyExercise()] });
 const WEEKDAY_LABELS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft[], durationWeeks?: number) => Promise<void> }) {
+function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft[], durationWeeks?: number, startDate?: string, endDate?: string) => Promise<void> }) {
     const { token } = useAuth();
     const [label, setLabel] = useState('Mi plan de entrenamiento');
     const [durationWeeks, setDurationWeeks] = useState('4');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [days, setDays] = useState<DayDraft[]>([emptyDay(1), emptyDay(3), emptyDay(5)]);
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState('');
@@ -54,7 +56,7 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
         setSubmitting(true);
         setFeedback('');
         try {
-            await onCreate(label, days, durationWeeks ? Number(durationWeeks) : undefined);
+            await onCreate(label, days, durationWeeks ? Number(durationWeeks) : undefined, startDate || undefined, endDate || undefined);
             await Promise.all(
                 days.flatMap((day) => day.exercises.map((exercise) => registerExerciseName(exercise.name, token))),
             );
@@ -87,6 +89,26 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
                         placeholder="4"
                         type="number"
                         value={durationWeeks}
+                    />
+                </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+                <div>
+                    <label className="mb-1 block text-[11px] text-slate-500">Vigente desde</label>
+                    <input
+                        className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                        onChange={(event) => setStartDate(event.target.value)}
+                        type="date"
+                        value={startDate}
+                    />
+                </div>
+                <div>
+                    <label className="mb-1 block text-[11px] text-slate-500">Vigente hasta</label>
+                    <input
+                        className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                        onChange={(event) => setEndDate(event.target.value)}
+                        type="date"
+                        value={endDate}
                     />
                 </div>
             </div>
@@ -434,6 +456,8 @@ export default function TrainingPlanView({ clientId, canManage = true, readOnly 
     const [newDayLabel, setNewDayLabel] = useState('');
     const [newDayWeekday, setNewDayWeekday] = useState<number | null>(null);
     const [durationDraft, setDurationDraft] = useState('');
+    const [startDateDraft, setStartDateDraft] = useState('');
+    const [endDateDraft, setEndDateDraft] = useState('');
     const [newExercise, setNewExercise] = useState<ExerciseDraft>(emptyExercise());
     const [confirmingReset, setConfirmingReset] = useState(false);
     const [resetting, setResetting] = useState(false);
@@ -505,6 +529,10 @@ export default function TrainingPlanView({ clientId, canManage = true, readOnly 
         await updatePlan({ durationWeeks: weeks });
     };
 
+    const handleSaveDates = async () => {
+        await updatePlan({ startDate: startDateDraft || null, endDate: endDateDraft || null });
+    };
+
     const handleResetPlan = async () => {
         setResetting(true);
         try {
@@ -529,6 +557,9 @@ export default function TrainingPlanView({ clientId, canManage = true, readOnly 
                     <p className="eyebrow">Entrenamiento</p>
                     <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">{plan.label}</h2>
                     <p className="mt-1 text-xs text-slate-500">Duración: {plan.durationWeeks} semana{plan.durationWeeks === 1 ? '' : 's'}</p>
+                    {(plan.startDate || plan.endDate) && (
+                        <p className="mt-0.5 text-xs text-slate-500">Vigente: {plan.startDate ?? '—'} → {plan.endDate ?? '—'}</p>
+                    )}
                 </div>
                 {canManage && (
                     <button
@@ -536,6 +567,8 @@ export default function TrainingPlanView({ clientId, canManage = true, readOnly 
                         onClick={() => {
                             setEditing((current) => !current);
                             setDurationDraft(String(plan.durationWeeks));
+                            setStartDateDraft(plan.startDate ?? '');
+                            setEndDateDraft(plan.endDate ?? '');
                         }}
                         type="button"
                     >
@@ -566,6 +599,32 @@ export default function TrainingPlanView({ clientId, canManage = true, readOnly 
                         type="button"
                     >
                         Reiniciar configuración
+                    </button>
+                </div>
+            )}
+
+            {editing && (
+                <div className="mt-3 flex items-end gap-2">
+                    <div>
+                        <label className="mb-1 block text-[10px] text-slate-500">Vigente desde</label>
+                        <input
+                            className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                            onChange={(event) => setStartDateDraft(event.target.value)}
+                            type="date"
+                            value={startDateDraft}
+                        />
+                    </div>
+                    <div>
+                        <label className="mb-1 block text-[10px] text-slate-500">Vigente hasta</label>
+                        <input
+                            className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                            onChange={(event) => setEndDateDraft(event.target.value)}
+                            type="date"
+                            value={endDateDraft}
+                        />
+                    </div>
+                    <button className="rounded-lg bg-white/8 px-3 py-1.5 text-xs text-slate-100 hover:bg-white/15" onClick={handleSaveDates} type="button">
+                        Guardar fechas
                     </button>
                 </div>
             )}

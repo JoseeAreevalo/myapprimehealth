@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Settings, Utensils } from 'lucide-react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +18,7 @@ export default function OverviewPage() {
     const { openProfile } = useOutletContext<LayoutContext>();
     const { todayPlan, loading: nutritionLoading, error: nutritionError, logMeal, isClient } = useNutritionToday();
     const { consumedMl, logWater } = useHydrationToday();
+    const [customMl, setCustomMl] = useState('');
     const displayName = user?.fullName || user?.name || 'ahí';
     const firstName = displayName.split(' ')[0] || 'Hola';
 
@@ -103,6 +105,27 @@ export default function OverviewPage() {
                         >
                             {consumedMl >= waterGoalMl ? 'Meta alcanzada' : '+ 100 ml'}
                         </button>
+                        <div className="mt-2 flex gap-2">
+                            <input
+                                className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                                min={1}
+                                onChange={(event) => setCustomMl(event.target.value)}
+                                placeholder="Otra cantidad (ml)"
+                                type="number"
+                                value={customMl}
+                            />
+                            <button
+                                className="shrink-0 rounded-xl bg-white/7 px-4 text-sm font-medium text-slate-300 transition hover:bg-white/12 disabled:opacity-40"
+                                disabled={!customMl || Number(customMl) <= 0}
+                                onClick={() => {
+                                    logWater(Number(customMl));
+                                    setCustomMl('');
+                                }}
+                                type="button"
+                            >
+                                Añadir
+                            </button>
+                        </div>
                     </article>
                 </section>
 

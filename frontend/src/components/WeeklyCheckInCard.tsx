@@ -1,26 +1,29 @@
 import { useState } from 'react';
 import { Moon } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { useCheckIns } from '../hooks/useCheckIns';
 import CheckInPhotos from './CheckInPhotos';
 
 export default function WeeklyCheckInCard() {
-    const { latest, loading, error, submit, isClient } = useCheckIns();
+    const { user } = useAuth();
+    const { latest, loading, error, submit } = useCheckIns();
     const [weightKg, setWeightKg] = useState('');
     const [adherencePercent, setAdherencePercent] = useState('');
     const [notes, setNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState('');
 
-    if (!isClient) return null;
+    if (user?.role !== 'client') return null;
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+        const adherence = adherencePercent ? Math.min(100, Math.max(0, Number(adherencePercent))) : null;
         setSubmitting(true);
         setFeedback('');
         try {
             await submit({
                 weightKg: weightKg ? Number(weightKg) : null,
-                adherencePercent: adherencePercent ? Number(adherencePercent) : null,
+                adherencePercent: adherence,
                 notes: notes || null,
             });
             setFeedback('Check-in enviado para esta semana.');
@@ -74,6 +77,8 @@ export default function WeeklyCheckInCard() {
                             <label className="mb-1.5 block text-xs font-medium text-slate-400">% de adherencia (opcional)</label>
                             <input
                                 className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                                max={100}
+                                min={0}
                                 onChange={(event) => setAdherencePercent(event.target.value)}
                                 placeholder="Ej: 80"
                                 type="number"

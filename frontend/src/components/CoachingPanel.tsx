@@ -41,6 +41,10 @@ const emptyMeals: MealDraft[] = [
     { name: 'Cena', mealTime: '19:00', calories: '550', items: [] },
 ];
 
+const WEEKDAY_LABELS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+type DayType = 'entrenamiento' | 'descanso';
+const DAY_TYPE_LABELS: Record<DayType, string> = { entrenamiento: 'Día de entrenamiento', descanso: 'Día de descanso' };
+
 function authHeaders(token: string | null) {
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -135,9 +139,15 @@ export function CreateMealPlanForm({ clients, fixedClientId, onCreated }: { clie
     const [waterGoalMl, setWaterGoalMl] = useState('2500');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [dayType, setDayType] = useState<DayType | null>(null);
+    const [weekdays, setWeekdays] = useState<number[]>([1, 2, 3, 4, 5, 6, 7]);
     const [meals, setMeals] = useState<MealDraft[]>(emptyMeals);
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+    const toggleWeekday = (weekday: number) => {
+        setWeekdays((current) => (current.includes(weekday) ? current.filter((w) => w !== weekday) : [...current, weekday]));
+    };
 
     const updateMeal = (index: number, field: 'name' | 'mealTime' | 'calories', value: string) => {
         setMeals((current) => current.map((meal, i) => (i === index ? { ...meal, [field]: value } : meal)));
@@ -162,6 +172,10 @@ export function CreateMealPlanForm({ clients, fixedClientId, onCreated }: { clie
             setFeedback({ type: 'error', message: 'Selecciona un cliente primero.' });
             return;
         }
+        if (!dayType || weekdays.length === 0) {
+            setFeedback({ type: 'error', message: 'Indica si esta dieta es de entrenamiento o descanso, y para qué días de la semana aplica.' });
+            return;
+        }
 
         setSubmitting(true);
         setFeedback(null);
@@ -179,6 +193,7 @@ export function CreateMealPlanForm({ clients, fixedClientId, onCreated }: { clie
                     waterGoalMl: waterGoalMl ? Number(waterGoalMl) : undefined,
                     startDate: startDate || undefined,
                     endDate: endDate || undefined,
+                    dayConfig: { label: DAY_TYPE_LABELS[dayType], weekdays },
                     meals: meals.map((meal) => ({
                         name: meal.name,
                         mealTime: meal.mealTime,
@@ -215,6 +230,46 @@ export function CreateMealPlanForm({ clients, fixedClientId, onCreated }: { clie
                     ))}
                 </select>
             )}
+            <div>
+                <label className="mb-1 block text-[11px] text-slate-500">Tipo de día (obligatorio)</label>
+                <div className="flex gap-2">
+                    {(['entrenamiento', 'descanso'] as DayType[]).map((type) => (
+                        <button
+                            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition ${dayType === type
+                                ? type === 'entrenamiento'
+                                    ? 'border-amber-400 bg-amber-500 text-white'
+                                    : 'border-teal-400 bg-teal-500 text-white'
+                                : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/8'
+                                }`}
+                            key={type}
+                            onClick={() => setDayType(type)}
+                            type="button"
+                        >
+                            {DAY_TYPE_LABELS[type]}
+                        </button>
+                    ))}
+                </div>
+            </div>
+            <div>
+                <label className="mb-1 block text-[11px] text-slate-500">Días de la semana en que aplica</label>
+                <div className="flex flex-wrap gap-1.5">
+                    {WEEKDAY_LABELS.map((weekdayLabel, index) => {
+                        const weekdayValue = index + 1;
+                        const checked = weekdays.includes(weekdayValue);
+                        return (
+                            <button
+                                className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${checked ? 'border-amber-400 bg-amber-500 text-white' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/8'
+                                    }`}
+                                key={weekdayValue}
+                                onClick={() => toggleWeekday(weekdayValue)}
+                                type="button"
+                            >
+                                {weekdayLabel}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Datos generales del plan</p>
             <div className="grid grid-cols-2 gap-3">
                 <div>

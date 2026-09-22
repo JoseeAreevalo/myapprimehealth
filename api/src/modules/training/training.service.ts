@@ -64,6 +64,12 @@ function validateDurationWeeks(durationWeeks: number | null | undefined): void {
     }
 }
 
+function validateDateRange(startDate?: string | null, endDate?: string | null): void {
+    if (startDate && endDate && startDate > endDate) {
+        throw new ValidationError('La fecha de inicio debe ser anterior a la fecha de término.');
+    }
+}
+
 export function createTrainingService() {
     return {
         async getActivePlan(requester: AuthenticatedUser, clientId: number): Promise<TrainingPlanWithDays | null> {
@@ -99,7 +105,7 @@ export function createTrainingService() {
 
         async createPlan(
             requester: AuthenticatedUser,
-            input: { clientId: number; label: string; durationWeeks?: number; days: TrainingDayInput[] },
+            input: { clientId: number; label: string; durationWeeks?: number; startDate?: string | null; endDate?: string | null; days: TrainingDayInput[] },
         ): Promise<TrainingPlanWithDays> {
             await assertCanManagePlan(requester, input.clientId);
 
@@ -107,6 +113,7 @@ export function createTrainingService() {
                 throw new ValidationError('El plan requiere un nombre.');
             }
             validateDurationWeeks(input.durationWeeks);
+            validateDateRange(input.startDate, input.endDate);
             if (!Array.isArray(input.days) || input.days.length === 0) {
                 throw new ValidationError('Se requiere al menos un día de entrenamiento.');
             }
@@ -136,6 +143,8 @@ export function createTrainingService() {
                 coachId: requester.id === input.clientId ? input.clientId : requester.id,
                 label: input.label,
                 durationWeeks: input.durationWeeks,
+                startDate: input.startDate,
+                endDate: input.endDate,
             });
 
             const days = await Promise.all(
@@ -151,13 +160,14 @@ export function createTrainingService() {
             return { ...plan, days };
         },
 
-        async updatePlan(requester: AuthenticatedUser, planId: number, updates: { label?: string; durationWeeks?: number }): Promise<TrainingPlan> {
+        async updatePlan(requester: AuthenticatedUser, planId: number, updates: { label?: string; durationWeeks?: number; startDate?: string | null; endDate?: string | null }): Promise<TrainingPlan> {
             const plan = await trainingPlansRepository.findById(planId);
             if (!plan) {
                 throw new NotFoundError('Plan de entrenamiento no encontrado.');
             }
             await assertCanManagePlan(requester, plan.clientId);
             validateDurationWeeks(updates.durationWeeks);
+            validateDateRange(updates.startDate ?? plan.startDate, updates.endDate ?? plan.endDate);
             return trainingPlansRepository.update(planId, updates);
         },
 

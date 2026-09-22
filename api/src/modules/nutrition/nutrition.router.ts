@@ -61,6 +61,9 @@ nutritionRouter.post('/plans', authenticate, async (req: Request, res: Response)
             startDate: req.body.startDate ?? undefined,
             endDate: req.body.endDate ?? undefined,
             meals: Array.isArray(req.body.meals) ? req.body.meals : [],
+            dayConfig: req.body.dayConfig && Array.isArray(req.body.dayConfig.weekdays)
+                ? { label: req.body.dayConfig.label, weekdays: req.body.dayConfig.weekdays.map(Number) }
+                : undefined,
         });
         res.status(201).json({ plan });
     } catch (error) {

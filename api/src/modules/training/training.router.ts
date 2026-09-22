@@ -44,6 +44,8 @@ trainingRouter.post('/plans', authenticate, async (req: Request, res: Response):
             clientId: Number(req.body.clientId),
             label: req.body.label,
             durationWeeks: req.body.durationWeeks != null ? Number(req.body.durationWeeks) : undefined,
+            startDate: req.body.startDate ?? undefined,
+            endDate: req.body.endDate ?? undefined,
             days: Array.isArray(req.body.days) ? req.body.days : [],
         });
         res.status(201).json({ plan });
@@ -57,6 +59,8 @@ trainingRouter.patch('/plans/:planId', authenticate, async (req: Request, res: R
         const plan = await trainingService.updatePlan(req.authenticatedUser!, Number(req.params.planId), {
             label: req.body.label,
             durationWeeks: req.body.durationWeeks != null ? Number(req.body.durationWeeks) : undefined,
+            startDate: req.body.startDate ?? undefined,
+            endDate: req.body.endDate ?? undefined,
         });
         res.status(200).json({ plan });
     } catch (error) {

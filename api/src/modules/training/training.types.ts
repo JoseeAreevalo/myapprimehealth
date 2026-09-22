@@ -4,6 +4,8 @@ export interface TrainingPlan {
     coachId: number;
     label: string;
     durationWeeks: number;
+    startDate: string | null;
+    endDate: string | null;
     isActive: boolean;
 }
 

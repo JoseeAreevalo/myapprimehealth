@@ -216,6 +216,7 @@ export function createNutritionService() {
                 startDate?: string | null;
                 endDate?: string | null;
                 meals: NutritionMealInput[];
+                dayConfig?: { label: string; weekdays: number[] };
             },
         ): Promise<NutritionPlanWithMeals> {
             await assertCanManagePlan(requester, input.clientId);
@@ -235,6 +236,9 @@ export function createNutritionService() {
                     throw new ValidationError('Cada comida requiere un nombre y una cantidad de calorías no negativa.');
                 }
             }
+            if (input.dayConfig) {
+                validateWeekdaysArray(input.dayConfig.weekdays);
+            }
 
             const plan = await nutritionPlansRepository.create({
                 clientId: input.clientId,
@@ -249,13 +253,28 @@ export function createNutritionService() {
                 startDate: input.startDate,
                 endDate: input.endDate,
             });
-            const meals = await nutritionMealsRepository.createMany(plan.id, input.meals);
+
+            let dayConfigId: number | null = null;
+            let dayConfigs: NutritionDayConfigWithMeals[] = [];
+            if (input.dayConfig) {
+                const createdDayConfig = await nutritionDayConfigsRepository.create(plan.id, input.dayConfig.label, input.dayConfig.weekdays, 0);
+                dayConfigId = createdDayConfig.id;
+                dayConfigs = [{ ...createdDayConfig, meals: [] }];
+            }
+
+            const meals = await nutritionMealsRepository.createMany(
+                plan.id,
+                input.meals.map((meal) => ({ ...meal, dayConfigId: dayConfigId ?? meal.dayConfigId })),
+            );
             const mealsWithItems: NutritionMeal[] = [];
             for (const [index, meal] of meals.entries()) {
                 const drafts = input.meals[index]?.items ?? [];
                 const items = drafts.length > 0 ? await createMealItems(meal.id, drafts) : [];
                 const calories = items.length > 0 ? sumItemCalories(items) : meal.calories;
                 mealsWithItems.push({ ...meal, calories, items });
+            }
+            if (dayConfigs.length > 0) {
+                dayConfigs[0].meals = mealsWithItems;
             }
 
             if (requester.id !== input.clientId) {
@@ -267,7 +286,17 @@ export function createNutritionService() {
                 );
             }
 
-            return { ...plan, meals: mealsWithItems.map((meal) => ({ ...meal, status: 'planned' as MealStatus })), dayConfigs: [] };
+            // Newly created plans become the active one immediately — otherwise they'd be
+            // invisible (getTodayPlan only looks at the active plan) with no way to switch to
+            // them, since the plan-switcher tabs only appear once 2+ plans already exist.
+            await nutritionPlansRepository.activate(input.clientId, plan.id);
+
+            return {
+                ...plan,
+                isActive: true,
+                meals: mealsWithItems.map((meal) => ({ ...meal, status: 'planned' as MealStatus })),
+                dayConfigs,
+            };
         },
 
         async updatePlan(

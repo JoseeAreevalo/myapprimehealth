@@ -7,6 +7,8 @@ interface PlanRow {
     coach_id: number;
     label: string;
     duration_weeks: number;
+    start_date: string | null;
+    end_date: string | null;
     is_active: boolean;
 }
 
@@ -55,6 +57,8 @@ function toPlan(row: PlanRow): TrainingPlan {
         coachId: row.coach_id,
         label: row.label,
         durationWeeks: row.duration_weeks,
+        startDate: row.start_date,
+        endDate: row.end_date,
         isActive: row.is_active,
     };
 }
@@ -96,14 +100,14 @@ export const trainingPlansRepository = {
         return rows[0] ? toPlan(rows[0]) : undefined;
     },
 
-    async create(input: { clientId: number; coachId: number; label: string; durationWeeks?: number }): Promise<TrainingPlan> {
+    async create(input: { clientId: number; coachId: number; label: string; durationWeeks?: number; startDate?: string | null; endDate?: string | null }): Promise<TrainingPlan> {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
             await client.query('UPDATE training_plans SET is_active = FALSE, updated_at = now() WHERE client_id = $1', [input.clientId]);
             const { rows } = await client.query<PlanRow>(
-                `INSERT INTO training_plans (client_id, coach_id, label, duration_weeks) VALUES ($1, $2, $3, COALESCE($4, 4)) RETURNING *`,
-                [input.clientId, input.coachId, input.label, input.durationWeeks ?? null],
+                `INSERT INTO training_plans (client_id, coach_id, label, duration_weeks, start_date, end_date) VALUES ($1, $2, $3, COALESCE($4, 4), $5, $6) RETURNING *`,
+                [input.clientId, input.coachId, input.label, input.durationWeeks ?? null, input.startDate ?? null, input.endDate ?? null],
             );
             await client.query('COMMIT');
             return toPlan(rows[0]);
@@ -115,10 +119,10 @@ export const trainingPlansRepository = {
         }
     },
 
-    async update(id: number, updates: { label?: string; durationWeeks?: number }): Promise<TrainingPlan> {
+    async update(id: number, updates: { label?: string; durationWeeks?: number; startDate?: string | null; endDate?: string | null }): Promise<TrainingPlan> {
         const { rows } = await pool.query<PlanRow>(
-            `UPDATE training_plans SET label = COALESCE($2, label), duration_weeks = COALESCE($3, duration_weeks), updated_at = now() WHERE id = $1 RETURNING *`,
-            [id, updates.label ?? null, updates.durationWeeks ?? null],
+            `UPDATE training_plans SET label = COALESCE($2, label), duration_weeks = COALESCE($3, duration_weeks), start_date = COALESCE($4, start_date), end_date = COALESCE($5, end_date), updated_at = now() WHERE id = $1 RETURNING *`,
+            [id, updates.label ?? null, updates.durationWeeks ?? null, updates.startDate ?? null, updates.endDate ?? null],
         );
         return toPlan(rows[0]);
     },

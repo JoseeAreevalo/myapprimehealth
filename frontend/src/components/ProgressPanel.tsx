@@ -67,6 +67,23 @@ export default function ProgressPanel() {
                             <Sparkbars values={progress.weightSeries.map((point) => point.weightKg)} />
                         </>
                     )}
+                    <p className="mt-5 text-xs text-slate-500">Histórico de check-ins</p>
+                    <ul className="mt-2 max-h-56 space-y-1.5 overflow-y-auto">
+                        {[...new Set([...progress.weightSeries.map((p) => p.weekStartDate), ...progress.adherenceSeries.map((p) => p.weekStartDate)])]
+                            .sort((a, b) => b.localeCompare(a))
+                            .map((date) => {
+                                const weight = progress.weightSeries.find((p) => p.weekStartDate === date)?.weightKg;
+                                const adherence = progress.adherenceSeries.find((p) => p.weekStartDate === date)?.adherencePercent;
+                                return (
+                                    <li className="flex items-center justify-between rounded-lg border border-white/7 bg-white/[0.03] px-3 py-1.5 text-xs" key={date}>
+                                        <span className="text-slate-400">Semana del {date}</span>
+                                        <span className="text-slate-200">
+                                            {weight != null ? `${weight} kg` : '—'} · {adherence != null ? `${adherence}%` : '—'}
+                                        </span>
+                                    </li>
+                                );
+                            })}
+                    </ul>
                 </>
             )}
         </section>
