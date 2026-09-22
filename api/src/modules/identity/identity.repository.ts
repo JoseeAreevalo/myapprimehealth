@@ -87,6 +87,11 @@ export const usersRepository = {
         );
         return rows[0] ? toUser(rows[0]) : undefined;
     },
+
+    async delete(id: number): Promise<boolean> {
+        const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [id]);
+        return (rowCount ?? 0) > 0;
+    },
 };
 
 export const refreshSessionsRepository = {

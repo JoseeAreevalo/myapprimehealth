@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
-import { ClipboardCheck, Dumbbell, HeartHandshake, Plus, Trash2, TrendingUp, Users, Utensils } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ClipboardCheck, Dumbbell, HeartHandshake, Plus, Search, Trash2, TrendingUp, UserPlus, Users, Utensils } from 'lucide-react';
 import { api } from '../api/config';
 import { useAuth } from '../context/AuthContext';
 import { useClientProgress } from '../hooks/useClientProgress';
@@ -366,6 +366,185 @@ function CreateMealPlanForm({ clients }: { clients: PersonSummary[] }) {
     );
 }
 
+function CreateClientForm({ onCreated }: { onCreated: () => void }) {
+    const { user, token } = useAuth();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!user) return;
+        setSubmitting(true);
+        setFeedback(null);
+        try {
+            await axios.post(
+                `${api.baseURL}${api.endpoints.coachClients(user.id)}`,
+                { email, password, fullName: fullName || undefined },
+                { headers: authHeaders(token) },
+            );
+            setFeedback({ type: 'success', message: 'Cliente creado y asignado a ti.' });
+            setEmail('');
+            setPassword('');
+            setFullName('');
+            onCreated();
+        } catch (error) {
+            const message = axios.isAxiosError(error) ? error.response?.data?.error?.message : undefined;
+            setFeedback({ type: 'error', message: message ?? 'No se pudo crear el cliente.' });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <form className="mt-6 space-y-3 border-t border-white/7 pt-6" onSubmit={handleSubmit}>
+            <p className="eyebrow flex items-center gap-1.5"><UserPlus size={13} /> Nuevo cliente</p>
+            <input
+                className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="Correo electrónico"
+                type="email"
+                value={email}
+            />
+            <input
+                className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                onChange={(event) => setFullName(event.target.value)}
+                placeholder="Nombre completo"
+                value={fullName}
+            />
+            <input
+                className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Contraseña temporal"
+                type="password"
+                value={password}
+            />
+            {feedback && (
+                <p className={`text-xs ${feedback.type === 'success' ? 'text-emerald-300' : 'text-rose-300'}`}>{feedback.message}</p>
+            )}
+            <button
+                className="w-full rounded-xl bg-amber-500 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-400 disabled:opacity-50"
+                disabled={submitting}
+                type="submit"
+            >
+                {submitting ? 'Creando…' : 'Crear cliente'}
+            </button>
+        </form>
+    );
+}
+
+function ClientReviewDetail({ client }: { client: PersonSummary }) {
+    const { token } = useAuth();
+    const [clientPlan, setClientPlan] = useState<NutritionPlanWithMeals | null>(null);
+    const [planLoading, setPlanLoading] = useState(true);
+    const { progress, loading } = useClientProgress(client.id);
+
+    useEffect(() => {
+        setPlanLoading(true);
+        axios
+            .get(`${api.baseURL}${api.endpoints.nutritionToday(client.id)}`, { headers: authHeaders(token) })
+            .then((res) => setClientPlan(res.data?.plan ?? null))
+            .catch(() => setClientPlan(null))
+            .finally(() => setPlanLoading(false));
+    }, [client.id, token]);
+
+    return (
+        <div className="mt-4 space-y-4 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+            <div>
+                <p className="text-sm font-semibold text-slate-100">{client.fullName ?? client.email}</p>
+                <p className="text-xs text-slate-500">{client.email}</p>
+            </div>
+            <div className="rounded-xl border border-white/7 bg-white/[0.03] p-3 text-xs text-slate-400">
+                {loading && <p>Cargando progreso…</p>}
+                {!loading && progress && progress.summary.totalCheckIns === 0 && <p>Aún no hay check-ins.</p>}
+                {!loading && progress && progress.summary.totalCheckIns > 0 && (
+                    <div className="grid grid-cols-2 gap-2">
+                        <p>Cambio de peso: <span className="text-slate-200">{progress.summary.weightChangeKg != null ? `${progress.summary.weightChangeKg} kg` : '—'}</span></p>
+                        <p>Adherencia prom.: <span className="text-slate-200">{progress.summary.averageAdherencePercent != null ? `${progress.summary.averageAdherencePercent}%` : '—'}</span></p>
+                    </div>
+                )}
+            </div>
+            <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Nutrición</p>
+                {planLoading && <p className="text-xs text-slate-400">Cargando…</p>}
+                {!planLoading && !clientPlan && <p className="text-xs text-slate-400">Este cliente no tiene un plan activo todavía.</p>}
+                {!planLoading && clientPlan && <EditNutritionPlan onUpdated={() => undefined} plan={clientPlan} />}
+            </div>
+            <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Entrenamiento</p>
+                <TrainingPlanView clientId={client.id} />
+            </div>
+        </div>
+    );
+}
+
+function ClientReviewSearch({ clients }: { clients: PersonSummary[] }) {
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState('');
+    const [selectedClient, setSelectedClient] = useState<PersonSummary | null>(null);
+
+    const filtered = useMemo(() => {
+        const normalized = query.trim().toLowerCase();
+        if (!normalized) return clients;
+        return clients.filter((client) =>
+            (client.fullName ?? '').toLowerCase().includes(normalized) || client.email.toLowerCase().includes(normalized),
+        );
+    }, [clients, query]);
+
+    return (
+        <section className="rounded-3xl border border-white/8 bg-panel/70 p-6 shadow-panel">
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="eyebrow">Coaching</p>
+                    <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Revisión de Clientes</h2>
+                </div>
+                <Search className="text-amber-300" size={20} />
+            </div>
+            <button
+                className="mt-4 flex w-full items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-300 hover:bg-white/8"
+                onClick={() => setOpen((current) => !current)}
+                type="button"
+            >
+                <span>{selectedClient ? (selectedClient.fullName ?? selectedClient.email) : 'Buscar y seleccionar un cliente…'}</span>
+                <Search size={15} />
+            </button>
+            {open && (
+                <div className="mt-2 rounded-xl border border-white/8 bg-slate-950 p-2">
+                    <input
+                        autoFocus
+                        className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="Escribe un nombre o correo…"
+                        value={query}
+                    />
+                    <ul className="mt-2 max-h-56 space-y-1 overflow-y-auto">
+                        {filtered.length === 0 && <li className="px-2 py-2 text-xs text-slate-500">Sin resultados.</li>}
+                        {filtered.map((client) => (
+                            <li key={client.id}>
+                                <button
+                                    className="w-full rounded-lg px-2 py-1.5 text-left text-xs text-slate-200 hover:bg-white/8"
+                                    onClick={() => {
+                                        setSelectedClient(client);
+                                        setOpen(false);
+                                        setQuery('');
+                                    }}
+                                    type="button"
+                                >
+                                    <span className="font-medium">{client.fullName ?? client.email}</span>
+                                    <span className="block text-slate-500">{client.email}</span>
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+            {selectedClient && <ClientReviewDetail client={selectedClient} />}
+        </section>
+    );
+}
+
 function ClientRosterItem({ client }: { client: PersonSummary }) {
     const { token } = useAuth();
     const [expanded, setExpanded] = useState(false);
@@ -455,7 +634,7 @@ function CoachDashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    useEffect(() => {
+    const load = () => {
         if (!user) return;
         setLoading(true);
         axios
@@ -463,15 +642,18 @@ function CoachDashboard() {
             .then((res) => setClients(res.data?.data ?? []))
             .catch(() => setError('No se pudo cargar tu lista de clientes.'))
             .finally(() => setLoading(false));
-    }, [user, token]);
+    };
+
+    useEffect(load, [user, token]);
 
     return (
         <>
+            {!loading && clients.length > 0 && <ClientReviewSearch clients={clients} />}
             <section className="rounded-3xl border border-white/8 bg-panel/70 p-6 shadow-panel">
                 <div className="flex items-center justify-between">
                     <div>
                         <p className="eyebrow">Coaching</p>
-                        <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Tus clientes</h2>
+                        <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Entrenamiento de clientes</h2>
                     </div>
                     <Users className="text-amber-300" size={20} />
                 </div>
@@ -488,6 +670,7 @@ function CoachDashboard() {
                     </ul>
                 )}
                 {!loading && clients.length > 0 && <CreateMealPlanForm clients={clients} />}
+                <CreateClientForm onCreated={load} />
             </section>
             {!loading && clients.length > 0 && <PendingCheckIns clients={clients} />}
         </>

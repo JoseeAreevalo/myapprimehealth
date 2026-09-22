@@ -62,6 +62,20 @@ peopleRouter.get('/coaches/:coachId/clients', authenticate, async (req: Request,
   }
 });
 
+peopleRouter.post('/coaches/:coachId/clients', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const coachId = Number(req.params.coachId);
+    const client = await peopleService.createClientForCoach(req.authenticatedUser!, coachId, {
+      email: req.body.email,
+      password: req.body.password,
+      fullName: req.body.fullName,
+    });
+    res.status(201).json({ client });
+  } catch (error) {
+    handleError(res, error, 'No se pudo crear el cliente.');
+  }
+});
+
 peopleRouter.get('/clients/:clientId/coach', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     const clientId = Number(req.params.clientId);

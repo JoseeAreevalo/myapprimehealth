@@ -69,5 +69,15 @@ export function createAdministrationService() {
             }
             return toAdminUserView(user);
         },
+
+        async deleteUser(id: number, requestingUserId: number): Promise<void> {
+            if (id === requestingUserId) {
+                throw new ValidationError('No puedes eliminar tu propio perfil.');
+            }
+            const deleted = await usersRepository.delete(id);
+            if (!deleted) {
+                throw new ValidationError('Usuario no encontrado.');
+            }
+        },
     };
 }

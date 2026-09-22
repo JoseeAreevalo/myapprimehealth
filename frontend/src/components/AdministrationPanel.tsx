@@ -22,6 +22,7 @@ const roleLabels: Record<AdminUser['role'], string> = {
     client: 'cliente',
 };
 
+
 function CreateUserForm({ onCreated }: { onCreated: () => void }) {
     const { token } = useAuth();
     const [email, setEmail] = useState('');
@@ -106,6 +107,8 @@ export default function AdministrationPanel() {
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     const load = () => {
         setLoading(true);
@@ -127,6 +130,28 @@ export default function AdministrationPanel() {
         load();
     };
 
+    const changeRole = async (target: AdminUser, role: AdminUser['role']) => {
+        await axios.patch(
+            `${api.baseURL}${api.endpoints.adminUserUpdate(target.id)}`,
+            { role },
+            { headers: authHeaders(token) },
+        );
+        load();
+    };
+
+    const handleDelete = async (target: AdminUser) => {
+        setDeleting(true);
+        try {
+            await axios.delete(`${api.baseURL}${api.endpoints.adminUserDelete(target.id)}`, { headers: authHeaders(token) });
+            setConfirmingDeleteId(null);
+            load();
+        } catch {
+            setError('No se pudo eliminar el usuario.');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     if (user?.role !== 'super_admin') return null;
 
     return (
@@ -134,7 +159,7 @@ export default function AdministrationPanel() {
             <div className="flex items-center justify-between">
                 <div>
                     <p className="eyebrow">Administración</p>
-                    <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Usuarios de la plataforma</h2>
+                    <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Configuración de perfiles</h2>
                 </div>
                 <ShieldCheck className="text-amber-300" size={20} />
             </div>
@@ -143,26 +168,81 @@ export default function AdministrationPanel() {
             {error && <p className="mt-5 text-sm text-rose-300">{error}</p>}
 
             {!loading && !error && (
-                <ul className="mt-5 max-h-72 space-y-2 overflow-y-auto pr-1">
+                <ul className="mt-5 max-h-96 space-y-2 overflow-y-auto pr-1">
                     {users.map((item) => (
-                        <li className="flex items-center justify-between rounded-xl border border-white/7 bg-white/[0.03] px-3 py-2 text-xs" key={item.id}>
-                            <div>
-                                <p className="font-medium text-slate-100">{item.fullName ?? item.email}</p>
-                                <p className="text-slate-500">{item.email} · {roleLabels[item.role]}</p>
+                        <li className="rounded-xl border border-white/7 bg-white/[0.03] px-3 py-2 text-xs" key={item.id}>
+                            <div className="flex items-center justify-between gap-2">
+                                <div>
+                                    <p className="font-medium text-slate-100">{item.fullName ?? item.email}</p>
+                                    <p className="text-slate-500">{item.email} · {roleLabels[item.role]}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        className="rounded-lg border border-white/8 bg-slate-900 px-2 py-1 text-[11px] text-slate-100"
+                                        onChange={(event) => changeRole(item, event.target.value as AdminUser['role'])}
+                                        value={item.role}
+                                    >
+                                        <option className="bg-slate-900 text-slate-100" value="super_admin">Super admin</option>
+                                        <option className="bg-slate-900 text-slate-100" value="coach">Coach</option>
+                                        <option className="bg-slate-900 text-slate-100" value="client">Cliente</option>
+                                    </select>
+                                    <button
+                                        className={`rounded-lg px-2 py-1 font-semibold ${item.isActive ? 'bg-white/8 text-slate-300' : 'bg-rose-500/20 text-rose-300'}`}
+                                        onClick={() => toggleActive(item)}
+                                        type="button"
+                                    >
+                                        {item.isActive ? 'Activo' : 'Deshabilitado'}
+                                    </button>
+                                    <button
+                                        className="rounded-lg bg-rose-500/15 px-2 py-1 text-rose-300 hover:bg-rose-500/25"
+                                        onClick={() => setConfirmingDeleteId(item.id)}
+                                        type="button"
+                                    >
+                                        Eliminar
+                                    </button>
+                                </div>
                             </div>
-                            <button
-                                className={`rounded-lg px-2 py-1 font-semibold ${item.isActive ? 'bg-white/8 text-slate-300' : 'bg-rose-500/20 text-rose-300'}`}
-                                onClick={() => toggleActive(item)}
-                                type="button"
-                            >
-                                {item.isActive ? 'Activo' : 'Deshabilitado'}
-                            </button>
                         </li>
                     ))}
                 </ul>
             )}
 
             <CreateUserForm onCreated={load} />
+
+            {confirmingDeleteId !== null && (
+                <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4"
+                    onClick={() => !deleting && setConfirmingDeleteId(null)}
+                >
+                    <div
+                        className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-950 p-5 shadow-panel"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <p className="text-sm text-slate-200">¿Eliminar este perfil de forma permanente? Esta acción no se puede deshacer.</p>
+                        <div className="mt-4 flex justify-end gap-2">
+                            <button
+                                className="rounded-lg bg-white/8 px-3 py-1.5 text-xs text-slate-200 hover:bg-white/15"
+                                disabled={deleting}
+                                onClick={() => setConfirmingDeleteId(null)}
+                                type="button"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-400 disabled:opacity-50"
+                                disabled={deleting}
+                                onClick={() => {
+                                    const target = users.find((candidate) => candidate.id === confirmingDeleteId);
+                                    if (target) handleDelete(target);
+                                }}
+                                type="button"
+                            >
+                                {deleting ? 'Eliminando…' : 'Sí, eliminar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </section>
     );
 }

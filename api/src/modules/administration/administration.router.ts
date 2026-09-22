@@ -58,4 +58,13 @@ administrationRouter.patch('/users/:id', async (req: Request, res: Response): Pr
     }
 });
 
+administrationRouter.delete('/users/:id', async (req: Request, res: Response): Promise<void> => {
+    try {
+        await administrationService.deleteUser(Number(req.params.id), req.authenticatedUser!.id);
+        res.status(204).send();
+    } catch (error) {
+        handleError(res, error, 'No se pudo eliminar el usuario.');
+    }
+});
+
 export default administrationRouter;

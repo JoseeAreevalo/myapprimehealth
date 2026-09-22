@@ -1,4 +1,6 @@
+import bcrypt from 'bcryptjs';
 import { AuthenticatedUser } from '../identity/identity.types';
+import { usersRepository } from '../identity/identity.repository';
 import { notificationsRepository } from '../notifications/notifications.repository';
 import { coachClientsRepository, peopleRepository, profilesRepository } from './people.repository';
 import { CoachClientLink, PersonSummary, Profile } from './people.types';
@@ -93,6 +95,38 @@ export function createPeopleService() {
             }
 
             await coachClientsRepository.end(linkId);
+        },
+
+        async createClientForCoach(
+            requester: AuthenticatedUser,
+            coachId: number,
+            input: { email: string; password: string; fullName?: string | null },
+        ): Promise<PersonSummary> {
+            if (requester.role === 'client') {
+                throw new ForbiddenError('Los clientes no pueden crear otros clientes.');
+            }
+            if (requester.role === 'coach' && requester.id !== coachId) {
+                throw new ForbiddenError('Los coaches solo pueden crear clientes para sí mismos.');
+            }
+
+            const email = input.email?.trim().toLowerCase();
+            const password = String(input.password ?? '');
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                throw new ValidationError('Se requiere un correo válido.');
+            }
+            if (password.length < 8) {
+                throw new ValidationError('La contraseña debe tener al menos 8 caracteres.');
+            }
+            if (await usersRepository.findByEmail(email)) {
+                throw new ValidationError('Ese correo ya está en uso.');
+            }
+
+            const passwordHash = await bcrypt.hash(password, 12);
+            const user = await usersRepository.create(email, passwordHash, input.fullName ?? null, 'client');
+            await coachClientsRepository.assign(coachId, user.id);
+            await notificationsRepository.create(user.id, 'coach_assigned', 'Tienes un nuevo coach', 'Te han asignado un nuevo coach.');
+
+            return { id: user.id, email: user.email, fullName: user.fullName, role: user.role };
         },
     };
 }
