@@ -105,13 +105,9 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
                                     {WEEKDAY_LABELS.map((weekdayLabel, weekdayIndex) => {
                                         const weekdayValue = weekdayIndex + 1;
                                         const usedElsewhere = days.some((other, otherIndex) => otherIndex !== dayIndex && other.weekday === weekdayValue);
+                                        if (usedElsewhere) return null;
                                         return (
-                                            <option
-                                                className="bg-slate-900 text-slate-100 disabled:text-slate-600"
-                                                disabled={usedElsewhere}
-                                                key={weekdayValue}
-                                                value={weekdayValue}
-                                            >
+                                            <option className="bg-slate-900 text-slate-100" key={weekdayValue} value={weekdayValue}>
                                                 {weekdayLabel}
                                             </option>
                                         );
@@ -341,13 +337,9 @@ function DayWeekdayEditor({
                     {WEEKDAY_LABELS.map((weekdayLabel, weekdayIndex) => {
                         const weekdayValue = weekdayIndex + 1;
                         const usedElsewhere = weekdayValue !== day.weekday && usedWeekdays.has(weekdayValue);
+                        if (usedElsewhere) return null;
                         return (
-                            <option
-                                className="bg-slate-900 text-slate-100 disabled:text-slate-600"
-                                disabled={usedElsewhere}
-                                key={weekdayValue}
-                                value={weekdayValue}
-                            >
+                            <option className="bg-slate-900 text-slate-100" key={weekdayValue} value={weekdayValue}>
                                 {weekdayLabel}
                             </option>
                         );
@@ -531,13 +523,9 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                         <option className="bg-slate-900 text-slate-100" value="">Día de la semana</option>
                         {WEEKDAY_LABELS.map((weekdayLabel, weekdayIndex) => {
                             const weekdayValue = weekdayIndex + 1;
+                            if (usedWeekdays.has(weekdayValue)) return null;
                             return (
-                                <option
-                                    className="bg-slate-900 text-slate-100 disabled:text-slate-600"
-                                    disabled={usedWeekdays.has(weekdayValue)}
-                                    key={weekdayValue}
-                                    value={weekdayValue}
-                                >
+                                <option className="bg-slate-900 text-slate-100" key={weekdayValue} value={weekdayValue}>
                                     {weekdayLabel}
                                 </option>
                             );
