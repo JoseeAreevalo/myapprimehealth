@@ -38,6 +38,26 @@ function weekdayOfIsoDate(iso: string): number {
     return jsDay === 0 ? 7 : jsDay;
 }
 
+function addDaysToIso(iso: string, delta: number): string {
+    const [y, m, d] = iso.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    date.setDate(date.getDate() + delta);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+// The plan's raw endDate may land on a weekday with no diet configured (e.g. a rest day outside
+// the schedule); walk backwards up to a week to the last day that's actually configured, so the
+// "revisión / check-in" marker always lands on a real, colored day instead of an empty one.
+function lastConfiguredDateOnOrBefore(endDate: string, startDate: string | null | undefined, configuredWeekdays: Set<number>): string {
+    if (configuredWeekdays.size === 0) return endDate;
+    let candidate = endDate;
+    for (let i = 0; i < 7; i++) {
+        if (configuredWeekdays.has(weekdayOfIsoDate(candidate)) && (!startDate || candidate >= startDate)) return candidate;
+        candidate = addDaysToIso(candidate, -1);
+    }
+    return endDate;
+}
+
 export default function NutritionCalendar({ dayConfigs, startDate, endDate }: { dayConfigs: NutritionDayConfig[]; startDate?: string | null; endDate?: string | null }) {
     const now = new Date();
     const [year, setYear] = useState(now.getFullYear());
@@ -48,6 +68,7 @@ export default function NutritionCalendar({ dayConfigs, startDate, endDate }: { 
     dayConfigs.forEach((config, index) => {
         config.weekdays.forEach((weekday) => configByWeekday.set(weekday, { config, colorIndex: colorIndexFor(config.label, index) }));
     });
+    const checkpointDate = endDate ? lastConfiguredDateOnOrBefore(endDate, startDate, new Set(configByWeekday.keys())) : null;
 
     const daysInMonth = new Date(year, month, 0).getDate();
     const leadingBlanks = firstWeekdayIndex(year, month);
@@ -122,7 +143,7 @@ export default function NutritionCalendar({ dayConfigs, startDate, endDate }: { 
                     const entry = withinRange ? configByWeekday.get(weekdayOfIsoDate(iso)) : undefined;
                     const isToday = iso === todayIso;
                     const isSelected = iso === selectedDate;
-                    const isCheckpoint = !!endDate && iso === endDate;
+                    const isCheckpoint = !!checkpointDate && iso === checkpointDate;
                     const palette = entry ? CONFIG_COLORS[entry.colorIndex] : null;
                     return (
                         <button
