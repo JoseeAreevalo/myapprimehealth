@@ -158,6 +158,15 @@ export function createTrainingService() {
             return trainingPlansRepository.update(planId, updates);
         },
 
+        async deletePlan(requester: AuthenticatedUser, planId: number): Promise<void> {
+            const plan = await trainingPlansRepository.findById(planId);
+            if (!plan) {
+                throw new NotFoundError('Plan de entrenamiento no encontrado.');
+            }
+            await assertCanManagePlan(requester, plan.clientId);
+            await trainingPlansRepository.delete(planId);
+        },
+
         async addDay(requester: AuthenticatedUser, planId: number, label: string, weekday?: number | null): Promise<void> {
             const plan = await trainingPlansRepository.findById(planId);
             if (!plan) {

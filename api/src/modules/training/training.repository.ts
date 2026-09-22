@@ -117,6 +117,10 @@ export const trainingPlansRepository = {
         );
         return toPlan(rows[0]);
     },
+
+    async delete(id: number): Promise<void> {
+        await pool.query('DELETE FROM training_plans WHERE id = $1', [id]);
+    },
 };
 
 export const trainingDaysRepository = {

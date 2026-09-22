@@ -139,6 +139,12 @@ export function useTrainingPlan(clientId: number | null) {
         [plan, token, load],
     );
 
+    const deletePlan = useCallback(async () => {
+        if (!plan) return;
+        await axios.delete(`${api.baseURL}${api.endpoints.trainingPlanUpdate(plan.id)}`, { headers: authHeaders(token) });
+        await load();
+    }, [plan, token, load]);
+
     const deleteDay = useCallback(
         async (dayId: number) => {
             await axios.delete(`${api.baseURL}${api.endpoints.trainingDayDelete(dayId)}`, { headers: authHeaders(token) });
@@ -179,5 +185,5 @@ export function useTrainingPlan(clientId: number | null) {
         [token, load],
     );
 
-    return { plan, loading, error, refresh: load, createPlan, updatePlan, addDay, updateDay, deleteDay, addExercise, updateExercise, deleteExercise, logSets };
+    return { plan, loading, error, refresh: load, createPlan, updatePlan, deletePlan, addDay, updateDay, deleteDay, addExercise, updateExercise, deleteExercise, logSets };
 }

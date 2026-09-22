@@ -64,6 +64,15 @@ trainingRouter.patch('/plans/:planId', authenticate, async (req: Request, res: R
     }
 });
 
+trainingRouter.delete('/plans/:planId', authenticate, async (req: Request, res: Response): Promise<void> => {
+    try {
+        await trainingService.deletePlan(req.authenticatedUser!, Number(req.params.planId));
+        res.status(204).send();
+    } catch (error) {
+        handleError(res, error, 'No se pudo reiniciar la configuración de entrenamiento.');
+    }
+});
+
 trainingRouter.post('/plans/:planId/days', authenticate, async (req: Request, res: Response): Promise<void> => {
     try {
         await trainingService.addDay(

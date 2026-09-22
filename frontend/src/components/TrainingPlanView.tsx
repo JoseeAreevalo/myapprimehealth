@@ -368,7 +368,7 @@ function DayWeekdayEditor({
 
 export default function TrainingPlanView({ clientId }: { clientId: number }) {
     const { token } = useAuth();
-    const { plan, loading, error, createPlan, updatePlan, addDay, updateDay, deleteDay, addExercise, deleteExercise, logSets } = useTrainingPlan(clientId);
+    const { plan, loading, error, createPlan, updatePlan, deletePlan, addDay, updateDay, deleteDay, addExercise, deleteExercise, logSets } = useTrainingPlan(clientId);
     const [selectedDayId, setSelectedDayId] = useState<number | null>(null);
     const [editing, setEditing] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
@@ -376,6 +376,8 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
     const [newDayWeekday, setNewDayWeekday] = useState<number | null>(null);
     const [durationDraft, setDurationDraft] = useState('');
     const [newExercise, setNewExercise] = useState<ExerciseDraft>(emptyExercise());
+    const [confirmingReset, setConfirmingReset] = useState(false);
+    const [resetting, setResetting] = useState(false);
 
     if (loading) return <p className="text-sm text-slate-500">Cargando…</p>;
     if (error) return <p className="text-sm text-rose-300">{error}</p>;
@@ -439,6 +441,16 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
         await updatePlan({ durationWeeks: weeks });
     };
 
+    const handleResetPlan = async () => {
+        setResetting(true);
+        try {
+            await deletePlan();
+        } finally {
+            setResetting(false);
+            setConfirmingReset(false);
+        }
+    };
+
     const usedWeekdays = new Set(plan.days.map((day) => day.weekday));
     const dayDisplayLabel = (day: { weekday: number | null; label: string }) => {
         if (day.weekday == null) return day.label;
@@ -482,6 +494,45 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                     <button className="rounded-lg bg-white/8 px-3 py-1.5 text-xs text-slate-100 hover:bg-white/15" onClick={handleSaveDuration} type="button">
                         Guardar duración
                     </button>
+                    <button
+                        className="ml-auto rounded-lg bg-rose-500/15 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/25"
+                        onClick={() => setConfirmingReset(true)}
+                        type="button"
+                    >
+                        Reiniciar configuración
+                    </button>
+                </div>
+            )}
+
+            {confirmingReset && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4" onClick={() => setConfirmingReset(false)}>
+                    <div
+                        className="w-full max-w-sm rounded-2xl border border-white/10 bg-panel p-6 shadow-2xl"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <h3 className="font-display text-lg font-semibold text-slate-50">¿Reiniciar configuración?</h3>
+                        <p className="mt-2 text-sm text-slate-400">
+                            Esto borrará por completo tu plan de entrenamiento actual: todos los días, ejercicios y metas configuradas. Esta acción no se puede deshacer.
+                        </p>
+                        <div className="mt-5 flex justify-end gap-2">
+                            <button
+                                className="rounded-lg bg-white/8 px-4 py-2 text-sm text-slate-100 hover:bg-white/15"
+                                disabled={resetting}
+                                onClick={() => setConfirmingReset(false)}
+                                type="button"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="rounded-lg bg-rose-500 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-400 disabled:opacity-50"
+                                disabled={resetting}
+                                onClick={handleResetPlan}
+                                type="button"
+                            >
+                                {resetting ? 'Reiniciando…' : 'Sí, reiniciar'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
