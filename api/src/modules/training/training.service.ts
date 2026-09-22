@@ -92,6 +92,9 @@ export function createTrainingService() {
             if (!Array.isArray(input.days) || input.days.length === 0) {
                 throw new ValidationError('Se requiere al menos un día de entrenamiento.');
             }
+            if (input.days.length > 7) {
+                throw new ValidationError('Una semana tiene máximo 7 días.');
+            }
             for (const day of input.days) {
                 if (!day.label || !day.label.trim()) {
                     throw new ValidationError('Cada día requiere un nombre.');
@@ -140,6 +143,9 @@ export function createTrainingService() {
                 throw new ValidationError('El día requiere un nombre.');
             }
             const dayOrder = await trainingDaysRepository.countByPlanId(planId);
+            if (dayOrder >= 7) {
+                throw new ValidationError('Una semana tiene máximo 7 días.');
+            }
             await trainingDaysRepository.create(planId, label.trim(), dayOrder + 1);
         },
 

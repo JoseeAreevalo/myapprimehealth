@@ -16,7 +16,7 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState('');
 
-    const addDay = () => setDays((current) => [...current, emptyDay(current.length + 1)]);
+    const addDay = () => setDays((current) => (current.length >= 7 ? current : [...current, emptyDay(current.length + 1)]));
     const removeDay = (index: number) => setDays((current) => current.filter((_, i) => i !== index));
     const updateDayLabel = (index: number, value: string) =>
         setDays((current) => current.map((day, i) => (i === index ? { ...day, label: value } : day)));
@@ -92,26 +92,26 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
                             {day.exercises.map((exercise, exIndex) => (
                                 <div className="grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5" key={exIndex}>
                                     <ExerciseAutocomplete
-                                        className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                                        className="w-full min-w-0 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
                                         onChange={(newValue) => updateExercise(dayIndex, exIndex, 'name', newValue)}
                                         value={exercise.name}
                                     />
                                     <input
-                                        className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                                        className="w-full min-w-0 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
                                         onChange={(event) => updateExercise(dayIndex, exIndex, 'targetSets', event.target.value)}
                                         placeholder="Series"
                                         type="number"
                                         value={exercise.targetSets}
                                     />
                                     <input
-                                        className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                                        className="w-full min-w-0 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
                                         onChange={(event) => updateExercise(dayIndex, exIndex, 'targetReps', event.target.value)}
                                         placeholder="Reps"
                                         type="number"
                                         value={exercise.targetReps}
                                     />
                                     <input
-                                        className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                                        className="w-full min-w-0 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
                                         onChange={(event) => updateExercise(dayIndex, exIndex, 'targetWeightKg', event.target.value)}
                                         placeholder="kg"
                                         type="number"
@@ -148,9 +148,15 @@ function CreatePlanForm({ onCreate }: { onCreate: (label: string, days: DayDraft
                     </div>
                 ))}
             </div>
-            <button className="flex items-center gap-1.5 text-sm font-medium text-amber-300 hover:text-amber-200" onClick={addDay} type="button">
+            <button
+                className="flex items-center gap-1.5 text-sm font-medium text-amber-300 hover:text-amber-200 disabled:opacity-30"
+                disabled={days.length >= 7}
+                onClick={addDay}
+                type="button"
+            >
                 <Plus size={15} /> Agregar día
             </button>
+            {days.length >= 7 && <p className="text-xs text-slate-500">Una semana tiene máximo 7 días.</p>}
             {feedback && <p className="text-xs text-rose-300">{feedback}</p>}
             <button
                 className="w-full rounded-xl bg-amber-500 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-400 disabled:opacity-50"
@@ -267,6 +273,18 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                 <p className="mt-3 text-sm text-slate-400">
                     Define cuántos días entrenas por semana y qué ejercicios corresponden a cada día.
                 </p>
+                <button
+                    className="mt-3 flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-slate-100"
+                    onClick={() => setShowCalendar((current) => !current)}
+                    type="button"
+                >
+                    <CalendarDays size={13} /> {showCalendar ? 'Ocultar calendario' : 'Ver calendario de entrenamientos'}
+                </button>
+                {showCalendar && (
+                    <div className="mt-3">
+                        <TrainingCalendar clientId={clientId} />
+                    </div>
+                )}
                 <div className="mt-5">
                     <CreatePlanForm onCreate={createPlan} />
                 </div>
@@ -346,7 +364,12 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                         placeholder="Nombre del nuevo día"
                         value={newDayLabel}
                     />
-                    <button className="rounded-lg bg-white/8 px-3 text-xs text-slate-100 hover:bg-white/15" onClick={handleAddDay} type="button">
+                    <button
+                        className="rounded-lg bg-white/8 px-3 text-xs text-slate-100 hover:bg-white/15 disabled:opacity-30"
+                        disabled={plan.days.length >= 7}
+                        onClick={handleAddDay}
+                        type="button"
+                    >
                         Agregar día
                     </button>
                     {activeDay && (
@@ -391,26 +414,26 @@ export default function TrainingPlanView({ clientId }: { clientId: number }) {
                             </div>
                             <div className="mt-1 grid grid-cols-[1.4fr_0.6fr_0.6fr_0.7fr_auto] gap-1.5">
                                 <ExerciseAutocomplete
-                                    className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                                    className="w-full min-w-0 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
                                     onChange={(newValue) => setNewExercise((current) => ({ ...current, name: newValue }))}
                                     value={newExercise.name}
                                 />
                                 <input
-                                    className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                                    className="w-full min-w-0 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
                                     onChange={(event) => setNewExercise((current) => ({ ...current, targetSets: event.target.value }))}
                                     placeholder="Series"
                                     type="number"
                                     value={newExercise.targetSets}
                                 />
                                 <input
-                                    className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                                    className="w-full min-w-0 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
                                     onChange={(event) => setNewExercise((current) => ({ ...current, targetReps: event.target.value }))}
                                     placeholder="Reps"
                                     type="number"
                                     value={newExercise.targetReps}
                                 />
                                 <input
-                                    className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                                    className="w-full min-w-0 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
                                     onChange={(event) => setNewExercise((current) => ({ ...current, targetWeightKg: event.target.value }))}
                                     placeholder="kg"
                                     type="number"
