@@ -306,7 +306,8 @@ function DayConfigEditForm({
 
 // Lets a coach/client define 1+ diet variants (e.g. "Día de entrenamiento" vs "Día de descanso"),
 // each covering a checked set of weekdays and carrying its own set of meals.
-export default function NutritionDayConfigsEditor({ plan, onUpdated }: { plan: NutritionPlanWithMeals; onUpdated: () => void }) {    const { token } = useAuth();
+export default function NutritionDayConfigsEditor({ plan, onUpdated }: { plan: NutritionPlanWithMeals; onUpdated: () => void }) {
+    const { token } = useAuth();
     const [creating, setCreating] = useState(false);
     const [dayType, setDayType] = useState<DayType | null>(null);
     const [weekdays, setWeekdays] = useState<number[]>([]);

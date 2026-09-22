@@ -1,13 +1,12 @@
 import axios from 'axios';
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ClipboardCheck, HeartHandshake, Plus, Search, Trash2, UserPlus } from 'lucide-react';
+import { ClipboardCheck, HeartHandshake, Plus, Search, Trash2, UserPlus } from 'lucide-react';
 import { api } from '../api/config';
 import { useAuth } from '../context/AuthContext';
 import { useClientProgress } from '../hooks/useClientProgress';
 import { PersonSummary } from '../hooks/useCoachClients';
 import { NutritionPlanWithMeals } from '../hooks/useNutritionToday';
 import CheckInPhotos from './CheckInPhotos';
-import ActivityPlanView from './ActivityPlanView';
 import EditNutritionPlan from './EditNutritionPlan';
 import MealItemsEditor, { MealItemDraft, mealItemsTotals } from './MealItemsEditor';
 import NutritionLiveTotals from './NutritionLiveTotals';
@@ -521,7 +520,7 @@ export function CreateClientForm({ onCreated }: { onCreated: () => void }) {
     );
 }
 
-function ClientReviewDetail({ client }: { client: PersonSummary }) {
+function ClientReviewDetail({ client, tab }: { client: PersonSummary; tab: ClientTab }) {
     const { token } = useAuth();
     const [clientPlan, setClientPlan] = useState<NutritionPlanWithMeals | null>(null);
     const [planLoading, setPlanLoading] = useState(true);
@@ -552,42 +551,53 @@ function ClientReviewDetail({ client }: { client: PersonSummary }) {
                     </div>
                 )}
             </div>
-            <div>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Nutrición (solo lectura)</p>
-                {planLoading && <p className="text-xs text-slate-400">Cargando…</p>}
-                {!planLoading && !clientPlan && <p className="text-xs text-slate-400">Este cliente no tiene un plan activo todavía.</p>}
-                {!planLoading && clientPlan && (
-                    <div className="rounded-xl border border-white/7 bg-white/[0.03] p-3">
-                        <p className="text-xs text-slate-300">
-                            {clientPlan.goalCalories} kcal meta · P {clientPlan.proteinGTarget ?? '—'}g · C {clientPlan.carbsGTarget ?? '—'}g · G {clientPlan.fatGTarget ?? '—'}g · Agua {(clientPlan.waterGoalMl / 1000).toFixed(1)}L
-                        </p>
-                        <ul className="mt-2 space-y-1 text-xs text-slate-400">
-                            {clientPlan.meals.map((meal) => (
-                                <li className="flex justify-between" key={meal.id}>
-                                    <span>{meal.name}{meal.mealTime ? ` · ${meal.mealTime}` : ''}</span>
-                                    <span>{meal.status === 'completed' && meal.loggedCalories != null ? Math.round(meal.loggedCalories) : meal.calories} kcal{meal.status === 'completed' ? ' ✓' : ''}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-            </div>
-            <div>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Entrenamiento (solo lectura)</p>
-                <TrainingPlanView clientId={client.id} canManage={false} readOnly />
-            </div>
-            <div>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Actividad (HEAT/NEAT, solo lectura)</p>
-                <ActivityPlanView canManage={false} clientId={client.id} />
-            </div>
+            {tab === 'nutrition' && (
+                <div>
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Nutrición (solo lectura)</p>
+                    {planLoading && <p className="text-xs text-slate-400">Cargando…</p>}
+                    {!planLoading && !clientPlan && <p className="text-xs text-slate-400">Este cliente no tiene un plan activo todavía.</p>}
+                    {!planLoading && clientPlan && (
+                        <div className="rounded-xl border border-white/7 bg-white/[0.03] p-3">
+                            <p className="text-xs text-slate-300">
+                                {clientPlan.goalCalories} kcal meta · P {clientPlan.proteinGTarget ?? '—'}g · C {clientPlan.carbsGTarget ?? '—'}g · G {clientPlan.fatGTarget ?? '—'}g · Agua {(clientPlan.waterGoalMl / 1000).toFixed(1)}L
+                            </p>
+                            <ul className="mt-2 space-y-1 text-xs text-slate-400">
+                                {clientPlan.meals.map((meal) => (
+                                    <li className="flex justify-between" key={meal.id}>
+                                        <span>{meal.name}{meal.mealTime ? ` · ${meal.mealTime}` : ''}</span>
+                                        <span>{meal.status === 'completed' && meal.loggedCalories != null ? Math.round(meal.loggedCalories) : meal.calories} kcal{meal.status === 'completed' ? ' ✓' : ''}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            )}
+            {tab === 'training' && (
+                <div>
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Entrenamiento (solo lectura)</p>
+                    <TrainingPlanView clientId={client.id} canManage={false} readOnly />
+                </div>
+            )}
         </div>
     );
 }
 
-export function ClientReviewSearch({ clients }: { clients: PersonSummary[] }) {
+type ClientTab = 'training' | 'nutrition';
+
+// Search box + dropdown used to pick a client, shared by the "Revisión de Clientes" and
+// "Planes Clientes" sections so both follow the same client-menu -> tabs pattern.
+function ClientPicker({
+    clients,
+    selectedClient,
+    onSelect,
+}: {
+    clients: PersonSummary[];
+    selectedClient: PersonSummary | null;
+    onSelect: (client: PersonSummary) => void;
+}) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
-    const [selectedClient, setSelectedClient] = useState<PersonSummary | null>(null);
     const [highlightedIndex, setHighlightedIndex] = useState(0);
 
     const filtered = useMemo(() => {
@@ -599,7 +609,7 @@ export function ClientReviewSearch({ clients }: { clients: PersonSummary[] }) {
     }, [clients, query]);
 
     const selectClient = (client: PersonSummary) => {
-        setSelectedClient(client);
+        onSelect(client);
         setOpen(false);
         setQuery('');
         setHighlightedIndex(0);
@@ -622,16 +632,9 @@ export function ClientReviewSearch({ clients }: { clients: PersonSummary[] }) {
     };
 
     return (
-        <section className="rounded-3xl border border-white/8 bg-panel/70 p-6 shadow-panel">
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="eyebrow">Coaching</p>
-                    <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Revisión de Clientes</h2>
-                </div>
-                <Search className="text-amber-300" size={20} />
-            </div>
+        <div>
             <button
-                className="mt-4 flex w-full items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-300 hover:bg-white/8"
+                className="flex w-full items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-300 hover:bg-white/8"
                 onClick={() => {
                     setOpen((current) => !current);
                     setHighlightedIndex(0);
@@ -675,16 +678,70 @@ export function ClientReviewSearch({ clients }: { clients: PersonSummary[] }) {
                     </ul>
                 </div>
             )}
-            {selectedClient && <ClientReviewDetail client={selectedClient} />}
+        </div>
+    );
+}
+
+function ClientTabButtons({ tab, onChange }: { tab: ClientTab; onChange: (tab: ClientTab) => void }) {
+    return (
+        <div className="mt-4 flex gap-2">
+            <button
+                className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition ${tab === 'training' ? 'border-amber-400 bg-amber-500 text-white' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/8'
+                    }`}
+                onClick={() => onChange('training')}
+                type="button"
+            >
+                Entrenamiento
+            </button>
+            <button
+                className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition ${tab === 'nutrition' ? 'border-amber-400 bg-amber-500 text-white' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/8'
+                    }`}
+                onClick={() => onChange('nutrition')}
+                type="button"
+            >
+                Nutrición
+            </button>
+        </div>
+    );
+}
+
+export function ClientReviewSearch({ clients }: { clients: PersonSummary[] }) {
+    const [selectedClient, setSelectedClient] = useState<PersonSummary | null>(null);
+    const [tab, setTab] = useState<ClientTab>('training');
+
+    return (
+        <section className="rounded-3xl border border-white/8 bg-panel/70 p-6 shadow-panel">
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="eyebrow">Coaching</p>
+                    <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Revisión de Clientes</h2>
+                </div>
+                <Search className="text-amber-300" size={20} />
+            </div>
+            <div className="mt-4">
+                <ClientPicker
+                    clients={clients}
+                    onSelect={(client) => {
+                        setSelectedClient(client);
+                        setTab('training');
+                    }}
+                    selectedClient={selectedClient}
+                />
+            </div>
+            {selectedClient && (
+                <>
+                    <ClientTabButtons onChange={setTab} tab={tab} />
+                    <ClientReviewDetail client={selectedClient} tab={tab} />
+                </>
+            )}
         </section>
     );
 }
 
-export function ClientNutritionItem({ client }: { client: PersonSummary }) {
+function ClientPlansDetail({ client, tab }: { client: PersonSummary; tab: ClientTab }) {
     const { token } = useAuth();
-    const [open, setOpen] = useState(false);
     const [clientPlan, setClientPlan] = useState<NutritionPlanWithMeals | null>(null);
-    const [planLoading, setPlanLoading] = useState(false);
+    const [planLoading, setPlanLoading] = useState(true);
 
     const loadPlan = () => {
         setPlanLoading(true);
@@ -695,56 +752,56 @@ export function ClientNutritionItem({ client }: { client: PersonSummary }) {
             .finally(() => setPlanLoading(false));
     };
 
+    useEffect(loadPlan, [client.id, token]);
+
     return (
-        <li className="rounded-xl border border-white/7 bg-white/[0.03] px-4 py-3">
-            <button
-                className="flex w-full items-center justify-between"
-                onClick={() => {
-                    const next = !open;
-                    setOpen(next);
-                    if (next) loadPlan();
-                }}
-                type="button"
-            >
-                <div className="text-left">
-                    <span className="text-sm font-medium text-slate-100">{client.fullName ?? client.email}</span>
-                    <span className="block text-xs text-slate-500">{client.email}</span>
-                </div>
-                <ChevronDown className={`text-slate-400 transition ${open ? 'rotate-180' : ''}`} size={16} />
-            </button>
-            {open && (
-                <div className="mt-3 border-t border-white/7 pt-3">
+        <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+            <div className="mb-3">
+                <p className="text-sm font-semibold text-slate-100">{client.fullName ?? client.email}</p>
+                <p className="text-xs text-slate-500">{client.email}</p>
+            </div>
+            {tab === 'training' && <TrainingPlanView clientId={client.id} />}
+            {tab === 'nutrition' && (
+                <>
                     {planLoading && <p className="text-xs text-slate-400">Cargando…</p>}
                     {!planLoading && !clientPlan && <CreateMealPlanForm fixedClientId={client.id} onCreated={loadPlan} />}
                     {!planLoading && clientPlan && <EditNutritionPlan onUpdated={loadPlan} plan={clientPlan} />}
-                </div>
+                </>
             )}
-        </li>
+        </div>
     );
 }
 
-export function ClientTrainingItem({ client }: { client: PersonSummary }) {
-    const [open, setOpen] = useState(false);
+export function ClientPlansSearch({ clients }: { clients: PersonSummary[] }) {
+    const [selectedClient, setSelectedClient] = useState<PersonSummary | null>(null);
+    const [tab, setTab] = useState<ClientTab>('training');
 
     return (
-        <li className="rounded-xl border border-white/7 bg-white/[0.03] px-4 py-3">
-            <button
-                className="flex w-full items-center justify-between"
-                onClick={() => setOpen((current) => !current)}
-                type="button"
-            >
-                <div className="text-left">
-                    <span className="text-sm font-medium text-slate-100">{client.fullName ?? client.email}</span>
-                    <span className="block text-xs text-slate-500">{client.email}</span>
+        <section className="rounded-3xl border border-white/8 bg-panel/70 p-6 shadow-panel">
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="eyebrow">Coaching</p>
+                    <h2 className="mt-2 font-display text-xl font-semibold tracking-[-0.03em] text-slate-50">Planes de Clientes</h2>
+                    <p className="mt-2 max-w-xl text-sm text-slate-400">Crea y edita el plan de entrenamiento y nutrición de cada cliente.</p>
                 </div>
-                <ChevronDown className={`text-slate-400 transition ${open ? 'rotate-180' : ''}`} size={16} />
-            </button>
-            {open && (
-                <div className="mt-3 border-t border-white/7 pt-3">
-                    <TrainingPlanView clientId={client.id} />
-                </div>
+            </div>
+            <div className="mt-4">
+                <ClientPicker
+                    clients={clients}
+                    onSelect={(client) => {
+                        setSelectedClient(client);
+                        setTab('training');
+                    }}
+                    selectedClient={selectedClient}
+                />
+            </div>
+            {selectedClient && (
+                <>
+                    <ClientTabButtons onChange={setTab} tab={tab} />
+                    <ClientPlansDetail client={selectedClient} tab={tab} />
+                </>
             )}
-        </li>
+        </section>
     );
 }
 

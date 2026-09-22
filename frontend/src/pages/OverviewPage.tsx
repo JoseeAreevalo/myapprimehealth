@@ -8,6 +8,7 @@ import ProgressPanel from '../components/ProgressPanel';
 import FoodCalculator from '../components/FoodCalculator';
 import TrainingSummaryCard from '../components/TrainingSummaryCard';
 import MealLogger from '../components/MealLogger';
+import QuickActivityLogCard from '../components/QuickActivityLogCard';
 import { useNutritionToday } from '../hooks/useNutritionToday';
 import { useHydrationToday } from '../hooks/useHydrationToday';
 import { findActiveDayConfig } from '../utils/weekday';
@@ -128,6 +129,10 @@ export default function OverviewPage() {
                         </div>
                     </article>
                 </section>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-3">
+                    <QuickActivityLogCard />
+                </div>
 
                 <section className="mt-8 rounded-3xl border border-white/8 bg-panel/70 p-5 shadow-panel sm:p-7">
                     <div className="flex items-start justify-between gap-4">

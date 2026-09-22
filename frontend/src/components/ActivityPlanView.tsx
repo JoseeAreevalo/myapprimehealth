@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Flame, Footprints, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useActivityPlan, useActivityLogs } from '../hooks/useActivityPlan';
+import { todayWeekday } from '../utils/weekday';
 
 const WEEKDAY_LABELS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 type Assignment = 'A' | 'B' | 'none';
@@ -101,6 +102,7 @@ export default function ActivityPlanView({
     const [savingTargets, setSavingTargets] = useState(false);
     const [creating, setCreating] = useState(false);
     const [saveError, setSaveError] = useState('');
+    const [editing, setEditing] = useState(false);
 
     // Pre-fill the editor from whatever is already configured, once the plan loads.
     useEffect(() => {
@@ -176,6 +178,7 @@ export default function ActivityPlanView({
                 }),
             ]);
             await refresh();
+            setEditing(false);
         } catch (err) {
             setSaveError((axios.isAxiosError(err) ? err.response?.data?.error?.message : undefined) || 'No se pudo guardar la configuración.');
         } finally {
@@ -288,7 +291,31 @@ export default function ActivityPlanView({
 
             {saveError && <p className="mt-3 text-sm text-rose-300">{saveError}</p>}
 
-            {canManage ? (
+            {!editing && (
+                <>
+                    <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-slate-300">
+                        <div className="rounded-xl border border-white/7 bg-white/[0.03] p-3">
+                            <p className="text-slate-500">Cardio (HEAT)</p>
+                            <p className="mt-1">{plan.cardioTargets.map((target) => `${WEEKDAY_LABELS[target.weekday - 1].slice(0, 3)}: ${target.minutes}min`).join(' · ') || 'Sin configurar'}</p>
+                        </div>
+                        <div className="rounded-xl border border-white/7 bg-white/[0.03] p-3">
+                            <p className="text-slate-500">Pasos (NEAT)</p>
+                            <p className="mt-1">{plan.stepsTargets.map((target) => `${WEEKDAY_LABELS[target.weekday - 1].slice(0, 3)}: ${(target.stepsTarget / 1000).toFixed(1)}k`).join(' · ') || 'Sin configurar'}</p>
+                        </div>
+                    </div>
+                    {canManage && (
+                        <button
+                            className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/8"
+                            onClick={() => setEditing(true)}
+                            type="button"
+                        >
+                            Modificar configuración
+                        </button>
+                    )}
+                </>
+            )}
+
+            {editing && canManage && (
                 <div className="mt-4 space-y-5">
                     <div>
                         <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
@@ -350,23 +377,19 @@ export default function ActivityPlanView({
                             {savingTargets ? 'Guardando…' : 'Guardar cambios'}
                         </button>
                         <button
+                            className="rounded-xl border border-white/10 bg-white/[0.03] px-4 text-xs font-semibold text-slate-300 hover:bg-white/8"
+                            onClick={() => setEditing(false)}
+                            type="button"
+                        >
+                            Cancelar
+                        </button>
+                        <button
                             className="rounded-xl bg-rose-500/15 px-4 text-xs font-semibold text-rose-300 hover:bg-rose-500/25"
                             onClick={() => setConfirmingReset(true)}
                             type="button"
                         >
                             Reiniciar
                         </button>
-                    </div>
-                </div>
-            ) : (
-                <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-slate-300">
-                    <div className="rounded-xl border border-white/7 bg-white/[0.03] p-3">
-                        <p className="text-slate-500">Cardio (HEAT)</p>
-                        <p className="mt-1">{plan.cardioTargets.map((target) => `${WEEKDAY_LABELS[target.weekday - 1].slice(0, 3)}: ${target.minutes}min`).join(' · ') || 'Sin configurar'}</p>
-                    </div>
-                    <div className="rounded-xl border border-white/7 bg-white/[0.03] p-3">
-                        <p className="text-slate-500">Pasos (NEAT)</p>
-                        <p className="mt-1">{plan.stepsTargets.map((target) => `${WEEKDAY_LABELS[target.weekday - 1].slice(0, 3)}: ${(target.stepsTarget / 1000).toFixed(1)}k`).join(' · ') || 'Sin configurar'}</p>
                     </div>
                 </div>
             )}
@@ -397,43 +420,59 @@ export default function ActivityPlanView({
 
             <div className="mt-5 border-t border-white/7 pt-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Registro de hoy</p>
-                {!isSelf ? (
-                    <p className="mt-2 text-sm text-slate-300">
-                        {plan.todayLog?.actualCardioMinutes != null ? `${plan.todayLog.actualCardioMinutes} min de cardio` : 'Sin cardio registrado'} ·{' '}
-                        {plan.todayLog?.actualSteps != null ? `${plan.todayLog.actualSteps} pasos` : 'Sin pasos registrados'}
-                    </p>
-                ) : (
-                    <div className="mt-2 flex items-end gap-2">
-                        <div>
-                            <label className="mb-1 block text-[10px] text-slate-500">Minutos de cardio hoy</label>
-                            <input
-                                className="w-28 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
-                                onChange={(event) => setLogCardio(event.target.value)}
-                                placeholder={plan.todayLog?.actualCardioMinutes != null ? String(plan.todayLog.actualCardioMinutes) : '0'}
-                                type="number"
-                                value={logCardio}
-                            />
+                {(() => {
+                    const isoWeekday = todayWeekday();
+                    const cardioTargetToday = plan.cardioTargets.find((target) => target.weekday === isoWeekday)?.minutes ?? 0;
+                    const stepsTargetToday = plan.stepsTargets.find((target) => target.weekday === isoWeekday)?.stepsTarget ?? 0;
+                    if (cardioTargetToday <= 0 && stepsTargetToday <= 0) {
+                        return <p className="mt-2 text-sm text-slate-400">No hay actividad configurada para hoy.</p>;
+                    }
+                    if (!isSelf) {
+                        return (
+                            <p className="mt-2 text-sm text-slate-300">
+                                {cardioTargetToday > 0 && (plan.todayLog?.actualCardioMinutes != null ? `${plan.todayLog.actualCardioMinutes} min de cardio` : 'Sin cardio registrado')}
+                                {cardioTargetToday > 0 && stepsTargetToday > 0 && ' · '}
+                                {stepsTargetToday > 0 && (plan.todayLog?.actualSteps != null ? `${plan.todayLog.actualSteps} pasos` : 'Sin pasos registrados')}
+                            </p>
+                        );
+                    }
+                    return (
+                        <div className="mt-2 flex items-end gap-2">
+                            {cardioTargetToday > 0 && (
+                                <div>
+                                    <label className="mb-1 block text-[10px] text-slate-500">Minutos de cardio hoy</label>
+                                    <input
+                                        className="w-28 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                                        onChange={(event) => setLogCardio(event.target.value)}
+                                        placeholder={plan.todayLog?.actualCardioMinutes != null ? String(plan.todayLog.actualCardioMinutes) : '0'}
+                                        type="number"
+                                        value={logCardio}
+                                    />
+                                </div>
+                            )}
+                            {stepsTargetToday > 0 && (
+                                <div>
+                                    <label className="mb-1 block text-[10px] text-slate-500">Pasos hoy</label>
+                                    <input
+                                        className="w-28 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                                        onChange={(event) => setLogSteps(event.target.value)}
+                                        placeholder={plan.todayLog?.actualSteps != null ? String(plan.todayLog.actualSteps) : '0'}
+                                        type="number"
+                                        value={logSteps}
+                                    />
+                                </div>
+                            )}
+                            <button
+                                className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400 disabled:opacity-50"
+                                disabled={savingLog || (!logCardio && !logSteps)}
+                                onClick={handleSaveLog}
+                                type="button"
+                            >
+                                {savingLog ? 'Guardando…' : 'Registrar'}
+                            </button>
                         </div>
-                        <div>
-                            <label className="mb-1 block text-[10px] text-slate-500">Pasos hoy</label>
-                            <input
-                                className="w-28 rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
-                                onChange={(event) => setLogSteps(event.target.value)}
-                                placeholder={plan.todayLog?.actualSteps != null ? String(plan.todayLog.actualSteps) : '0'}
-                                type="number"
-                                value={logSteps}
-                            />
-                        </div>
-                        <button
-                            className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400 disabled:opacity-50"
-                            disabled={savingLog || (!logCardio && !logSteps)}
-                            onClick={handleSaveLog}
-                            type="button"
-                        >
-                            {savingLog ? 'Guardando…' : 'Registrar'}
-                        </button>
-                    </div>
-                )}
+                    );
+                })()}
             </div>
 
             <div className="mt-5 border-t border-white/7 pt-4">

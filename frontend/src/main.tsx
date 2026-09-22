@@ -9,8 +9,7 @@ import OverviewPage from './pages/OverviewPage.tsx'
 import NutritionPage from './pages/NutritionPage.tsx'
 import TrainingPage from './pages/TrainingPage.tsx'
 import ProgressPage from './pages/ProgressPage.tsx'
-import ClientNutritionPage from './pages/ClientNutritionPage.tsx'
-import ClientTrainingPage from './pages/ClientTrainingPage.tsx'
+import ClientPlansPage from './pages/ClientPlansPage.tsx'
 import ClientReviewPage from './pages/ClientReviewPage.tsx'
 import AdminProfilesPage from './pages/AdminProfilesPage.tsx'
 import ActivityPage from './pages/ActivityPage.tsx'
@@ -33,8 +32,7 @@ function AppShell() {
         <Route element={<TrainingPage />} path="training" />
         <Route element={<ProgressPage />} path="progress" />
         <Route element={<ActivityPage />} path="activity" />
-        <Route element={<ClientNutritionPage />} path="clients/nutrition" />
-        <Route element={<ClientTrainingPage />} path="clients/training" />
+        <Route element={<ClientPlansPage />} path="clients/plans" />
         <Route element={<ClientActivityPage />} path="clients/activity" />
         <Route element={<ClientReviewPage />} path="clients/review" />
         <Route element={<AdminProfilesPage />} path="admin/profiles" />
