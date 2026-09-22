@@ -26,6 +26,7 @@ function handleError(res: Response, error: unknown, fallbackMessage: string): vo
         return;
     }
     const message = error instanceof Error ? error.message : fallbackMessage;
+    console.error('[activity]', error);
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message } });
 }
 

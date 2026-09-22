@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 import { Flame, Footprints, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useActivityPlan, useActivityLogs } from '../hooks/useActivityPlan';
@@ -78,7 +79,7 @@ export default function ActivityPlanView({
     clientId: number;
     canManage?: boolean;
 }) {
-    const { plan, loading, error, createPlan, deletePlan, setCardioTarget, removeCardioTarget, setStepsTarget, removeStepsTarget, logToday } = useActivityPlan(clientId);
+    const { plan, loading, error, refresh, createPlan, deletePlan, setCardioTarget, removeCardioTarget, setStepsTarget, removeStepsTarget, logToday } = useActivityPlan(clientId);
     const { logs } = useActivityLogs(clientId);
     const { user } = useAuth();
     const isSelf = user?.id === clientId;
@@ -94,6 +95,7 @@ export default function ActivityPlanView({
     const [logSteps, setLogSteps] = useState('');
     const [savingLog, setSavingLog] = useState(false);
     const [savingTargets, setSavingTargets] = useState(false);
+    const [saveError, setSaveError] = useState('');
 
     // Pre-fill the editor from whatever is already configured, once the plan loads.
     useEffect(() => {
@@ -128,11 +130,17 @@ export default function ActivityPlanView({
             .map(([weekday, assignment]) => ({ weekday: Number(weekday), stepsTarget: Math.round(Number(assignment === 'A' ? stepsValueA : stepsValueB) * 1000) }))
             .filter((target) => target.stepsTarget > 0);
         if (cardioTargets.length === 0 && stepsTargets.length === 0) return;
-        await createPlan(cardioTargets, stepsTargets);
+        setSaveError('');
+        try {
+            await createPlan(cardioTargets, stepsTargets);
+        } catch (err) {
+            setSaveError((axios.isAxiosError(err) ? err.response?.data?.error?.message : undefined) || 'No se pudo guardar la configuración.');
+        }
     };
 
     const handleSaveTargets = async () => {
         setSavingTargets(true);
+        setSaveError('');
         try {
             const cardioByWeekday = new Map(plan!.cardioTargets.map((target) => [target.weekday, target]));
             const stepsByWeekday = new Map(plan!.stepsTargets.map((target) => [target.weekday, target]));
@@ -156,6 +164,9 @@ export default function ActivityPlanView({
                     return stepsTarget > 0 ? setStepsTarget(weekday, stepsTarget) : Promise.resolve();
                 }),
             ]);
+            await refresh();
+        } catch (err) {
+            setSaveError((axios.isAxiosError(err) ? err.response?.data?.error?.message : undefined) || 'No se pudo guardar la configuración.');
         } finally {
             setSavingTargets(false);
         }
@@ -163,6 +174,7 @@ export default function ActivityPlanView({
 
     const handleSaveLog = async () => {
         setSavingLog(true);
+        setSaveError('');
         try {
             await logToday({
                 actualCardioMinutes: logCardio ? Number(logCardio) : undefined,
@@ -170,6 +182,8 @@ export default function ActivityPlanView({
             });
             setLogCardio('');
             setLogSteps('');
+        } catch (err) {
+            setSaveError((axios.isAxiosError(err) ? err.response?.data?.error?.message : undefined) || 'No se pudo guardar el registro.');
         } finally {
             setSavingLog(false);
         }
@@ -186,6 +200,7 @@ export default function ActivityPlanView({
                     <Flame className="text-amber-300" size={20} />
                 </div>
                 {!canManage && <p className="mt-3 text-sm text-slate-400">Tu coach aún no ha configurado tu actividad.</p>}
+                {saveError && <p className="mt-3 text-sm text-rose-300">{saveError}</p>}
                 {canManage && (
                     <div className="mt-4 space-y-5">
                         <div>
@@ -258,6 +273,8 @@ export default function ActivityPlanView({
                 </div>
                 <Flame className="text-amber-300" size={20} />
             </div>
+
+            {saveError && <p className="mt-3 text-sm text-rose-300">{saveError}</p>}
 
             {canManage ? (
                 <div className="mt-4 space-y-5">

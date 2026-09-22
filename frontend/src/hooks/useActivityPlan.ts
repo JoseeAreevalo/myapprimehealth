@@ -54,8 +54,9 @@ export function useActivityPlan(clientId: number | null) {
         try {
             const res = await axios.get(`${api.baseURL}${api.endpoints.activityPlan(clientId)}`, { headers: authHeaders(token) });
             setPlan(res.data?.plan ?? null);
-        } catch {
-            setError('No se pudo cargar la configuración de actividad.');
+        } catch (err) {
+            const message = axios.isAxiosError(err) ? err.response?.data?.error?.message : undefined;
+            setError(message || 'No se pudo cargar la configuración de actividad.');
         } finally {
             setLoading(false);
         }
@@ -84,6 +85,9 @@ export function useActivityPlan(clientId: number | null) {
         await load();
     }, [plan, token, load]);
 
+    // Mutators used to save several weekday targets at once (see handleSaveTargets in
+    // ActivityPlanView): they do NOT trigger their own reload, so callers can fire them in
+    // parallel and call `refresh()` once at the end instead of racing many concurrent GETs.
     const setCardioTarget = useCallback(
         async (weekday: number, minutes: number) => {
             if (!plan) return;
@@ -92,18 +96,16 @@ export function useActivityPlan(clientId: number | null) {
                 { weekday, minutes },
                 { headers: authHeaders(token) },
             );
-            await load();
         },
-        [plan, token, load],
+        [plan, token],
     );
 
     const removeCardioTarget = useCallback(
         async (weekday: number) => {
             if (!plan) return;
             await axios.delete(`${api.baseURL}${api.endpoints.activityCardioDelete(plan.id, weekday)}`, { headers: authHeaders(token) });
-            await load();
         },
-        [plan, token, load],
+        [plan, token],
     );
 
     const setStepsTarget = useCallback(
@@ -114,18 +116,16 @@ export function useActivityPlan(clientId: number | null) {
                 { weekday, stepsTarget },
                 { headers: authHeaders(token) },
             );
-            await load();
         },
-        [plan, token, load],
+        [plan, token],
     );
 
     const removeStepsTarget = useCallback(
         async (weekday: number) => {
             if (!plan) return;
             await axios.delete(`${api.baseURL}${api.endpoints.activityStepsDelete(plan.id, weekday)}`, { headers: authHeaders(token) });
-            await load();
         },
-        [plan, token, load],
+        [plan, token],
     );
 
     const logToday = useCallback(
