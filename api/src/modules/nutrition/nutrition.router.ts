@@ -58,6 +58,8 @@ nutritionRouter.post('/plans', authenticate, async (req: Request, res: Response)
             carbsGTarget: req.body.carbsGTarget != null ? Number(req.body.carbsGTarget) : undefined,
             fatGTarget: req.body.fatGTarget != null ? Number(req.body.fatGTarget) : undefined,
             waterGoalMl: req.body.waterGoalMl != null ? Number(req.body.waterGoalMl) : undefined,
+            startDate: req.body.startDate ?? undefined,
+            endDate: req.body.endDate ?? undefined,
             meals: Array.isArray(req.body.meals) ? req.body.meals : [],
         });
         res.status(201).json({ plan });
@@ -84,10 +86,46 @@ nutritionRouter.patch('/plans/:planId', authenticate, async (req: Request, res: 
             carbsGTarget: req.body.carbsGTarget != null ? Number(req.body.carbsGTarget) : undefined,
             fatGTarget: req.body.fatGTarget != null ? Number(req.body.fatGTarget) : undefined,
             waterGoalMl: req.body.waterGoalMl != null ? Number(req.body.waterGoalMl) : undefined,
+            startDate: req.body.startDate,
+            endDate: req.body.endDate,
         });
         res.status(200).json({ plan });
     } catch (error) {
         handleError(res, error, 'No se pudo actualizar el plan de nutrición.');
+    }
+});
+
+nutritionRouter.post('/plans/:planId/day-configs', authenticate, async (req: Request, res: Response): Promise<void> => {
+    try {
+        const dayConfig = await nutritionService.addDayConfig(req.authenticatedUser!, Number(req.params.planId), {
+            label: req.body.label,
+            weekdays: Array.isArray(req.body.weekdays) ? req.body.weekdays.map(Number) : [],
+            meals: Array.isArray(req.body.meals) ? req.body.meals : [],
+        });
+        res.status(201).json({ dayConfig });
+    } catch (error) {
+        handleError(res, error, 'No se pudo crear la configuración de días.');
+    }
+});
+
+nutritionRouter.patch('/day-configs/:dayConfigId', authenticate, async (req: Request, res: Response): Promise<void> => {
+    try {
+        const dayConfig = await nutritionService.updateDayConfig(req.authenticatedUser!, Number(req.params.dayConfigId), {
+            label: req.body.label,
+            weekdays: Array.isArray(req.body.weekdays) ? req.body.weekdays.map(Number) : undefined,
+        });
+        res.status(200).json({ dayConfig });
+    } catch (error) {
+        handleError(res, error, 'No se pudo actualizar la configuración de días.');
+    }
+});
+
+nutritionRouter.delete('/day-configs/:dayConfigId', authenticate, async (req: Request, res: Response): Promise<void> => {
+    try {
+        await nutritionService.deleteDayConfig(req.authenticatedUser!, Number(req.params.dayConfigId));
+        res.status(204).send();
+    } catch (error) {
+        handleError(res, error, 'No se pudo eliminar la configuración de días.');
     }
 });
 

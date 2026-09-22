@@ -2,8 +2,25 @@ import { coachClientsRepository } from '../people/people.repository';
 import { AuthenticatedUser } from '../identity/identity.types';
 import { foodsRepository } from '../foods/foods.repository';
 import { notificationsRepository } from '../notifications/notifications.repository';
-import { nutritionMealItemsRepository, nutritionMealLogsRepository, nutritionMealsRepository, nutritionPlansRepository } from './nutrition.repository';
-import { MealStatus, NutritionMeal, NutritionMealInput, NutritionMealItem, NutritionMealItemDraft, NutritionPlan, NutritionPlanWithMeals } from './nutrition.types';
+import {
+    nutritionDayConfigsRepository,
+    nutritionMealItemsRepository,
+    nutritionMealLogsRepository,
+    nutritionMealsRepository,
+    nutritionPlansRepository,
+} from './nutrition.repository';
+import {
+    MealStatus,
+    NutritionDayConfig,
+    NutritionDayConfigInput,
+    NutritionDayConfigWithMeals,
+    NutritionMeal,
+    NutritionMealInput,
+    NutritionMealItem,
+    NutritionMealItemDraft,
+    NutritionPlan,
+    NutritionPlanWithMeals,
+} from './nutrition.types';
 
 class ForbiddenError extends Error { }
 class NotFoundError extends Error { }
@@ -13,6 +30,42 @@ export { ForbiddenError, NotFoundError, ValidationError };
 
 function todayIsoDate(): string {
     return new Date().toISOString().slice(0, 10);
+}
+
+// Monday=1 .. Sunday=7, matching the training module's weekday convention.
+function todayWeekday(): number {
+    const jsDay = new Date().getDay();
+    return jsDay === 0 ? 7 : jsDay;
+}
+
+function validateWeekdaysArray(weekdays: number[]): void {
+    if (!Array.isArray(weekdays) || weekdays.length === 0) {
+        throw new ValidationError('Selecciona al menos un día de la semana.');
+    }
+    const seen = new Set<number>();
+    for (const day of weekdays) {
+        if (!Number.isInteger(day) || day < 1 || day > 7) {
+            throw new ValidationError('Los días de la semana deben estar entre 1 (lunes) y 7 (domingo).');
+        }
+        if (seen.has(day)) {
+            throw new ValidationError('No repitas el mismo día dentro de una configuración.');
+        }
+        seen.add(day);
+    }
+}
+
+async function assertNoWeekdayOverlap(planId: number, weekdays: number[], excludeConfigId?: number): Promise<void> {
+    const existing = await nutritionDayConfigsRepository.listByPlanId(planId);
+    const usedElsewhere = new Set(existing.filter((config) => config.id !== excludeConfigId).flatMap((config) => config.weekdays));
+    if (weekdays.some((day) => usedElsewhere.has(day))) {
+        throw new ValidationError('Uno de los días seleccionados ya pertenece a otra configuración de este plan.');
+    }
+}
+
+function validateDateRange(startDate?: string | null, endDate?: string | null): void {
+    if (startDate && endDate && startDate > endDate) {
+        throw new ValidationError('La fecha de inicio debe ser anterior a la fecha de término.');
+    }
 }
 
 async function assertCoachOwnsClient(coachId: number, clientId: number): Promise<void> {
@@ -121,14 +174,22 @@ export function createNutritionService() {
             const meals = await nutritionMealsRepository.listByPlanId(plan.id);
             const items = await nutritionMealItemsRepository.listByMealIds(meals.map((meal) => meal.id));
             const logs = await nutritionMealLogsRepository.listForDate(clientId, todayIsoDate());
+            const dayConfigs = await nutritionDayConfigsRepository.listByPlanId(plan.id);
+
+            const mealsWithItems = meals.map((meal) => ({ ...meal, items: items.filter((item) => item.mealId === meal.id) }));
+            const activeConfig = dayConfigs.find((config) => config.weekdays.includes(todayWeekday()));
+            const todaysMeals = mealsWithItems.filter(
+                (meal) => meal.dayConfigId === null || (activeConfig != null && meal.dayConfigId === activeConfig.id),
+            );
+            const dayConfigsWithMeals: NutritionDayConfigWithMeals[] = dayConfigs.map((config) => ({
+                ...config,
+                meals: mealsWithItems.filter((meal) => meal.dayConfigId === config.id),
+            }));
 
             return {
                 ...plan,
-                meals: meals.map((meal) => ({
-                    ...meal,
-                    items: items.filter((item) => item.mealId === meal.id),
-                    status: logs.get(meal.id) ?? 'planned',
-                })),
+                meals: todaysMeals.map((meal) => ({ ...meal, status: logs.get(meal.id) ?? 'planned' })),
+                dayConfigs: dayConfigsWithMeals,
             };
         },
 
@@ -143,6 +204,8 @@ export function createNutritionService() {
                 carbsGTarget?: number | null;
                 fatGTarget?: number | null;
                 waterGoalMl?: number;
+                startDate?: string | null;
+                endDate?: string | null;
                 meals: NutritionMealInput[];
             },
         ): Promise<NutritionPlanWithMeals> {
@@ -154,6 +217,7 @@ export function createNutritionService() {
             if (!Number.isFinite(input.goalCalories) || input.goalCalories <= 0) {
                 throw new ValidationError('goalCalories debe ser un número positivo.');
             }
+            validateDateRange(input.startDate, input.endDate);
             if (!Array.isArray(input.meals) || input.meals.length === 0) {
                 throw new ValidationError('Se requiere al menos una comida.');
             }
@@ -173,6 +237,8 @@ export function createNutritionService() {
                 carbsGTarget: input.carbsGTarget,
                 fatGTarget: input.fatGTarget,
                 waterGoalMl: input.waterGoalMl,
+                startDate: input.startDate,
+                endDate: input.endDate,
             });
             const meals = await nutritionMealsRepository.createMany(plan.id, input.meals);
             const mealsWithItems: NutritionMeal[] = [];
@@ -192,7 +258,7 @@ export function createNutritionService() {
                 );
             }
 
-            return { ...plan, meals: mealsWithItems.map((meal) => ({ ...meal, status: 'planned' as MealStatus })) };
+            return { ...plan, meals: mealsWithItems.map((meal) => ({ ...meal, status: 'planned' as MealStatus })), dayConfigs: [] };
         },
 
         async updatePlan(
@@ -205,6 +271,8 @@ export function createNutritionService() {
                 carbsGTarget?: number | null;
                 fatGTarget?: number | null;
                 waterGoalMl?: number;
+                startDate?: string | null;
+                endDate?: string | null;
             },
         ): Promise<NutritionPlan> {
             const plan = await nutritionPlansRepository.findById(planId);
@@ -216,8 +284,78 @@ export function createNutritionService() {
             if (updates.goalCalories != null && (!Number.isFinite(updates.goalCalories) || updates.goalCalories <= 0)) {
                 throw new ValidationError('goalCalories debe ser un número positivo.');
             }
+            validateDateRange(updates.startDate ?? plan.startDate, updates.endDate ?? plan.endDate);
 
             return nutritionPlansRepository.update(planId, updates);
+        },
+
+        async addDayConfig(requester: AuthenticatedUser, planId: number, input: NutritionDayConfigInput): Promise<NutritionDayConfigWithMeals> {
+            const plan = await nutritionPlansRepository.findById(planId);
+            if (!plan) {
+                throw new NotFoundError('Plan de nutrición no encontrado.');
+            }
+            await assertCanManagePlan(requester, plan.clientId);
+
+            if (!input.label || !input.label.trim()) {
+                throw new ValidationError('La configuración requiere un nombre (ej. "Día de entrenamiento").');
+            }
+            validateWeekdaysArray(input.weekdays);
+            await assertNoWeekdayOverlap(planId, input.weekdays);
+            if (!Array.isArray(input.meals) || input.meals.length === 0) {
+                throw new ValidationError('Cada configuración de días requiere al menos una comida.');
+            }
+            for (const meal of input.meals) {
+                if (!meal.name || !Number.isFinite(meal.calories) || meal.calories < 0) {
+                    throw new ValidationError('Cada comida requiere un nombre y una cantidad de calorías no negativa.');
+                }
+            }
+
+            const sortOrder = await nutritionDayConfigsRepository.countByPlanId(planId);
+            const dayConfig = await nutritionDayConfigsRepository.create(planId, input.label.trim(), input.weekdays, sortOrder);
+
+            const taggedMeals = input.meals.map((meal) => ({ ...meal, dayConfigId: dayConfig.id }));
+            const createdMeals = await nutritionMealsRepository.createMany(planId, taggedMeals);
+            const meals: NutritionMeal[] = [];
+            for (const [index, meal] of createdMeals.entries()) {
+                const drafts = input.meals[index]?.items ?? [];
+                const items = drafts.length > 0 ? await createMealItems(meal.id, drafts) : [];
+                const calories = items.length > 0 ? sumItemCalories(items) : meal.calories;
+                meals.push({ ...meal, calories, items });
+            }
+
+            return { ...dayConfig, meals };
+        },
+
+        async updateDayConfig(
+            requester: AuthenticatedUser,
+            dayConfigId: number,
+            updates: { label?: string; weekdays?: number[] },
+        ): Promise<NutritionDayConfig> {
+            const dayConfig = await nutritionDayConfigsRepository.findById(dayConfigId);
+            if (!dayConfig) {
+                throw new NotFoundError('Configuración no encontrada.');
+            }
+            const plan = await nutritionPlansRepository.findById(dayConfig.planId);
+            if (!plan) {
+                throw new NotFoundError('Plan de nutrición no encontrado.');
+            }
+            await assertCanManagePlan(requester, plan.clientId);
+
+            if (updates.weekdays != null) {
+                validateWeekdaysArray(updates.weekdays);
+                await assertNoWeekdayOverlap(dayConfig.planId, updates.weekdays, dayConfigId);
+            }
+
+            return nutritionDayConfigsRepository.update(dayConfigId, updates);
+        },
+
+        async deleteDayConfig(requester: AuthenticatedUser, dayConfigId: number): Promise<void> {
+            const dayConfig = await nutritionDayConfigsRepository.findById(dayConfigId);
+            if (!dayConfig) return;
+            const plan = await nutritionPlansRepository.findById(dayConfig.planId);
+            if (!plan) return;
+            await assertCanManagePlan(requester, plan.clientId);
+            await nutritionDayConfigsRepository.delete(dayConfigId);
         },
 
         async addMeal(requester: AuthenticatedUser, planId: number, meal: NutritionMealInput): Promise<NutritionMeal> {

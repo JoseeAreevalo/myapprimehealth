@@ -16,16 +16,20 @@ export interface NutritionMealItem {
     fatG: number;
 }
 
-export interface NutritionMeal {
+export interface NutritionMealBase {
     id: number;
     name: string;
     detail: string | null;
     mealTime: string | null;
     calories: number;
-    status: MealStatus;
     items: NutritionMealItem[];
     alternativeGroup: string | null;
     alternativeLabel: string | null;
+    dayConfigId: number | null;
+}
+
+export interface NutritionMeal extends NutritionMealBase {
+    status: MealStatus;
 }
 
 export interface NutritionPlan {
@@ -37,11 +41,24 @@ export interface NutritionPlan {
     carbsGTarget: number | null;
     fatGTarget: number | null;
     waterGoalMl: number;
+    startDate: string | null;
+    endDate: string | null;
     isActive: boolean;
+}
+
+// A diet variant covering a checked set of weekdays (1=Lunes..7=Domingo), each with its own meals.
+export interface NutritionDayConfig {
+    id: number;
+    planId: number;
+    label: string;
+    weekdays: number[];
+    sortOrder: number;
+    meals: NutritionMealBase[];
 }
 
 export interface NutritionPlanWithMeals extends NutritionPlan {
     meals: NutritionMeal[];
+    dayConfigs: NutritionDayConfig[];
 }
 
 function authHeaders(token: string | null) {

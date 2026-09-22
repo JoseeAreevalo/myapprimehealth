@@ -1,0 +1,241 @@
+import axios from 'axios';
+import { useState } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
+import { api } from '../api/config';
+import { useAuth } from '../context/AuthContext';
+import { NutritionDayConfig, NutritionPlanWithMeals } from '../hooks/useNutritionToday';
+import MealItemsEditor, { MealItemDraft, mealItemsTotals } from './MealItemsEditor';
+
+function authHeaders(token: string | null) {
+    return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+const WEEKDAY_LABELS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+interface MealDraft {
+    name: string;
+    mealTime: string;
+    calories: string;
+    items: MealItemDraft[];
+}
+
+const emptyMeal = (index: number): MealDraft => ({ name: `Comida ${index + 1}`, mealTime: '', calories: '200', items: [] });
+
+function effectiveCalories(meal: MealDraft): number {
+    return meal.items.length > 0 ? mealItemsTotals(meal.items).calories : Number(meal.calories) || 0;
+}
+
+// Lets a coach/client define 1+ diet variants (e.g. "Día de entrenamiento" vs "Día de descanso"),
+// each covering a checked set of weekdays and carrying its own set of meals.
+export default function NutritionDayConfigsEditor({ plan, onUpdated }: { plan: NutritionPlanWithMeals; onUpdated: () => void }) {
+    const { token } = useAuth();
+    const [creating, setCreating] = useState(false);
+    const [label, setLabel] = useState('');
+    const [weekdays, setWeekdays] = useState<number[]>([]);
+    const [meals, setMeals] = useState<MealDraft[]>([emptyMeal(0)]);
+    const [submitting, setSubmitting] = useState(false);
+    const [feedback, setFeedback] = useState('');
+
+    const usedWeekdays = new Set(plan.dayConfigs.flatMap((config) => config.weekdays));
+
+    const toggleWeekday = (weekday: number) => {
+        setWeekdays((current) => (current.includes(weekday) ? current.filter((w) => w !== weekday) : [...current, weekday]));
+    };
+
+    const updateMealField = (index: number, field: 'name' | 'mealTime' | 'calories', value: string) => {
+        setMeals((current) => current.map((meal, i) => (i === index ? { ...meal, [field]: value } : meal)));
+    };
+    const updateMealItems = (index: number, items: MealItemDraft[]) => {
+        setMeals((current) => current.map((meal, i) => (i === index ? { ...meal, items } : meal)));
+    };
+    const addMealRow = () => setMeals((current) => [...current, emptyMeal(current.length)]);
+    const removeMealRow = (index: number) => setMeals((current) => current.filter((_, i) => i !== index));
+
+    const resetForm = () => {
+        setLabel('');
+        setWeekdays([]);
+        setMeals([emptyMeal(0)]);
+        setCreating(false);
+    };
+
+    const handleCreate = async () => {
+        if (!label.trim() || weekdays.length === 0) return;
+        setSubmitting(true);
+        setFeedback('');
+        try {
+            await axios.post(
+                `${api.baseURL}${api.endpoints.nutritionDayConfigAdd(plan.id)}`,
+                {
+                    label: label.trim(),
+                    weekdays,
+                    meals: meals.map((meal) => ({
+                        name: meal.name,
+                        mealTime: meal.mealTime,
+                        calories: effectiveCalories(meal),
+                        items: meal.items.map((item) => ({ foodId: item.foodId, foodName: item.foodName, grams: Number(item.grams) })),
+                    })),
+                },
+                { headers: authHeaders(token) },
+            );
+            resetForm();
+            onUpdated();
+        } catch (error) {
+            const message = axios.isAxiosError(error) ? error.response?.data?.error?.message : undefined;
+            setFeedback(message ?? 'No se pudo crear la configuración de días.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDelete = async (dayConfigId: number) => {
+        await axios.delete(`${api.baseURL}${api.endpoints.nutritionDayConfigDelete(dayConfigId)}`, { headers: authHeaders(token) });
+        onUpdated();
+    };
+
+    return (
+        <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Dietas por día (ej. entrenamiento vs. descanso)
+            </p>
+
+            {plan.dayConfigs.length === 0 && !creating && (
+                <p className="text-xs text-slate-500">Aún no hay configuraciones de días distintas para este plan.</p>
+            )}
+
+            {plan.dayConfigs.map((config: NutritionDayConfig) => (
+                <div className="space-y-2 rounded-xl border border-white/7 bg-white/[0.02] p-3" key={config.id}>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-slate-100">{config.label}</p>
+                            <p className="mt-0.5 text-[11px] text-slate-500">
+                                {config.weekdays.map((w) => WEEKDAY_LABELS[w - 1]).join(', ')}
+                            </p>
+                        </div>
+                        <button className="text-rose-300 hover:text-rose-200" onClick={() => handleDelete(config.id)} type="button">
+                            <Trash2 size={14} />
+                        </button>
+                    </div>
+                    <div className="space-y-1">
+                        {config.meals.map((meal) => (
+                            <p className="text-xs text-slate-400" key={meal.id}>
+                                {meal.name}
+                                {meal.mealTime ? ` · ${meal.mealTime}` : ''} — {Math.round(meal.calories)} kcal
+                            </p>
+                        ))}
+                    </div>
+                </div>
+            ))}
+
+            {!creating && (
+                <button
+                    className="flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-amber-200"
+                    onClick={() => setCreating(true)}
+                    type="button"
+                >
+                    <Plus size={13} /> Agregar configuración de días
+                </button>
+            )}
+
+            {creating && (
+                <div className="space-y-3 rounded-xl border border-white/7 bg-white/[0.02] p-3">
+                    <div>
+                        <label className="mb-1 block text-[10px] text-slate-500">Nombre (ej. "Día de entrenamiento")</label>
+                        <input
+                            className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                            onChange={(event) => setLabel(event.target.value)}
+                            value={label}
+                        />
+                    </div>
+                    <div>
+                        <label className="mb-1 block text-[10px] text-slate-500">Días de la semana en que aplica</label>
+                        <div className="flex flex-wrap gap-1.5">
+                            {WEEKDAY_LABELS.map((weekdayLabel, index) => {
+                                const weekdayValue = index + 1;
+                                const disabled = usedWeekdays.has(weekdayValue);
+                                const checked = weekdays.includes(weekdayValue);
+                                if (disabled) return null;
+                                return (
+                                    <button
+                                        className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${checked ? 'border-amber-400 bg-amber-500 text-white' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/8'
+                                            }`}
+                                        key={weekdayValue}
+                                        onClick={() => toggleWeekday(weekdayValue)}
+                                        type="button"
+                                    >
+                                        {weekdayLabel}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Comidas de esta configuración</p>
+                        {meals.map((meal, index) => (
+                            <div className="space-y-1.5 rounded-lg border border-white/7 p-2" key={index}>
+                                <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1.5">
+                                    <input
+                                        className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                                        onChange={(event) => updateMealField(index, 'name', event.target.value)}
+                                        placeholder="Comida"
+                                        value={meal.name}
+                                    />
+                                    <input
+                                        className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                                        onChange={(event) => updateMealField(index, 'mealTime', event.target.value)}
+                                        placeholder="Hora"
+                                        value={meal.mealTime}
+                                    />
+                                    {meal.items.length === 0 ? (
+                                        <input
+                                            className="rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-100"
+                                            onChange={(event) => updateMealField(index, 'calories', event.target.value)}
+                                            placeholder="kcal"
+                                            type="number"
+                                            value={meal.calories}
+                                        />
+                                    ) : (
+                                        <div className="flex items-center rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1 text-xs text-slate-400">
+                                            {Math.round(effectiveCalories(meal))} kcal
+                                        </div>
+                                    )}
+                                    <button
+                                        className="rounded-lg bg-rose-500/15 px-2 text-xs text-rose-300 hover:bg-rose-500/25 disabled:opacity-30"
+                                        disabled={meals.length <= 1}
+                                        onClick={() => removeMealRow(index)}
+                                        type="button"
+                                    >
+                                        <Trash2 size={13} />
+                                    </button>
+                                </div>
+                                <MealItemsEditor items={meal.items} onChange={(items) => updateMealItems(index, items)} />
+                            </div>
+                        ))}
+                        <button
+                            className="flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-amber-200"
+                            onClick={addMealRow}
+                            type="button"
+                        >
+                            <Plus size={13} /> Agregar comida
+                        </button>
+                    </div>
+
+                    {feedback && <p className="text-xs text-rose-300">{feedback}</p>}
+                    <div className="flex gap-2">
+                        <button
+                            className="flex-1 rounded-lg bg-amber-500 py-2 text-xs font-semibold text-white hover:bg-amber-400 disabled:opacity-50"
+                            disabled={submitting || !label.trim() || weekdays.length === 0}
+                            onClick={handleCreate}
+                            type="button"
+                        >
+                            {submitting ? 'Guardando…' : 'Guardar configuración'}
+                        </button>
+                        <button className="rounded-lg bg-white/8 px-3 py-2 text-xs text-slate-100 hover:bg-white/15" onClick={resetForm} type="button">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

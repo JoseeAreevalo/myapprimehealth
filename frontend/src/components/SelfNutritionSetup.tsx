@@ -34,6 +34,8 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
     const [carbsG, setCarbsG] = useState('220');
     const [fatG, setFatG] = useState('70');
     const [waterGoalMl, setWaterGoalMl] = useState('2500');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [meals, setMeals] = useState<MealDraft[]>(defaultMeals);
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -72,6 +74,8 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
                     carbsGTarget: carbsG ? Number(carbsG) : undefined,
                     fatGTarget: fatG ? Number(fatG) : undefined,
                     waterGoalMl: waterGoalMl ? Number(waterGoalMl) : undefined,
+                    startDate: startDate || undefined,
+                    endDate: endDate || undefined,
                     meals: meals.map((meal) => ({
                         name: meal.name,
                         mealTime: meal.mealTime,
@@ -168,6 +172,26 @@ export default function SelfNutritionSetup({ hasPlan, onCreated }: { hasPlan: bo
                             type="number"
                             value={waterGoalMl}
                         />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="mb-1 block text-[11px] text-slate-500">Fecha de inicio</label>
+                            <input
+                                className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                                onChange={(event) => setStartDate(event.target.value)}
+                                type="date"
+                                value={startDate}
+                            />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-[11px] text-slate-500">Fecha de término</label>
+                            <input
+                                className="w-full rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
+                                onChange={(event) => setEndDate(event.target.value)}
+                                type="date"
+                                value={endDate}
+                            />
+                        </div>
                     </div>
                     <NutritionLiveTotals
                         goalCalories={Number(goalCalories) || 0}

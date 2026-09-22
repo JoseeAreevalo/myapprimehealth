@@ -1,10 +1,12 @@
 import axios from 'axios';
 import { useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { CalendarDays, Pencil, Trash2 } from 'lucide-react';
 import { api } from '../api/config';
 import { useAuth } from '../context/AuthContext';
 import { NutritionMeal, NutritionPlanWithMeals } from '../hooks/useNutritionToday';
 import FoodSearchAdd, { FoodOption } from './FoodSearchAdd';
+import NutritionCalendar from './NutritionCalendar';
+import NutritionDayConfigsEditor from './NutritionDayConfigsEditor';
 import NutritionLiveTotals from './NutritionLiveTotals';
 import { macroCalories, sumMealCalories } from '../utils/nutritionMath';
 
@@ -24,6 +26,9 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
     const [carbsG, setCarbsG] = useState(String(plan.carbsGTarget ?? ''));
     const [fatG, setFatG] = useState(String(plan.fatGTarget ?? ''));
     const [waterGoalMl, setWaterGoalMl] = useState(String(plan.waterGoalMl));
+    const [startDate, setStartDate] = useState(plan.startDate ?? '');
+    const [endDate, setEndDate] = useState(plan.endDate ?? '');
+    const [showCalendar, setShowCalendar] = useState(false);
     const [meals, setMeals] = useState<NutritionMeal[]>(plan.meals);
     const [newMeal, setNewMeal] = useState({ name: '', mealTime: '', calories: '' });
     const [saving, setSaving] = useState(false);
@@ -62,6 +67,8 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
                     carbsGTarget: carbsG ? Number(carbsG) : null,
                     fatGTarget: fatG ? Number(fatG) : null,
                     waterGoalMl: waterGoalMl ? Number(waterGoalMl) : undefined,
+                    startDate: startDate || null,
+                    endDate: endDate || null,
                 },
                 { headers: authHeaders(token) },
             );
@@ -253,6 +260,26 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
                     value={waterGoalMl}
                 />
             </div>
+            <div className="grid grid-cols-2 gap-2">
+                <div>
+                    <label className="mb-1 block text-[10px] text-slate-500">Fecha de inicio</label>
+                    <input
+                        className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                        onChange={(event) => setStartDate(event.target.value)}
+                        type="date"
+                        value={startDate}
+                    />
+                </div>
+                <div>
+                    <label className="mb-1 block text-[10px] text-slate-500">Fecha de término</label>
+                    <input
+                        className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-2 py-1.5 text-xs text-slate-100"
+                        onChange={(event) => setEndDate(event.target.value)}
+                        type="date"
+                        value={endDate}
+                    />
+                </div>
+            </div>
             <NutritionLiveTotals
                 goalCalories={Number(goalCalories) || 0}
                 macroTotalCalories={macroCalories(proteinG, carbsG, fatG)}
@@ -266,6 +293,17 @@ export default function EditNutritionPlan({ plan, onUpdated }: { plan: Nutrition
             >
                 Guardar nombre/meta
             </button>
+
+            <button
+                className="flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-slate-100"
+                onClick={() => setShowCalendar((current) => !current)}
+                type="button"
+            >
+                <CalendarDays size={13} /> {showCalendar ? 'Ocultar calendario' : 'Ver calendario de alimentación'}
+            </button>
+            {showCalendar && <NutritionCalendar dayConfigs={plan.dayConfigs} />}
+
+            <NutritionDayConfigsEditor onUpdated={onUpdated} plan={plan} />
 
             <div className="space-y-3 border-t border-white/7 pt-3">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Comidas existentes</p>

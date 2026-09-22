@@ -11,6 +11,8 @@ export interface NutritionPlan {
     carbsGTarget: number | null;
     fatGTarget: number | null;
     waterGoalMl: number;
+    startDate: string | null;
+    endDate: string | null;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -49,6 +51,7 @@ export interface NutritionMealInput {
     sortOrder?: number;
     alternativeGroup?: string | null;
     alternativeLabel?: string | null;
+    dayConfigId?: number | null;
     items?: NutritionMealItemDraft[];
 }
 
@@ -62,6 +65,7 @@ export interface NutritionMeal {
     sortOrder: number;
     alternativeGroup: string | null;
     alternativeLabel: string | null;
+    dayConfigId: number | null;
     items: NutritionMealItem[];
 }
 
@@ -69,6 +73,27 @@ export interface NutritionMealWithStatus extends NutritionMeal {
     status: MealStatus;
 }
 
+// A diet variant covering a checked set of weekdays (1=Lunes..7=Domingo), e.g. "Día de
+// entrenamiento" vs "Día de descanso", each with its own meals.
+export interface NutritionDayConfig {
+    id: number;
+    planId: number;
+    label: string;
+    weekdays: number[];
+    sortOrder: number;
+}
+
+export interface NutritionDayConfigInput {
+    label: string;
+    weekdays: number[];
+    meals: NutritionMealInput[];
+}
+
+export interface NutritionDayConfigWithMeals extends NutritionDayConfig {
+    meals: NutritionMeal[];
+}
+
 export interface NutritionPlanWithMeals extends NutritionPlan {
     meals: NutritionMealWithStatus[];
+    dayConfigs: NutritionDayConfigWithMeals[];
 }

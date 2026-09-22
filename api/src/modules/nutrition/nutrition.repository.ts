@@ -1,5 +1,5 @@
 import { pool } from '../../db/pool';
-import { MealStatus, NutritionMeal, NutritionMealInput, NutritionMealItem, NutritionPlan } from './nutrition.types';
+import { MealStatus, NutritionDayConfig, NutritionMeal, NutritionMealInput, NutritionMealItem, NutritionPlan } from './nutrition.types';
 
 interface PlanRow {
     id: number;
@@ -12,6 +12,8 @@ interface PlanRow {
     carbs_g_target: string | null;
     fat_g_target: string | null;
     water_goal_ml: number;
+    start_date: string | null;
+    end_date: string | null;
     is_active: boolean;
     created_at: string;
     updated_at: string;
@@ -27,6 +29,15 @@ interface MealRow {
     sort_order: number;
     alternative_group: string | null;
     alternative_label: string | null;
+    day_config_id: number | null;
+}
+
+interface DayConfigRow {
+    id: number;
+    plan_id: number;
+    label: string;
+    weekdays: number[];
+    sort_order: number;
 }
 
 interface MealItemRow {
@@ -59,6 +70,8 @@ function toPlan(row: PlanRow): NutritionPlan {
         carbsGTarget: row.carbs_g_target === null ? null : Number(row.carbs_g_target),
         fatGTarget: row.fat_g_target === null ? null : Number(row.fat_g_target),
         waterGoalMl: row.water_goal_ml,
+        startDate: row.start_date,
+        endDate: row.end_date,
         isActive: row.is_active,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
@@ -76,7 +89,12 @@ function toMeal(row: MealRow): Omit<NutritionMeal, 'items'> {
         sortOrder: row.sort_order,
         alternativeGroup: row.alternative_group,
         alternativeLabel: row.alternative_label,
+        dayConfigId: row.day_config_id,
     };
+}
+
+function toDayConfig(row: DayConfigRow): NutritionDayConfig {
+    return { id: row.id, planId: row.plan_id, label: row.label, weekdays: row.weekdays ?? [], sortOrder: row.sort_order };
 }
 
 function toMealItem(row: MealItemRow): NutritionMealItem {
@@ -126,10 +144,12 @@ export const nutritionPlansRepository = {
         carbsGTarget?: number | null;
         fatGTarget?: number | null;
         waterGoalMl?: number;
+        startDate?: string | null;
+        endDate?: string | null;
     }): Promise<NutritionPlan> {
         const { rows } = await pool.query<PlanRow>(
-            `INSERT INTO nutrition_plans (client_id, coach_id, plan_key, label, goal_calories, protein_g_target, carbs_g_target, fat_g_target, water_goal_ml)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 2000))
+            `INSERT INTO nutrition_plans (client_id, coach_id, plan_key, label, goal_calories, protein_g_target, carbs_g_target, fat_g_target, water_goal_ml, start_date, end_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 2000), $10, $11)
        RETURNING *`,
             [
                 input.clientId,
@@ -141,6 +161,8 @@ export const nutritionPlansRepository = {
                 input.carbsGTarget ?? null,
                 input.fatGTarget ?? null,
                 input.waterGoalMl ?? null,
+                input.startDate ?? null,
+                input.endDate ?? null,
             ],
         );
         return toPlan(rows[0]);
@@ -163,7 +185,16 @@ export const nutritionPlansRepository = {
 
     async update(
         id: number,
-        updates: { label?: string; goalCalories?: number; proteinGTarget?: number | null; carbsGTarget?: number | null; fatGTarget?: number | null; waterGoalMl?: number },
+        updates: {
+            label?: string;
+            goalCalories?: number;
+            proteinGTarget?: number | null;
+            carbsGTarget?: number | null;
+            fatGTarget?: number | null;
+            waterGoalMl?: number;
+            startDate?: string | null;
+            endDate?: string | null;
+        },
     ): Promise<NutritionPlan> {
         const { rows } = await pool.query<PlanRow>(
             `UPDATE nutrition_plans
@@ -173,6 +204,8 @@ export const nutritionPlansRepository = {
            carbs_g_target = COALESCE($5, carbs_g_target),
            fat_g_target = COALESCE($6, fat_g_target),
            water_goal_ml = COALESCE($7, water_goal_ml),
+           start_date = COALESCE($8, start_date),
+           end_date = COALESCE($9, end_date),
            updated_at = now()
        WHERE id = $1
        RETURNING *`,
@@ -184,6 +217,8 @@ export const nutritionPlansRepository = {
                 updates.carbsGTarget ?? null,
                 updates.fatGTarget ?? null,
                 updates.waterGoalMl ?? null,
+                updates.startDate ?? null,
+                updates.endDate ?? null,
             ],
         );
         return toPlan(rows[0]);
@@ -208,8 +243,8 @@ export const nutritionMealsRepository = {
         const created: Omit<NutritionMeal, 'items'>[] = [];
         for (const [index, meal] of meals.entries()) {
             const { rows } = await pool.query<MealRow>(
-                `INSERT INTO nutrition_meals (plan_id, name, detail, meal_time, calories, sort_order, alternative_group, alternative_label)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                `INSERT INTO nutrition_meals (plan_id, name, detail, meal_time, calories, sort_order, alternative_group, alternative_label, day_config_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
                 [
                     planId,
@@ -220,6 +255,7 @@ export const nutritionMealsRepository = {
                     meal.sortOrder ?? index,
                     meal.alternativeGroup ?? null,
                     meal.alternativeLabel ?? null,
+                    meal.dayConfigId ?? null,
                 ],
             );
             created.push(toMeal(rows[0]));
@@ -229,8 +265,8 @@ export const nutritionMealsRepository = {
 
     async create(planId: number, meal: NutritionMealInput, sortOrder: number): Promise<Omit<NutritionMeal, 'items'>> {
         const { rows } = await pool.query<MealRow>(
-            `INSERT INTO nutrition_meals (plan_id, name, detail, meal_time, calories, sort_order, alternative_group, alternative_label)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO nutrition_meals (plan_id, name, detail, meal_time, calories, sort_order, alternative_group, alternative_label, day_config_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
             [
                 planId,
@@ -241,6 +277,7 @@ export const nutritionMealsRepository = {
                 sortOrder,
                 meal.alternativeGroup ?? null,
                 meal.alternativeLabel ?? null,
+                meal.dayConfigId ?? null,
             ],
         );
         return toMeal(rows[0]);
@@ -343,5 +380,45 @@ export const nutritionMealLogsRepository = {
        ON CONFLICT (meal_id, log_date) DO UPDATE SET status = EXCLUDED.status, updated_at = now()`,
             [mealId, clientId, logDate, status],
         );
+    },
+};
+
+export const nutritionDayConfigsRepository = {
+    async listByPlanId(planId: number): Promise<NutritionDayConfig[]> {
+        const { rows } = await pool.query<DayConfigRow>(
+            'SELECT * FROM nutrition_day_configs WHERE plan_id = $1 ORDER BY sort_order ASC, id ASC',
+            [planId],
+        );
+        return rows.map(toDayConfig);
+    },
+
+    async findById(id: number): Promise<NutritionDayConfig | undefined> {
+        const { rows } = await pool.query<DayConfigRow>('SELECT * FROM nutrition_day_configs WHERE id = $1', [id]);
+        return rows[0] ? toDayConfig(rows[0]) : undefined;
+    },
+
+    async create(planId: number, label: string, weekdays: number[], sortOrder: number): Promise<NutritionDayConfig> {
+        const { rows } = await pool.query<DayConfigRow>(
+            `INSERT INTO nutrition_day_configs (plan_id, label, weekdays, sort_order) VALUES ($1, $2, $3, $4) RETURNING *`,
+            [planId, label, weekdays, sortOrder],
+        );
+        return toDayConfig(rows[0]);
+    },
+
+    async update(id: number, updates: { label?: string; weekdays?: number[] }): Promise<NutritionDayConfig> {
+        const { rows } = await pool.query<DayConfigRow>(
+            `UPDATE nutrition_day_configs SET label = COALESCE($2, label), weekdays = COALESCE($3, weekdays) WHERE id = $1 RETURNING *`,
+            [id, updates.label ?? null, updates.weekdays ?? null],
+        );
+        return toDayConfig(rows[0]);
+    },
+
+    async countByPlanId(planId: number): Promise<number> {
+        const { rows } = await pool.query<{ count: string }>('SELECT COUNT(*) AS count FROM nutrition_day_configs WHERE plan_id = $1', [planId]);
+        return Number(rows[0]?.count ?? 0);
+    },
+
+    async delete(id: number): Promise<void> {
+        await pool.query('DELETE FROM nutrition_day_configs WHERE id = $1', [id]);
     },
 };
