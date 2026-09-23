@@ -68,13 +68,5 @@ export function useLearningNotes() {
         [token, load],
     );
 
-    const generateDraft = useCallback(
-        async (prompt: string): Promise<{ title: string; body: string }> => {
-            const res = await axios.post(`${api.baseURL}${api.endpoints.learningNoteGenerate}`, { prompt }, { headers: authHeaders(token) });
-            return res.data.draft;
-        },
-        [token],
-    );
-
-    return { notes, loading, error, createNote, updateNote, deleteNote, generateDraft };
+    return { notes, loading, error, createNote, updateNote, deleteNote };
 }

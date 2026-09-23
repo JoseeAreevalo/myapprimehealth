@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../identity/token.service';
-import { AiNotConfiguredError, ForbiddenError, NotFoundError, ValidationError, createLearningService } from './learning.service';
+import { ForbiddenError, NotFoundError, ValidationError, createLearningService } from './learning.service';
 
 export const learningRouter = Router();
 const learningService = createLearningService();
@@ -23,10 +23,6 @@ function handleError(res: Response, error: unknown, fallbackMessage: string): vo
     }
     if (error instanceof ValidationError) {
         res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: error.message } });
-        return;
-    }
-    if (error instanceof AiNotConfiguredError) {
-        res.status(503).json({ error: { code: 'AI_NOT_CONFIGURED', message: error.message } });
         return;
     }
     const message = error instanceof Error ? error.message : fallbackMessage;
@@ -70,15 +66,6 @@ learningRouter.delete('/notes/:id', authenticate, async (req: Request, res: Resp
         res.status(204).send();
     } catch (error) {
         handleError(res, error, 'No se pudo eliminar la nota.');
-    }
-});
-
-learningRouter.post('/notes/generate', authenticate, async (req: Request, res: Response): Promise<void> => {
-    try {
-        const draft = await learningService.generateDraft(req.authenticatedUser!, req.body.prompt);
-        res.status(200).json({ draft });
-    } catch (error) {
-        handleError(res, error, 'No se pudo generar la nota con IA.');
     }
 });
 

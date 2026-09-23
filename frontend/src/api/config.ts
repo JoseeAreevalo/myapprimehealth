@@ -102,7 +102,6 @@ export const api = {
         learningNotes: '/api/v1/learning/notes',
         learningNoteUpdate: (id: number) => `/api/v1/learning/notes/${id}`,
         learningNoteDelete: (id: number) => `/api/v1/learning/notes/${id}`,
-        learningNoteGenerate: '/api/v1/learning/notes/generate',
         assistantChat: '/api/v1/assistant/chat',
     }
 };

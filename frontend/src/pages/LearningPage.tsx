@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
+import { BookOpen, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { LearningNote, useLearningNotes } from '../hooks/useLearningNotes';
 
@@ -7,35 +7,15 @@ function NoteFormModal({
     initial,
     onClose,
     onSave,
-    onGenerate,
 }: {
     initial?: LearningNote;
     onClose: () => void;
     onSave: (title: string, body: string) => Promise<void>;
-    onGenerate: (prompt: string) => Promise<{ title: string; body: string }>;
 }) {
     const [title, setTitle] = useState(initial?.title ?? '');
     const [body, setBody] = useState(initial?.body ?? '');
-    const [prompt, setPrompt] = useState('');
-    const [generating, setGenerating] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-
-    const handleGenerate = async () => {
-        if (!prompt.trim()) return;
-        setGenerating(true);
-        setError('');
-        try {
-            const draft = await onGenerate(prompt.trim());
-            setTitle(draft.title);
-            setBody(draft.body);
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'No se pudo generar la nota con IA.';
-            setError(message);
-        } finally {
-            setGenerating(false);
-        }
-    };
 
     const handleSave = async () => {
         if (!title.trim() || !body.trim()) {
@@ -64,30 +44,6 @@ function NoteFormModal({
                         <X size={18} />
                     </button>
                 </div>
-
-                {!initial && (
-                    <div className="mt-4 rounded-xl border border-violet-400/20 bg-violet-400/5 p-3">
-                        <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-violet-300">
-                            <Sparkles size={12} /> Generar con IA (opcional)
-                        </label>
-                        <div className="flex gap-2">
-                            <input
-                                className="w-full rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-100"
-                                onChange={(event) => setPrompt(event.target.value)}
-                                placeholder="Ej. Explica qué es el déficit calórico"
-                                value={prompt}
-                            />
-                            <button
-                                className="shrink-0 rounded-lg bg-violet-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-violet-400 disabled:opacity-50"
-                                disabled={generating || !prompt.trim()}
-                                onClick={handleGenerate}
-                                type="button"
-                            >
-                                {generating ? 'Generando…' : 'Generar'}
-                            </button>
-                        </div>
-                    </div>
-                )}
 
                 <div className="mt-4 space-y-3">
                     <div>
@@ -133,7 +89,7 @@ function NoteFormModal({
 
 export default function LearningPage() {
     const { user } = useAuth();
-    const { notes, loading, error, createNote, updateNote, deleteNote, generateDraft } = useLearningNotes();
+    const { notes, loading, error, createNote, updateNote, deleteNote } = useLearningNotes();
     const [formMode, setFormMode] = useState<'closed' | 'create' | number>('closed');
     const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(null);
     const isSuperAdmin = user?.role === 'super_admin';
@@ -191,7 +147,6 @@ export default function LearningPage() {
                 <NoteFormModal
                     initial={editingNote}
                     onClose={() => setFormMode('closed')}
-                    onGenerate={generateDraft}
                     onSave={(title, body) => (editingNote ? updateNote(editingNote.id, { title, body }) : createNote(title, body))}
                 />
             )}

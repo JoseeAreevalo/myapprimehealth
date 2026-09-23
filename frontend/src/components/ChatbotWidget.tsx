@@ -37,7 +37,7 @@ export default function ChatbotWidget() {
         try {
             const res = await axios.post(
                 `${api.baseURL}${api.endpoints.assistantChat}`,
-                { message: text, history: nextMessages.slice(0, -1) },
+                { message: text },
                 { headers: authHeaders(token) },
             );
             setMessages((current) => [...current, { role: 'assistant', content: res.data.reply }]);
