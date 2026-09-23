@@ -42,7 +42,11 @@ export default function ChatbotWidget() {
             );
             setMessages((current) => [...current, { role: 'assistant', content: res.data.reply }]);
         } catch (err) {
-            setError((axios.isAxiosError(err) ? err.response?.data?.error?.message : undefined) || 'No se pudo obtener una respuesta.');
+            if (axios.isAxiosError(err) && err.response?.status === 401) {
+                setError('Tu sesión expiró. Vuelve a iniciar sesión para seguir usando el asistente.');
+            } else {
+                setError((axios.isAxiosError(err) ? err.response?.data?.error?.message : undefined) || 'No se pudo obtener una respuesta.');
+            }
         } finally {
             setSending(false);
         }
