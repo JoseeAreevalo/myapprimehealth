@@ -99,5 +99,10 @@ export const api = {
         activityStepsDelete: (planId: number, weekday: number) => `/api/v1/activity/plans/${planId}/steps/${weekday}`,
         activityLog: (clientId: number) => `/api/v1/activity/clients/${clientId}/log`,
         activityLogs: (clientId: number) => `/api/v1/activity/clients/${clientId}/logs`,
+        learningNotes: '/api/v1/learning/notes',
+        learningNoteUpdate: (id: number) => `/api/v1/learning/notes/${id}`,
+        learningNoteDelete: (id: number) => `/api/v1/learning/notes/${id}`,
+        learningNoteGenerate: '/api/v1/learning/notes/generate',
+        assistantChat: '/api/v1/assistant/chat',
     }
 };

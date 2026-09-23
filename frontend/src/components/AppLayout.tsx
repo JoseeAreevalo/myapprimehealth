@@ -1,9 +1,10 @@
-import { Activity, ChevronDown, Dumbbell, Flame, LogOut, Menu, Search, ShieldCheck, Sparkles, User, Utensils, X } from 'lucide-react';
+import { Activity, BookOpen, ChevronDown, Dumbbell, Flame, LogOut, Menu, Search, ShieldCheck, Sparkles, User, Utensils, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import NotificationsBell from './NotificationsBell';
 import ProfileModal from './ProfileModal';
+import ChatbotWidget from './ChatbotWidget';
 import lionLogo from '../assets/lion-logo.png';
 
 const navigation = [
@@ -111,6 +112,16 @@ export default function AppLayout() {
                         <p className="mt-0.5 text-sm font-medium text-slate-300">Haz que hoy cuente.</p>
                     </div>
                     <div className="flex items-center gap-3">
+                        <NavLink
+                            aria-label="Aprendizaje"
+                            className={({ isActive }) =>
+                                `grid size-11 place-items-center rounded-xl border transition ${isActive ? 'border-amber-400/40 bg-amber-500/15 text-amber-200' : 'border-white/8 bg-white/[0.035] text-slate-300 hover:bg-white/8'
+                                }`
+                            }
+                            to="/learning"
+                        >
+                            <BookOpen size={18} />
+                        </NavLink>
                         <NotificationsBell />
                         <div className="hidden items-center gap-3 sm:flex">
                             <div className="relative" ref={userMenuRef}>
@@ -182,6 +193,7 @@ export default function AppLayout() {
                 <Outlet context={{ openProfile: () => setProfileOpen(true) } satisfies LayoutContext} />
             </main>
             <ProfileModal onClose={() => setProfileOpen(false)} open={profileOpen} />
+            <ChatbotWidget />
         </div>
     );
 }
