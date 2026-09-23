@@ -15,7 +15,7 @@ const assistantService = createAssistantService();
 assistantRouter.post('/chat', authenticate, async (req: Request, res: Response): Promise<void> => {
     try {
         const history = Array.isArray(req.body.history) ? req.body.history : [];
-        const reply = await assistantService.chat(req.body.message, history);
+        const reply = await assistantService.chat(req.authenticatedUser!, req.body.message, history);
         res.status(200).json({ reply });
     } catch (error) {
         if (error instanceof ValidationError) {
