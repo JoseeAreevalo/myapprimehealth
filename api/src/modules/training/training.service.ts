@@ -1,5 +1,6 @@
 import { coachClientsRepository } from '../people/people.repository';
 import { AuthenticatedUser } from '../identity/identity.types';
+import { notifyClientProgress, notifyPlanChange } from '../notifications/notification.events';
 import {
     trainingDaysRepository,
     trainingExercisesRepository,
@@ -157,6 +158,8 @@ export function createTrainingService() {
                 }),
             );
 
+            await notifyPlanChange(requester, input.clientId, 'entrenamiento', `el plan "${input.label}"`);
+
             return { ...plan, days };
         },
 
@@ -168,7 +171,9 @@ export function createTrainingService() {
             await assertCanManagePlan(requester, plan.clientId);
             validateDurationWeeks(updates.durationWeeks);
             validateDateRange(updates.startDate ?? plan.startDate, updates.endDate ?? plan.endDate);
-            return trainingPlansRepository.update(planId, updates);
+            const updated = await trainingPlansRepository.update(planId, updates);
+            await notifyPlanChange(requester, plan.clientId, 'entrenamiento', 'la configuración del plan');
+            return updated;
         },
 
         async deletePlan(requester: AuthenticatedUser, planId: number): Promise<void> {
@@ -304,6 +309,16 @@ export function createTrainingService() {
             const logDate = todayIsoDate();
             for (const set of sets) {
                 await trainingSetLogsRepository.upsertSet(exerciseId, logDate, set.setNumber, set.actualReps, set.actualWeightKg, set.actualRir ?? null);
+            }
+
+            const completedSets = sets.filter((set) => set.actualReps != null && set.actualReps > 0);
+            if (requester.id === plan.clientId && completedSets.length > 0) {
+                await notifyClientProgress(
+                    plan.clientId,
+                    'training_completed',
+                    'Entrenamiento registrado',
+                    `${requester.fullName ?? requester.email} registró ${completedSets.length} serie(s) de ${exercise.name}.`,
+                );
             }
         },
 

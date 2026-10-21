@@ -23,6 +23,17 @@ function authHeaders(token: string | null) {
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function notificationTypeLabel(type: string): string {
+    if (type === 'plan_assigned') return 'Plan nuevo';
+    if (type === 'plan_updated') return 'Plan actualizado';
+    if (type === 'client_plan_updated') return 'Cambio del cliente';
+    if (type === 'nutrition_completed') return 'Nutrición';
+    if (type === 'training_completed') return 'Entrenamiento';
+    if (type === 'checkin_reviewed') return 'Check-in';
+    if (type === 'coach_assigned') return 'Coach';
+    return 'Notificación';
+}
+
 export default function NotificationsBell() {
     const { token } = useAuth();
     const [open, setOpen] = useState(false);
@@ -67,6 +78,7 @@ export default function NotificationsBell() {
 
     const handleOpen = () => {
         setOpen((current) => !current);
+        load();
     };
 
     const markRead = async (id: number) => {
@@ -117,7 +129,10 @@ export default function NotificationsBell() {
                                 onClick={() => !item.isRead && markRead(item.id)}
                                 type="button"
                             >
-                                <p className="font-medium">{item.title}</p>
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="font-medium">{item.title}</p>
+                                    <span className="text-[10px] uppercase tracking-wide text-amber-300/70">{notificationTypeLabel(item.type)}</span>
+                                </div>
                                 {item.body && <p className="mt-0.5 text-xs text-slate-500">{item.body}</p>}
                             </button>
                         ))}

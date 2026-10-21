@@ -2,6 +2,7 @@ import { coachClientsRepository } from '../people/people.repository';
 import { AuthenticatedUser } from '../identity/identity.types';
 import { foodsRepository } from '../foods/foods.repository';
 import { notificationsRepository } from '../notifications/notifications.repository';
+import { notifyPlanChange, notifyClientProgress } from '../notifications/notification.events';
 import {
     nutritionDayConfigsRepository,
     nutritionMealItemsRepository,
@@ -291,6 +292,10 @@ export function createNutritionService() {
             // them, since the plan-switcher tabs only appear once 2+ plans already exist.
             await nutritionPlansRepository.activate(input.clientId, plan.id);
 
+            if (requester.id === input.clientId) {
+                await notifyPlanChange(requester, input.clientId, 'nutrición', `el plan "${input.label}"`);
+            }
+
             return {
                 ...plan,
                 isActive: true,
@@ -324,7 +329,9 @@ export function createNutritionService() {
             }
             validateDateRange(updates.startDate ?? plan.startDate, updates.endDate ?? plan.endDate);
 
-            return nutritionPlansRepository.update(planId, updates);
+            const updated = await nutritionPlansRepository.update(planId, updates);
+            await notifyPlanChange(requester, plan.clientId, 'nutrición', 'la configuración del plan');
+            return updated;
         },
 
         async deletePlan(requester: AuthenticatedUser, planId: number): Promise<void> {
@@ -393,7 +400,9 @@ export function createNutritionService() {
                 await assertNoWeekdayOverlap(dayConfig.planId, updates.weekdays, dayConfigId);
             }
 
-            return nutritionDayConfigsRepository.update(dayConfigId, updates);
+            const updated = await nutritionDayConfigsRepository.update(dayConfigId, updates);
+            await notifyPlanChange(requester, plan.clientId, 'nutrición', 'la configuración de días');
+            return updated;
         },
 
         async deleteDayConfig(requester: AuthenticatedUser, dayConfigId: number): Promise<void> {
@@ -403,6 +412,7 @@ export function createNutritionService() {
             if (!plan) return;
             await assertCanManagePlan(requester, plan.clientId);
             await nutritionDayConfigsRepository.delete(dayConfigId);
+            await notifyPlanChange(requester, plan.clientId, 'nutrición', 'la configuración de días');
         },
 
         async addMeal(requester: AuthenticatedUser, planId: number, meal: NutritionMealInput): Promise<NutritionMeal> {
@@ -420,6 +430,7 @@ export function createNutritionService() {
             const created = await nutritionMealsRepository.create(planId, meal, sortOrder);
             const items = meal.items && meal.items.length > 0 ? await createMealItems(created.id, meal.items) : [];
             const calories = items.length > 0 ? sumItemCalories(items) : created.calories;
+            await notifyPlanChange(requester, plan.clientId, 'nutrición', `la comida "${created.name}"`);
             return { ...created, calories, items };
         },
 
@@ -438,6 +449,7 @@ export function createNutritionService() {
             const items = await nutritionMealItemsRepository.listByMealId(mealId);
             const calories = sumItemCalories(items);
             const updated = await nutritionMealsRepository.update(mealId, { calories });
+            await notifyPlanChange(requester, plan.clientId, 'nutrición', `los alimentos de la comida "${meal.name}"`);
             return { ...updated, items };
         },
 
@@ -460,6 +472,7 @@ export function createNutritionService() {
             const items = await nutritionMealItemsRepository.listByMealId(meal.id);
             const calories = items.length > 0 ? sumItemCalories(items) : meal.calories;
             const updated = await nutritionMealsRepository.update(meal.id, { calories });
+            await notifyPlanChange(requester, plan.clientId, 'nutrición', `los alimentos de la comida "${meal.name}"`);
             return { ...updated, items };
         },
 
@@ -493,6 +506,7 @@ export function createNutritionService() {
             const items = await nutritionMealItemsRepository.listByMealId(meal.id);
             const calories = sumItemCalories(items);
             const updated = await nutritionMealsRepository.update(meal.id, { calories });
+            await notifyPlanChange(requester, plan.clientId, 'nutrición', `los gramos de la comida "${meal.name}"`);
             return { ...updated, items };
         },
 
@@ -517,6 +531,7 @@ export function createNutritionService() {
 
             const updated = await nutritionMealsRepository.update(mealId, updates);
             const items = await nutritionMealItemsRepository.listByMealId(mealId);
+            await notifyPlanChange(requester, plan.clientId, 'nutrición', `la comida "${meal.name}"`);
             return { ...updated, items };
         },
 
@@ -532,6 +547,7 @@ export function createNutritionService() {
             await assertCanManagePlan(requester, plan.clientId);
 
             await nutritionMealsRepository.delete(mealId);
+            await notifyPlanChange(requester, plan.clientId, 'nutrición', `la comida "${meal.name}"`);
         },
 
         async activatePlan(requester: AuthenticatedUser, clientId: number, planId: number): Promise<void> {
@@ -596,6 +612,15 @@ export function createNutritionService() {
             }
 
             await nutritionMealLogsRepository.upsert(mealId, plan.clientId, todayIsoDate(), status, loggedItems, loggedCalories);
+
+            if (requester.id === plan.clientId && status === 'completed') {
+                await notifyClientProgress(
+                    plan.clientId,
+                    'nutrition_completed',
+                    'Nutrición actualizada',
+                    `${requester.fullName ?? requester.email} completó la comida "${meal.name}".`,
+                );
+            }
         },
     };
 }

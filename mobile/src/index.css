@@ -1,0 +1,163 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  font-family: 'Manrope', sans-serif;
+  background: oklch(0.1 0.014 285);
+  color: oklch(0.98 0.01 285);
+  --app-bg: oklch(0.1 0.014 285);
+  --app-panel: oklch(0.16 0.02 285);
+  --app-panel-strong: oklch(0.2 0.022 285);
+  --app-text: oklch(0.98 0.01 285);
+  --app-muted: oklch(0.75 0.03 285);
+  --app-border: oklch(1 0 0 / 0.12);
+  --app-input-bg: oklch(0.18 0.02 285 / 0.96);
+  --app-input-text: oklch(0.99 0.005 285);
+  --app-placeholder: oklch(0.71 0.03 285);
+  --app-accent: oklch(0.78 0.16 85);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+input, select, textarea {
+  font-size: max(16px, 1em);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, oklch(0.58 0.24 295 / 0.12), transparent 32%),
+    radial-gradient(circle at 20% 20%, oklch(0.7 0.16 235 / 0.08), transparent 24%),
+    linear-gradient(oklch(1 0 0 / 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(1 0 0 / 0.02) 1px, transparent 1px),
+    var(--app-bg);
+  background-size: auto, auto, 48px 48px, 48px 48px, auto;
+  color: var(--app-text);
+}
+
+body,
+button,
+input,
+textarea,
+select {
+  color: var(--app-text);
+}
+
+::selection {
+  background: oklch(0.75 0.18 85 / 0.35);
+  color: oklch(0.99 0.01 285);
+}
+
+input,
+textarea,
+select {
+  background-color: var(--app-input-bg);
+  border-color: var(--app-border);
+  color: var(--app-input-text);
+  caret-color: var(--app-accent);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--app-placeholder);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--app-input-text);
+  box-shadow: 0 0 0 1000px var(--app-input-bg) inset;
+  caret-color: var(--app-accent);
+  transition: background-color 9999s ease-out 0s;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.font-display {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.metric-card {
+  border: 1px solid var(--app-border);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(145deg, oklch(0.21 0.028 285 / 0.92), oklch(0.15 0.018 285 / 0.82));
+  box-shadow: 0 18px 50px oklch(0.03 0.01 285 / 0.34);
+}
+
+.shadow-panel {
+  box-shadow: 0 18px 50px oklch(0.03 0.01 285 / 0.34);
+}
+
+.ambient-orb {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  width: 34rem;
+  height: 34rem;
+  border-radius: 999px;
+  filter: blur(100px);
+  opacity: 0.16;
+}
+
+.ambient-orb-top {
+  top: -17rem;
+  right: -8rem;
+  background: var(--app-accent);
+}
+
+.ambient-orb-bottom {
+  bottom: -22rem;
+  left: 10rem;
+  background: oklch(0.7 0.17 235);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -1,4 +1,11 @@
-export type NotificationType = 'plan_assigned' | 'checkin_reviewed' | 'coach_assigned';
+export type NotificationType =
+    | 'plan_assigned'
+    | 'plan_updated'
+    | 'client_plan_updated'
+    | 'nutrition_completed'
+    | 'training_completed'
+    | 'checkin_reviewed'
+    | 'coach_assigned';
 
 export interface Notification {
     id: number;

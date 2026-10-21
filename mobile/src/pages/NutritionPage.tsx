@@ -1,0 +1,130 @@
+import { useState } from 'react';
+import { CalendarDays, Utensils } from 'lucide-react';
+import { useNutritionToday } from '../hooks/useNutritionToday';
+import { useMyCoach } from '../hooks/useMyCoach';
+import SelfNutritionSetup from '../components/SelfNutritionSetup';
+import EditNutritionPlan from '../components/EditNutritionPlan';
+import MealLogger from '../components/MealLogger';
+import NutritionCalendar from '../components/NutritionCalendar';
+import { findActiveDayConfig } from '../utils/weekday';
+
+export default function NutritionPage() {
+    const { plans, todayPlan, loading, error, activatePlan, refresh, isClient, logMeal } = useNutritionToday();
+    const { hasCoach, loading: coachLoading } = useMyCoach();
+    const canManageOwnPlan = isClient && !coachLoading && !hasCoach;
+    const [showCalendar, setShowCalendar] = useState(false);
+
+    return (
+        <section className="mx-auto max-w-3xl">
+            <div className="mb-8">
+                <p className="mb-3 flex items-center gap-2 text-sm font-medium text-amber-300"><Utensils size={16} /> NUTRICIÓN</p>
+                <h1 className="font-display text-4xl font-semibold tracking-[-0.04em] text-slate-50">Tu plan de nutrición</h1>
+                <p className="mt-3 max-w-xl text-base leading-7 text-slate-300">
+                    Crea, revisa y ajusta tu plan: calorías, macronutrientes, meta de agua y cada una de tus comidas.
+                </p>
+            </div>
+
+            {loading && <p className="text-sm text-slate-500">Cargando…</p>}
+            {!loading && error && <p className="text-sm text-rose-300">{error}</p>}
+
+            {!loading && !error && plans.length > 1 && (
+                <div className="mb-5 flex flex-wrap gap-2">
+                    {plans.map((plan) => (
+                        <button
+                            key={plan.id}
+                            type="button"
+                            onClick={() => activatePlan(plan.id)}
+                            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${plan.isActive ? 'bg-amber-500 text-white shadow-[0_10px_24px_rgba(217,158,45,0.28)]' : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                                }`}
+                        >
+                            {plan.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {!loading && !error && todayPlan && (
+                <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                    <div className="metric-card !p-4 text-center">
+                        <p className="eyebrow">kcal</p>
+                        <p className="mt-2 font-display text-2xl font-semibold text-slate-50">{todayPlan.goalCalories}</p>
+                    </div>
+                    <div className="metric-card !p-4 text-center">
+                        <p className="eyebrow">PRO</p>
+                        <p className="mt-2 font-display text-2xl font-semibold text-slate-50">{todayPlan.proteinGTarget ?? '—'}g</p>
+                    </div>
+                    <div className="metric-card !p-4 text-center">
+                        <p className="eyebrow">CHO</p>
+                        <p className="mt-2 font-display text-2xl font-semibold text-slate-50">{todayPlan.carbsGTarget ?? '—'}g</p>
+                    </div>
+                    <div className="metric-card !p-4 text-center">
+                        <p className="eyebrow">GRA</p>
+                        <p className="mt-2 font-display text-2xl font-semibold text-slate-50">{todayPlan.fatGTarget ?? '—'}g</p>
+                    </div>
+                    <div className="metric-card !p-4 text-center">
+                        <p className="eyebrow">Agua</p>
+                        <p className="mt-2 font-display text-2xl font-semibold text-slate-50">{(todayPlan.waterGoalMl / 1000).toFixed(1)}L</p>
+                    </div>
+                </div>
+            )}
+
+            {!loading && !error && isClient && !coachLoading && !todayPlan && canManageOwnPlan && (
+                <SelfNutritionSetup hasPlan={false} onCreated={refresh} />
+            )}
+            {!loading && !error && isClient && !coachLoading && !todayPlan && !canManageOwnPlan && (
+                <p className="text-sm text-slate-400">Tu coach aún no te ha asignado un plan de nutrición.</p>
+            )}
+            {!loading && !error && isClient && todayPlan && (
+                <div className="rounded-3xl border border-white/8 bg-panel/70 p-6 shadow-panel">
+                    <p className="eyebrow">Comidas del plan activo</p>
+                    {findActiveDayConfig(todayPlan.dayConfigs) && (
+                        <span className="mt-2 inline-block rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-200">
+                            Hoy: {findActiveDayConfig(todayPlan.dayConfigs)?.label}
+                        </span>
+                    )}
+                    <ul className="mt-3 divide-y divide-white/7">
+                        {todayPlan.meals.map((meal) => (
+                            <li className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0" key={meal.id}>
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-medium text-slate-100">{meal.name} {meal.mealTime && <span className="text-xs font-normal text-slate-500">· {meal.mealTime}</span>}</p>
+                                    {meal.detail && <p className="mt-1 text-xs text-slate-500">{meal.detail}</p>}
+                                    {meal.items.length > 0 && (
+                                        <p className="mt-1 text-xs text-slate-500">
+                                            {meal.items.map((item) => `${item.foodName} (${item.grams}g)`).join(', ')}
+                                        </p>
+                                    )}
+                                    {meal.items.length > 0 && (
+                                        <p className="mt-1 text-xs text-slate-400">
+                                            P {meal.items.reduce((sum, item) => sum + item.proteinG, 0).toFixed(1)}g · C{' '}
+                                            {meal.items.reduce((sum, item) => sum + item.carbsG, 0).toFixed(1)}g · G{' '}
+                                            {meal.items.reduce((sum, item) => sum + item.fatG, 0).toFixed(1)}g
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="shrink-0 text-right">
+                                    <p className="text-sm font-medium text-slate-300">
+                                        {meal.status === 'completed' && meal.loggedCalories != null ? Math.round(meal.loggedCalories) : meal.calories} kcal
+                                    </p>
+                                    <MealLogger meal={meal} onLog={logMeal} />
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                    <button
+                        className="mt-4 flex items-center gap-1.5 text-xs font-medium text-slate-300 hover:text-slate-100"
+                        onClick={() => setShowCalendar((current) => !current)}
+                        type="button"
+                    >
+                        <CalendarDays size={13} /> {showCalendar ? 'Ocultar calendario' : 'Ver calendario de alimentación'}
+                    </button>
+                    {showCalendar && (
+                        <div className="mt-3">
+                            <NutritionCalendar dayConfigs={todayPlan.dayConfigs} endDate={todayPlan.endDate} startDate={todayPlan.startDate} />
+                        </div>
+                    )}
+                    {canManageOwnPlan && <EditNutritionPlan onUpdated={refresh} plan={todayPlan} />}
+                </div>
+            )}
+        </section>
+    );
+}
