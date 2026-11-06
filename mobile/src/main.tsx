@@ -50,7 +50,7 @@ function AppShell() {
 createRoot(document.getElementById('root')!).render(
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <ThemeProvider>
           <AuthProvider>
             <AppShell />

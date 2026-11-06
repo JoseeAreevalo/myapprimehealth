@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
@@ -14,8 +14,14 @@ const pwaIcons = [
   'icon-256.webp',
   'icon-512.webp',
 ]
+const repositoryName = process.env.GITHUB_REPOSITORY?.split('/')[1]
+const base =
+  process.env.VITE_PAGES_BUILD === 'true' && repositoryName
+    ? `/${repositoryName}/`
+    : '/'
 
 export default defineConfig({
+  base,
   plugins: [
     react(),
     {
@@ -27,6 +33,13 @@ export default defineConfig({
             fileName: `icons/${icon}`,
             source: readFileSync(resolve(projectRoot, 'icons', icon)),
           })
+        }
+      },
+
+      closeBundle() {
+        if (process.env.VITE_PAGES_BUILD === 'true') {
+          const indexHtmlPath = resolve(projectRoot, 'dist', 'index.html')
+          writeFileSync(resolve(projectRoot, 'dist', '404.html'), readFileSync(indexHtmlPath))
         }
       },
     },

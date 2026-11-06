@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: prime-health-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: API_CORS_ORIGINS
+        value: https://joseearevalo.github.io,https://localhost,http://localhost,capacitor://localhost

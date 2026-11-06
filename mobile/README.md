@@ -20,7 +20,16 @@ Copy-Item .env.example .env
 npm run build
 ```
 
-Publica el contenido generado en `mobile/dist` en un hosting de sitios estáticos. Configura `API_CORS_ORIGINS` en el API con el origen exacto del sitio (por ejemplo, `https://primehealth.example.com`, sin barra final). Abre la URL en Safari en el iPhone, toca Compartir > Añadir a pantalla de inicio y luego abre Prime Health desde el icono.
+El repositorio está configurado para publicar `mobile/dist` en GitHub Pages cuando hay un push a `main`. Configura primero el repositorio:
+
+1. En Settings > Pages, selecciona **GitHub Actions** como origen.
+2. En Settings > Secrets and variables > Actions > Variables, crea `VITE_API_URL` con la URL HTTPS del API.
+3. Crea una base de datos PostgreSQL en Neon y configura su connection string como `DATABASE_URL` en el servicio Render creado desde el `render.yaml` del repositorio. Render genera `JWT_ACCESS_SECRET`; el blueprint ya permite el origen de GitHub Pages en CORS.
+4. Después de guardar `VITE_API_URL`, vuelve a ejecutar el workflow **Deploy iOS PWA** o haz un nuevo push a `main`.
+
+El API gratuito de Render se suspende tras 15 minutos sin tráfico y puede tardar cerca de un minuto en iniciar. Neon Free suspende el cómputo tras 5 minutos de inactividad. Son límites aceptables para una prueba personal, no para producción. Usa cuentas y datos ficticios; no ingreses datos reales de salud.
+
+Cuando el workflow termine, abre la URL que aparece en Actions en Safari, toca Compartir > Añadir a pantalla de inicio y luego abre Prime Health desde el icono.
 
 La PWA necesita conexión a internet y no almacena la app ni los datos del usuario para uso offline. Los cambios publicados se cargan al volver a abrir o actualizar la página. Las funciones que requieren cámara u otras APIs nativas no forman parte de esta modalidad; para esta prueba se usan las funciones web de la app. Una PWA es la aplicación web instalada desde Safari, no un archivo nativo `.ipa`.
 
