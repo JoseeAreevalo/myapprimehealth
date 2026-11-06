@@ -6,6 +6,24 @@ Estructura: `src/` (copia de `frontend/src` + adaptaciones móviles), `android/`
 
 Adaptaciones respecto a la web: URL del API por `VITE_API_URL` (`src/api/config.ts`), safe areas de notch/barra inferior, botón atrás de Android, status bar y splash (`src/native.ts`), permisos de cámara/galería para fotos de check-in.
 
+## Probar en iPhone como web app (PWA)
+
+Para probar las funciones de la app que no dependen de capacidades nativas, no necesitas compilar una app iOS ni publicarla en App Store. Publica el contenido de `mobile/dist` en un hosting web con HTTPS y el API por separado con HTTPS. El proyecto ya incluye el manifiesto, el icono de inicio de iOS y los metadatos para abrirse en modo independiente desde la pantalla de inicio.
+
+Desde Windows, prepara el build así:
+
+```powershell
+cd mobile
+npm install
+Copy-Item .env.example .env
+# Edita .env y configura VITE_API_URL=https://tu-api
+npm run build
+```
+
+Publica el contenido generado en `mobile/dist` en un hosting de sitios estáticos. Configura `API_CORS_ORIGINS` en el API con el origen exacto del sitio (por ejemplo, `https://primehealth.example.com`, sin barra final). Abre la URL en Safari en el iPhone, toca Compartir > Añadir a pantalla de inicio y luego abre Prime Health desde el icono.
+
+La PWA necesita conexión a internet y no almacena la app ni los datos del usuario para uso offline. Los cambios publicados se cargan al volver a abrir o actualizar la página. Las funciones que requieren cámara u otras APIs nativas no forman parte de esta modalidad; para esta prueba se usan las funciones web de la app. Una PWA es la aplicación web instalada desde Safari, no un archivo nativo `.ipa`.
+
 ## 1. Requisitos en tu PC (Windows) para Android
 
 1. Node.js 20+ (ya tienes 24).
@@ -19,7 +37,7 @@ Adaptaciones respecto a la web: URL del API por `VITE_API_URL` (`src/api/config.
 4. En el teléfono Android: Ajustes > Acerca del teléfono > toca 7 veces "Número de compilación" > Opciones de desarrollador > activa "Depuración USB". Conéctalo por USB y acepta la huella RSA.
    Verifica con `adb devices` (en `%LOCALAPPDATA%\Android\Sdk\platform-tools`).
 
-## 2. Requisitos para iOS
+## 2. Requisitos para compilar la app nativa de iOS
 
 Apple solo permite compilar iOS en macOS. Desde Windows no es posible directamente. Opciones:
 
